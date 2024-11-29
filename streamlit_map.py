@@ -25,28 +25,29 @@ def mapcsv():
         obs_edit=st.session_state.obs_edit
         if "center" not in st.session_state:
             st.session_state["center"] = [ 19.8,-96.85]  # Default center for the map
-
+        if "out" not in st.session_state:
+            st.session_state.out={}
 
         if "zoom" not in st.session_state:
             st.session_state["zoom"] = 8  # Default zoom level
 
 
 
-        m = folium.Map(location=st.session_state["center"], zoom_start=st.session_state["zoom"], crs = 'EPSG4326')
+        m = folium.Map(location=st.session_state["center"], zoom_start=st.session_state["zoom"])
         fg = folium.FeatureGroup(name="Markers")
 
-
-        if st.button("remove point"):
-            index=obs.index[obs["Lon"]==st.session_state.out["last_object_clicked"]["lat"]]
-            obs_edit=obs_edit.drop([index[0]])
-            st.session_state.obs_edit=obs_edit
+        if "last_object_clicked" in st.session_state.out:
+            if st.button("remove point"):
+                index=obs.index[obs["decimal_latitude"]==st.session_state.out["last_object_clicked"]["lat"]]
+                obs_edit=obs_edit.drop([index[0]])
+                st.session_state.obs_edit=obs_edit
 
             
 
 
         for i, row in obs_edit.iterrows():
             fg.add_child(folium.Marker(
-                location=[row[1], row[2]],
+                location=[row[0], row[1]],
                 tooltip="Click to select",
                 icon=plugins.BeautifyIcon(icon="circle")
             ))   
@@ -60,9 +61,14 @@ def mapcsv():
             width=700,
             
         )
-        index=obs.index[obs["Lon"]==st.session_state.out["last_object_clicked"]["lat"]]
+        index=obs.index[obs["decimal_latitude"]==st.session_state.out["last_object_clicked"]["lat"]]
         st.write("removed Point with index", index[0])
         st.write(obs_edit)
+
+        if st.button("Commit"):
+           csv_string=str([tuple(obs_edit.columns)] + [tuple(x) for x in obs_edit.values])
+           st.write(csv_string)
+
 
 
 def mapgeojson():
@@ -79,7 +85,7 @@ def mapgeojson():
         if "zoom" not in st.session_state:
             st.session_state["zoom"] = 8  # Default zoom level
 
-        m = folium.Map(location=st.session_state["center"], zoom_start=st.session_state["zoom"], crs = 'EPSG4326')
+        m = folium.Map(location=st.session_state["center"], zoom_start=st.session_state["zoom"])
         fg = folium.FeatureGroup(name="Markers")
         fg.add_child(folium.GeoJson(poly_file))
         
@@ -95,3 +101,9 @@ def mapgeojson():
                 width=700,
                 
             )
+          
+            
+
+
+
+mapgeojson()
