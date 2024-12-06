@@ -15,3 +15,5 @@ data = {
 headers = {"Content-Type": "application/json"}
 
 response = requests.post(url, json=data, headers=headers)
+
+print(response.text)
