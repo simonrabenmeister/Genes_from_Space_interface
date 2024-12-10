@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import folium.plugins as plugins
 import geojson as gj
+from folium.plugins import Draw
 
 
 def mapcsv():
@@ -16,17 +17,18 @@ def mapcsv():
         bytes_data = obs_file.getvalue()
         # Can be used wherever a "file-like" object is accepted:
         obs = pd.read_csv(obs_file, sep='\t')
-
+        st.write(obs)
 
         if "obs" not in st.session_state:
             st.session_state.obs= obs
         if "obs_edit" not in st.session_state:
             st.session_state.obs_edit= obs
-        obs_edit=st.session_state.obs_edit
         if "center" not in st.session_state:
             st.session_state["center"] = [ 19.8,-96.85]  # Default center for the map
         if "out" not in st.session_state:
             st.session_state.out={}
+        if "index" not in st.session_state:
+            st.session_state.index=None
         
         if "zoom" not in st.session_state:
             st.session_state["zoom"] = 8  # Default zoom level
@@ -56,15 +58,22 @@ def mapcsv():
                 height=400,
                 width=700,
             )
+            
         render_map()
 
-        index=obs_edit.index[(obs_edit[lat_col] == st.session_state.out["last_object_clicked"]["lat"]) & 
-                                  (obs_edit[lon_col] == st.session_state.out["last_object_clicked"]["lng"])]
 
-
-        if st.button("remove point"):
+        if st.session_state.out["last_object_clicked"] is not None:
+            st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.out["last_object_clicked"]["lat"]) & 
+            (obs_edit[lon_col] == st.session_state.out["last_object_clicked"]["lng"])]
+        
+        def remove_point(index):
             st.session_state.obs_edit=obs_edit.drop(index)
-            return str([tuple(obs_edit.columns)] + [tuple(x) for x in obs_edit.values])
+
+        st.button("remove_point", on_click=remove_point, args=(st.session_state.index,)) 
+
+        csv=st.session_state.obs_edit.loc[:, [lat_col, lon_col]]
+        return str([tuple(csv.columns)] + [tuple(x) for x in csv.values])
+    
 
 
 
@@ -99,4 +108,21 @@ def mapgeojson():
                 width=700,
                 
             )
-          
+    
+    return poly_file
+
+def mapbbox():
+    m = folium.Map(location=[39.949610, -75.150282], zoom_start=5)
+    draw = Draw(export=True)
+    draw.add_to(m)
+
+    output = st_folium(m, width=700, height=500)
+
+    geometry = output["last_active_drawing"]["geometry"]
+
+    def get_bounding_box(geometry):
+        coords = np.array(list(gj.utils.coords(geometry)))
+        return coords[:,0].min(), coords[:,0].max(), coords[:,1].min(), coords[:,1].max()
+
+    st.write(get_bounding_box(geometry))
+    return get_bounding_box(geometry)

@@ -10,6 +10,7 @@ def TC_obs(session):
     pop_density= session["pop_density"] 
     runtitle= session["runtitle"]
     buffer_size= session["buffer_size"]
+    pop_distance= session["pop_distance"]
 
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Forest_cover_v_obs_server.json/run"
 
@@ -18,6 +19,7 @@ def TC_obs(session):
         "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_GFW_tree_canopy_2000-2023.json@33|pipeline@38": years,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
+        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@39|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance":pop_distance,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": runtitle,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@39|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
     }
@@ -69,7 +71,7 @@ def LC_country(session):
     start_year= session["start_year"]
     end_year= session["end_year"]
     countries= session["countries"]
-    cover_types= session["LC class"]
+    cover_types= session["LC_class"]
 
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Land_cover_v_GBIF_countries.json/run"
 
@@ -124,12 +126,12 @@ def TC_country( session):
     return response
 
 
-def TC_polygon(session):
+def TC_poly(session):
     years= session["years"]
     ne_nc= session["ne_nc"]
     pop_density= session["pop_density"]
     runtitle= session["runtitle"]
-    filepath= session["filepath"]
+    geojson= session["geojson"]
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Forestcover_v_polygon.json/run"
 
     data = {
@@ -137,7 +139,7 @@ def TC_polygon(session):
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": runtitle,
-        "pipeline@40": filepath
+        "pipeline@40": geojson
     }
     headers = {"Content-Type": "application/json"}
 
@@ -155,7 +157,7 @@ def LC_bbox(session):
     species= session["species"]
     start_year= session["start_year"]
     end_year= session["end_year"]
-    cover_types= session["LC class"]
+    cover_types= session["LC_class"]
     bbox= session["bbox"]
     
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Land_cover_v_GBIF_bbox.json/run"
@@ -182,7 +184,7 @@ def LC_bbox(session):
 def LC_obs(session):
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Landcover_v_obs_server.json/run"
 
-    cover_types= session["LC class"]
+    cover_types= session["LC_class"]
     csv= session["csv"]
     years= session["years"]
     ne_nc= session["ne_nc"]
@@ -207,10 +209,10 @@ def LC_obs(session):
     return response
 
 
-def LC_polygon(session):
+def LC_poly(session):
     url = "http://130.60.24.27/pipeline/GenesFromSpace>Tool>Landcover_v_polygon.json/run"
 
-    cover_types= session["LC class"]
+    cover_types= session["LC_class"]
     years= session["years"]
     ne_nc= session["ne_nc"]
     pop_density= session["pop_density"]
