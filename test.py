@@ -1,18 +1,20 @@
-
+import folium
 import streamlit as st
-import time
-import pandas as pd
-from io import StringIO
-from streamlit_map import mapcsv
-from streamlit_map import mapgeojson
+from folium.plugins import Draw
+from streamlit_folium import st_folium
+import numpy as np
 import geojson
 
-st.markdown('''
-<style>
-    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-    font-size:20px;
-    }
-</style>
-''', unsafe_allow_html=True)
+m = folium.Map(location=[39.949610, -75.150282], zoom_start=5)
+draw = Draw(export=True)
+draw.add_to(m)
 
-tab1, tab2 = st.tabs(["Pipeline", "Inputs"])
+output = st_folium(m, width=700, height=500)
+
+geometry = output["last_active_drawing"]["geometry"]
+
+def get_bounding_box(geometry):
+    coords = np.array(list(geojson.utils.coords(geometry)))
+    return coords[:,0].min(), coords[:,0].max(), coords[:,1].min(), coords[:,1].max()
+
+st.write(get_bounding_box(geometry))

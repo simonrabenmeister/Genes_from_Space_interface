@@ -45,13 +45,28 @@ st.markdown('''
 
 ##Header
 st.markdown("# Genes from Space Monitoring Tool")
-st.markdown('''Hello! This is a automatic fill out form for the Genes from Space Tool. It helps you find the right Pipeline for your needs.
-            If you want, you can check out The tool on Bon in a Box directly: [Bon in a Box](https://pipelines-2.geobon.org/pipeline-form/GenesFromSpace%3EToolComponents%3EGetHabitatMaps%3EGFS_Habitat_map_GFW_tree_canopy_2000-2023)''')
+st.markdown('''
+The Genes From Space monitoring tool uses Earth Observations (EO) to track habitat changes over time and infer population trends 
+as indicators of genetic diversity. Leveraging public EO data, the tool enables users to calculate two genetic diversity indicators 
+adopted by the Convention on Biological Diversity:
 
+- the Ne500 indicator, indicating the fraction of populations with an effective population size (Ne) above 500 units. Populations with 
+        Ne below 500 units are at risk of genetic erosion.
+- the Populations Maintained indicator (PM), indicating the fraction of populations that are maintained (i.e., that did not extinct) over time.
 
-
-
-
+Originally developed within the BON in a box platform, the tool provides an interface that simplifies the process of selecting EO datasets, 
+running analyses, and interpreting genetic diversity indicators. Ultimately, this tool offers a more scalable and accessible solution 
+for researchers, conservationists, and policymakers to monitor and protect biodiversity at local, regional, and global levels.\n
+For more Infos check out the [Genes from Space](https://genesfrom.space/) website.
+''')
+st.markdown("## Genes from Space Tool Interface")
+st.markdown('''
+Since Bon in a Box is still development, the Genes from Space team developed this Fill out Form to help you find the right Pipeline for your needs.
+            If you want, you can check out The tool on Bon in a Box directly: [Bon in a Box](http://130.60.24.27/pipeline-form)''')
+st.markdown("### Pipeline Selection")
+st.markdown('''
+To find the right pipeline for your needs, please answer the following questions.\n
+''')
 
 
 LCtype= st.selectbox(
@@ -60,6 +75,10 @@ LCtype= st.selectbox(
     index=None,
     placeholder="Select LC Type...")
 
+st.markdown('''
+The Genes from Space tool uses Landcover Data from the Copernicus Global Land Service or Forest Cover Data from the Global Forest Watch.
+Please select the type of Landcover you are interested in.
+''')
 if LCtype:
     st.session_state.save["LCtype"]=LCtype
     poly=st.radio(
@@ -68,7 +87,10 @@ if LCtype:
         options=["yes", "no"],
         index=None
     )
-    
+    st.markdown('''
+    The Genes from Space tool uses Landcover Data from the Copernicus Global Land Service or Forest Cover Data from the Global Forest Watch.
+    Please select the type of Landcover you are interested in.
+    ''')
 
 
     if poly=="yes":
