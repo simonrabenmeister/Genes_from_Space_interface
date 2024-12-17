@@ -4,3 +4,6 @@ base = "dark"
 
 [browser]
 serverAddress = "130.60.24.27"
+
+[server]
+port=8080
