@@ -8,6 +8,7 @@ import geojson as gj
 from folium.plugins import Draw
 
 
+
 def mapcsv():
     obs=pd.DataFrame()
 

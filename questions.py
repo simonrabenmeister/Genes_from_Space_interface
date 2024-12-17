@@ -3,6 +3,7 @@ from streamlit_map import mapcsv
 from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
 import json
+import pycountry
 
 
 LC_names = [
@@ -106,7 +107,8 @@ def TC_bbox():
 def LC_country():
     species = st.text_input("Name of the species", placeholder="Example: Species name", key="species")
     if species:
-        countries = st.text_input("List of countries", placeholder="Example: Country1, Country2",  key="countries")
+        country_names = [country.name for country in pycountry.countries]
+        countries = st.multiselect("Select countries", country_names)
         if countries:
             years = st.multiselect("Years of interest", list(range(1992, 2021)))
             if years:
@@ -128,7 +130,7 @@ def LC_country():
                                             if runtitle:
                                                 st.session_state.input = {
                                                     "species": species,
-                                                    "countries": countries.split(", "),
+                                                    "countries": countries,
                                                     "years": years,
                                                     "LC_class": [values[LC_names.index(name)] for name in LC_class],
                                                     "buffer_size": float(buffer_size),
@@ -253,7 +255,8 @@ def LC_poly():
 def TC_country():
     species = st.text_input("Name of the species", placeholder="Example: Species name")
     if species:
-        countries = st.text_input("List of countries", placeholder="Example: Country1, Country2")
+        country_names = [country.name for country in pycountry.countries]
+        countries = st.multiselect("Select countries", country_names)
         if countries:
             years = st.multiselect("Years of interest", list(range(2000, 2024)))
             if years:
@@ -273,7 +276,7 @@ def TC_country():
                                             if runtitle:
                                                 st.session_state.input = {
                                                     "species": species,
-                                                    "countries": countries.split(", "),
+                                                    "countries": countries,
                                                     "years": years,
                                                     "buffer_size": float(buffer_size),
                                                     "pop_distance": float(pop_distance),

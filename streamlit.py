@@ -10,8 +10,8 @@ from streamlit_map import mapbbox
 import geojson
 import api_calls
 import webbrowser 
-import questions
 
+import questions
 
 # Initialize user input save
 #characterizes Pipeline type
