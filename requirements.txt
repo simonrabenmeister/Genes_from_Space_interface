@@ -1,0 +1,7 @@
+streamlit
+folium
+streamlit_folium
+pandas
+numpy
+geojson
+pycountry

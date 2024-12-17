@@ -1,13 +1,9 @@
 
 
 import streamlit as st
-import time
-import pandas as pd
-from io import StringIO
 from streamlit_map import mapcsv
 from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
-import geojson
 import api_calls
 import webbrowser 
 
