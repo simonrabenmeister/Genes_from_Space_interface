@@ -120,10 +120,11 @@ def mapbbox():
     output = st_folium(m, width=700, height=500)
 
     geometry = output["last_active_drawing"]["geometry"]
+    coords = [geometry[0], geometry[2], geometry[1], geometry[3]]
 
-    def get_bounding_box(geometry):
-        coords = np.array(list(gj.utils.coords(geometry)))
-        return coords[:,0].min(), coords[:,0].max(), coords[:,1].min(), coords[:,1].max()
-
-    st.write(get_bounding_box(geometry))
-    return get_bounding_box(geometry)
+    # def get_bounding_box(geometry):
+    #     coords = np.array(list(gj.utils.coords(geometry)))
+        
+    #     return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
+    
+    return coords

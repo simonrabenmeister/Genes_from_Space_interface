@@ -168,6 +168,7 @@ def LC_bbox():
     if species:
         bbox = mapbbox()
         if bbox:
+            st.write(bbox)
             years = st.multiselect("Years of interest", list(range(1992, 2021)))
             if years:
                 LC_class = st.multiselect("Land cover class types", options=LC_names)
@@ -186,19 +187,20 @@ def LC_bbox():
                                         if end_year:
                                             runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
                                             if runtitle:
-                                                st.session_state.input = {
-                                                    "species": species,
-                                                    "bbox": bbox,
-                                                    "years": years,
-                                                    "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                                    "buffer_size": float(buffer_size),
-                                                    "pop_distance": float(pop_distance),
-                                                    "ne_nc": list(map(float, ne_nc.split(','))),
-                                                    "pop_density": list(map(float, pop_density.split(','))),
-                                                    "start_year": float(start_year),
-                                                    "end_year": float(end_year),
-                                                    "runtitle": runtitle,
-                                                }
+                                                if st.button("Submit"):
+                                                    st.session_state.input = {
+                                                        "species": species,
+                                                        "bbox": bbox,
+                                                        "years": years,
+                                                        "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                                        "buffer_size": float(buffer_size),
+                                                        "pop_distance": float(pop_distance),
+                                                        "ne_nc": list(map(float, ne_nc.split(','))),
+                                                        "pop_density": list(map(float, pop_density.split(','))),
+                                                        "start_year": float(start_year),
+                                                        "end_year": float(end_year),
+                                                        "runtitle": runtitle,
+                                                    }
 
 # 6. LC_obs (Land Cover - Observations)
 def LC_obs():
