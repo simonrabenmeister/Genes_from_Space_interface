@@ -57,16 +57,15 @@ def TC_obs():
                             pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                             if pop_density:
                                 runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                if runtitle:
-                                    st.session_state.input = {
-                                        "csv": csv,
-                                        "years": years,
-                                        "buffer_size": float(buffer_size),
-                                        "pop_distance": float(pop_distance),
-                                        "ne_nc": list(map(float, ne_nc.split(','))),
-                                        "pop_density": list(map(float, pop_density.split(','))),
-                                        "runtitle": runtitle,
-                                    }
+                                st.session_state.input = {
+                                    "csv": csv,
+                                    "years": years,
+                                    "buffer_size": float(buffer_size),
+                                    "pop_distance": float(pop_distance),
+                                    "ne_nc": list(map(float, ne_nc.split(','))),
+                                    "pop_density": list(map(float, pop_density.split(','))),
+                                    "runtitle": runtitle,
+                                }
 
 # 2. TC_bbox (Tree Canopy - Bounding Box)
 def TC_bbox():
@@ -89,19 +88,18 @@ def TC_bbox():
                                     end_year = st.text_input("End year of the study", placeholder="Example: 2020")
                                     if end_year:
                                         runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                        if runtitle:
-                                            st.session_state.input = {
-                                                "species": species,
-                                                "bbox": bbox,
-                                                "years": years,
-                                                "buffer_size": float(buffer_size),
-                                                "pop_distance": float(pop_distance),
-                                                "ne_nc": list(map(float, ne_nc.split(','))),
-                                                "pop_density": list(map(float, pop_density.split(','))),
-                                                "start_year": float(start_year),
-                                                "end_year": float(end_year),
-                                                "runtitle": runtitle,
-                                            }
+                                        st.session_state.input = {
+                                            "species": species,
+                                            "bbox": bbox,
+                                            "years": years,
+                                            "buffer_size": float(buffer_size),
+                                            "pop_distance": float(pop_distance),
+                                            "ne_nc": list(map(float, ne_nc.split(','))),
+                                            "pop_density": list(map(float, pop_density.split(','))),
+                                            "start_year": float(start_year),
+                                            "end_year": float(end_year),
+                                            "runtitle": runtitle,
+                                        }
 
 # 3. LC_country (Land Cover - Country)
 def LC_country():
@@ -153,22 +151,21 @@ def TC_poly():
                 pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                 if pop_density:
                     runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                    if runtitle:
-                        st.session_state.input = {
-                            "geojson": geojson,
-                            "years": years,
-                            "ne_nc": list(map(float, ne_nc.split(','))),
-                            "pop_density": list(map(float, pop_density.split(','))),
-                            "runtitle": runtitle,
-                        }
+                    st.session_state.input = {
+                        "geojson": geojson,
+                        "years": years,
+                        "ne_nc": list(map(float, ne_nc.split(','))),
+                        "pop_density": list(map(float, pop_density.split(','))),
+                        "runtitle": runtitle,
+                    }
 
 # 5. LC_bbox (Land Cover - Bounding Box)
 def LC_bbox():
+
     species = st.text_input("Name of the species", placeholder="Example: Species name")
     if species:
         bbox = mapbbox()
         if bbox:
-            st.write(bbox)
             years = st.multiselect("Years of interest", list(range(1992, 2021)))
             if years:
                 LC_class = st.multiselect("Land cover class types", options=LC_names)
@@ -185,22 +182,20 @@ def LC_bbox():
                                     if start_year:
                                         end_year = st.text_input("End year of the study", placeholder="Example: 2020")
                                         if end_year:
-                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                            if runtitle:
-                                                if st.button("Submit"):
-                                                    st.session_state.input = {
-                                                        "species": species,
-                                                        "bbox": bbox,
-                                                        "years": years,
-                                                        "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                                        "buffer_size": float(buffer_size),
-                                                        "pop_distance": float(pop_distance),
-                                                        "ne_nc": list(map(float, ne_nc.split(','))),
-                                                        "pop_density": list(map(float, pop_density.split(','))),
-                                                        "start_year": float(start_year),
-                                                        "end_year": float(end_year),
-                                                        "runtitle": runtitle,
-                                                    }
+                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")                                           
+                                            st.session_state.input = {
+                                                "species": species,
+                                                "bbox": bbox,
+                                                "years": years,
+                                                "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                                "buffer_size": float(buffer_size),
+                                                "pop_distance": float(pop_distance),
+                                                "ne_nc": list(map(float, ne_nc.split(','))),
+                                                "pop_density": list(map(float, pop_density.split(','))),
+                                                "start_year": float(start_year),
+                                                "end_year": float(end_year),
+                                                "runtitle": runtitle,
+                                            }
 
 # 6. LC_obs (Land Cover - Observations)
 def LC_obs():
@@ -219,17 +214,16 @@ def LC_obs():
                                 pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                                 if pop_density:
                                     runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                    if runtitle:
-                                        st.session_state.input = {
-                                            "csv": csv,
-                                            "years": years,
-                                            "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                            "buffer_size": float(buffer_size),
-                                            "pop_distance": float(pop_distance),
-                                            "ne_nc": list(map(float, ne_nc.split(','))),
-                                            "pop_density": list(map(float, pop_density.split(','))),
-                                            "runtitle": runtitle,
-                                        }
+                                    st.session_state.input = {
+                                        "csv": csv,
+                                        "years": years,
+                                        "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                        "buffer_size": float(buffer_size),
+                                        "pop_distance": float(pop_distance),
+                                        "ne_nc": list(map(float, ne_nc.split(','))),
+                                        "pop_density": list(map(float, pop_density.split(','))),
+                                        "runtitle": runtitle,
+                                    }
 
 # 7. LC_polygon (Land Cover - Polygon)
 def LC_poly():
@@ -244,15 +238,14 @@ def LC_poly():
                     pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                     if pop_density:
                         runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                        if runtitle:
-                            st.session_state.input = {
-                                "geojson": geojson,
-                                "years": years,
-                                "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                "ne_nc": list(map(float, ne_nc.split(','))),
-                                "pop_density": list(map(float, pop_density.split(','))),
-                                "runtitle": runtitle,
-                            }
+                        st.session_state.input = {
+                            "geojson": geojson,
+                            "years": years,
+                            "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                            "ne_nc": list(map(float, ne_nc.split(','))),
+                            "pop_density": list(map(float, pop_density.split(','))),
+                            "runtitle": runtitle,
+                        }
                             
 def TC_country():
     species = st.text_input("Name of the species", placeholder="Example: Species name")
@@ -275,16 +268,15 @@ def TC_country():
                                         end_year = st.text_input("End year of the study", placeholder="Example: 2020", key="end_year")
                                         if end_year:
                                             runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
-                                            if runtitle:
-                                                st.session_state.input = {
-                                                    "species": species,
-                                                    "countries": countries,
-                                                    "years": years,
-                                                    "buffer_size": float(buffer_size),
-                                                    "pop_distance": float(pop_distance),
-                                                    "ne_nc": list(map(float, ne_nc.split(','))),
-                                                    "pop_density": list(map(float, pop_density.split(','))),
-                                                    "runtitle": runtitle,
-                                                    "start_year": float(start_year),
-                                                    "end_year": float(end_year),
-                                                }
+                                            st.session_state.input = {
+                                                "species": species,
+                                                "countries": countries,
+                                                "years": years,
+                                                "buffer_size": float(buffer_size),
+                                                "pop_distance": float(pop_distance),
+                                                "ne_nc": list(map(float, ne_nc.split(','))),
+                                                "pop_density": list(map(float, pop_density.split(','))),
+                                                "runtitle": runtitle,
+                                                "start_year": float(start_year),
+                                                "end_year": float(end_year),
+                                            }

@@ -116,15 +116,13 @@ def mapbbox():
     m = folium.Map(location=[39.949610, -75.150282], zoom_start=5)
     draw = Draw(export=True)
     draw.add_to(m)
-
-    output = st_folium(m, width=700, height=500)
-
-    geometry = output["last_active_drawing"]["geometry"]
-    coords = [geometry[0], geometry[2], geometry[1], geometry[3]]
-
-    # def get_bounding_box(geometry):
-    #     coords = np.array(list(gj.utils.coords(geometry)))
+   
+    def get_bounding_box(geom):
+        coords = np.array(list(gj.utils.coords(geom)))
         
-    #     return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
+        return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
     
-    return coords
+    output = st_folium(m, width=700, height=500)
+    if output["last_active_drawing"] is not None:
+        geometry = output["last_active_drawing"]["geometry"]
+        return get_bounding_box(geometry)
