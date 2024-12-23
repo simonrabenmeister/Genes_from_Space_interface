@@ -6,7 +6,6 @@ from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
 import api_calls
 import webbrowser 
-import time
 
 import questions
 
