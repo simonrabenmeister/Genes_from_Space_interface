@@ -7,6 +7,7 @@ import pycountry
 
 
 LC_names = [
+    "Most common land cover",
     "Cropland, rainfed",
     "Herbaceous cover",
     "Tree or shrub cover",
@@ -39,11 +40,12 @@ LC_names = [
     "Permanent snow and ice"
 ]
 values = [
-    10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82,
+    0, 10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82,
     90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220
 ]
 #1. TC_obs (Tree Canopy - Observations)
 def TC_obs():
+        Finished = False
         csv = mapcsv()
         if csv:
             years = st.multiselect("Years of interest", list(range(1992, 2021)))
@@ -57,18 +59,24 @@ def TC_obs():
                             pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                             if pop_density:
                                 runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                st.session_state.input = {
-                                    "csv": csv,
-                                    "years": years,
-                                    "buffer_size": float(buffer_size),
-                                    "pop_distance": float(pop_distance),
-                                    "ne_nc": list(map(float, ne_nc.split(','))),
-                                    "pop_density": list(map(float, pop_density.split(','))),
-                                    "runtitle": runtitle,
-                                }
+                                if runtitle:
+                                    st.session_state.input = {
+                                        "csv": csv,
+                                        "years": years,
+                                        "buffer_size": float(buffer_size),
+                                        "pop_distance": float(pop_distance),
+                                        "ne_nc": list(map(float, ne_nc.split(','))),
+                                        "pop_density": list(map(float, pop_density.split(','))),
+                                        "runtitle": runtitle,
+                                    }
+                                    #tells streamlit.py to display Run script button
+                                    Finished = True
+                                    return Finished
+
 
 # 2. TC_bbox (Tree Canopy - Bounding Box)
 def TC_bbox():
+    Finished = False
     species = st.text_input("Name of the species", placeholder="Example: Species name")
     if species:
         bbox = mapbbox()
@@ -88,21 +96,25 @@ def TC_bbox():
                                     end_year = st.text_input("End year of the study", placeholder="Example: 2020")
                                     if end_year:
                                         runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                        st.session_state.input = {
-                                            "species": species,
-                                            "bbox": bbox,
-                                            "years": years,
-                                            "buffer_size": float(buffer_size),
-                                            "pop_distance": float(pop_distance),
-                                            "ne_nc": list(map(float, ne_nc.split(','))),
-                                            "pop_density": list(map(float, pop_density.split(','))),
-                                            "start_year": float(start_year),
-                                            "end_year": float(end_year),
-                                            "runtitle": runtitle,
-                                        }
+                                        if runtitle:
+                                            st.session_state.input = {
+                                                "species": species,
+                                                "bbox": bbox,
+                                                "years": years,
+                                                "buffer_size": float(buffer_size),
+                                                "pop_distance": float(pop_distance),
+                                                "ne_nc": list(map(float, ne_nc.split(','))),
+                                                "pop_density": list(map(float, pop_density.split(','))),
+                                                "start_year": float(start_year),
+                                                "end_year": float(end_year),
+                                                "runtitle": runtitle,
+                                            }
+                                            Finished = True
+                                            return Finished
 
 # 3. LC_country (Land Cover - Country)
 def LC_country():
+    Finished = False
     species = st.text_input("Name of the species", placeholder="Example: Species name", key="species")
     if species:
         country_names = [country.name for country in pycountry.countries]
@@ -139,9 +151,12 @@ def LC_country():
                                                     "end_year": float(end_year),
                                                     "runtitle": runtitle,
                                                 }
+                                                Finished = True
+                                                return Finished
 
 # 4. TC_polygon (Tree Canopy - Polygon)
 def TC_poly():
+    Finished = False
     geojson = str(json.dumps(mapgeojson()))
     if geojson:
         years = st.multiselect("Years of interest", list(range(2000, 2024)))
@@ -151,17 +166,19 @@ def TC_poly():
                 pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                 if pop_density:
                     runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                    st.session_state.input = {
-                        "geojson": geojson,
-                        "years": years,
-                        "ne_nc": list(map(float, ne_nc.split(','))),
-                        "pop_density": list(map(float, pop_density.split(','))),
-                        "runtitle": runtitle,
-                    }
-
+                    if runtitle:
+                        st.session_state.input = {
+                            "geojson": geojson,
+                            "years": years,
+                            "ne_nc": list(map(float, ne_nc.split(','))),
+                            "pop_density": list(map(float, pop_density.split(','))),
+                            "runtitle": runtitle,
+                        }
+                        Finished = True
+                        return Finished
 # 5. LC_bbox (Land Cover - Bounding Box)
 def LC_bbox():
-
+    Finished = False
     species = st.text_input("Name of the species", placeholder="Example: Species name")
     if species:
         bbox = mapbbox()
@@ -182,23 +199,28 @@ def LC_bbox():
                                     if start_year:
                                         end_year = st.text_input("End year of the study", placeholder="Example: 2020")
                                         if end_year:
-                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")                                           
-                                            st.session_state.input = {
-                                                "species": species,
-                                                "bbox": bbox,
-                                                "years": years,
-                                                "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                                "buffer_size": float(buffer_size),
-                                                "pop_distance": float(pop_distance),
-                                                "ne_nc": list(map(float, ne_nc.split(','))),
-                                                "pop_density": list(map(float, pop_density.split(','))),
-                                                "start_year": float(start_year),
-                                                "end_year": float(end_year),
-                                                "runtitle": runtitle,
-                                            }
+                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title") 
+                                            if runtitle:                                          
+                                                st.session_state.input = {
+                                                    "species": species,
+                                                    "bbox": bbox,
+                                                    "years": years,
+                                                    "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                                    "buffer_size": float(buffer_size),
+                                                    "pop_distance": float(pop_distance),
+                                                    "ne_nc": list(map(float, ne_nc.split(','))),
+                                                    "pop_density": list(map(float, pop_density.split(','))),
+                                                    "start_year": float(start_year),
+                                                    "end_year": float(end_year),
+                                                    "runtitle": runtitle,
+                                                }
+                                                Finished = True
+                                                return Finished
+
 
 # 6. LC_obs (Land Cover - Observations)
 def LC_obs():
+        Finished = False
         csv = mapcsv()
         if csv:
             years = st.multiselect("Years of interest", list(range(1992, 2021)))
@@ -214,19 +236,23 @@ def LC_obs():
                                 pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                                 if pop_density:
                                     runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                    st.session_state.input = {
-                                        "csv": csv,
-                                        "years": years,
-                                        "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                        "buffer_size": float(buffer_size),
-                                        "pop_distance": float(pop_distance),
-                                        "ne_nc": list(map(float, ne_nc.split(','))),
-                                        "pop_density": list(map(float, pop_density.split(','))),
-                                        "runtitle": runtitle,
-                                    }
+                                    if runtitle:
+                                        st.session_state.input = {
+                                            "csv": csv,
+                                            "years": years,
+                                            "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                            "buffer_size": float(buffer_size),
+                                            "pop_distance": float(pop_distance),
+                                            "ne_nc": list(map(float, ne_nc.split(','))),
+                                            "pop_density": list(map(float, pop_density.split(','))),
+                                            "runtitle": runtitle,
+                                        }
+                                        Finished = True
+                                        return Finished
 
 # 7. LC_polygon (Land Cover - Polygon)
 def LC_poly():
+    Finished = False
     geojson = str(json.dumps(mapgeojson()))
     if geojson:
         years = st.multiselect("Years of interest", list(range(1992, 2021)))
@@ -238,16 +264,20 @@ def LC_poly():
                     pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
                     if pop_density:
                         runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                        st.session_state.input = {
-                            "geojson": geojson,
-                            "years": years,
-                            "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                            "ne_nc": list(map(float, ne_nc.split(','))),
-                            "pop_density": list(map(float, pop_density.split(','))),
-                            "runtitle": runtitle,
-                        }
+                        if runtitle:   
+                            st.session_state.input = {
+                                "geojson": geojson,
+                                "years": years,
+                                "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                "ne_nc": list(map(float, ne_nc.split(','))),
+                                "pop_density": list(map(float, pop_density.split(','))),
+                                "runtitle": runtitle,
+                            }
+                            Finished = True
+                            return Finished
                             
 def TC_country():
+    Finished = False
     species = st.text_input("Name of the species", placeholder="Example: Species name")
     if species:
         country_names = [country.name for country in pycountry.countries]
@@ -268,15 +298,18 @@ def TC_country():
                                         end_year = st.text_input("End year of the study", placeholder="Example: 2020", key="end_year")
                                         if end_year:
                                             runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
-                                            st.session_state.input = {
-                                                "species": species,
-                                                "countries": countries,
-                                                "years": years,
-                                                "buffer_size": float(buffer_size),
-                                                "pop_distance": float(pop_distance),
-                                                "ne_nc": list(map(float, ne_nc.split(','))),
-                                                "pop_density": list(map(float, pop_density.split(','))),
-                                                "runtitle": runtitle,
-                                                "start_year": float(start_year),
-                                                "end_year": float(end_year),
-                                            }
+                                            if runtitle:   
+                                                st.session_state.input = {
+                                                    "species": species,
+                                                    "countries": countries,
+                                                    "years": years,
+                                                    "buffer_size": float(buffer_size),
+                                                    "pop_distance": float(pop_distance),
+                                                    "ne_nc": list(map(float, ne_nc.split(','))),
+                                                    "pop_density": list(map(float, pop_density.split(','))),
+                                                    "runtitle": runtitle,
+                                                    "start_year": float(start_year),
+                                                    "end_year": float(end_year),
+                                                }
+                                                Finished = True
+                                                return Finished

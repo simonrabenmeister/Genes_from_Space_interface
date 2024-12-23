@@ -1,20 +1,61 @@
-import folium
 import streamlit as st
-from folium.plugins import Draw
-from streamlit_folium import st_folium
-import numpy as np
-import geojson
 
-m = folium.Map(location=[39.949610, -75.150282], zoom_start=5)
-draw = Draw(export=True)
-draw.add_to(m)
+# value = st.number_input("Value")
+# text = f""" 
+# # <span style="font-size:24px;">Title</span>
+# """
 
-output = st_folium(m, width=700, height=500)
 
-geometry = output["last_active_drawing"]["geometry"]
+# # Initialize session state
+# if "show_expander" not in st.session_state:
+#     st.session_state.show_expander = False
 
-def get_bounding_box(geometry):
-    coords = np.array(list(geojson.utils.coords(geometry)))
-    return coords[:,0].min(), coords[:,0].max(), coords[:,1].min(), coords[:,1].max()
+# # Toggle expander visibility based on button click
+# if st.button("Toggle Expander"):
+#     st.session_state.show_expander = not st.session_state.show_expander
 
-st.write(get_bounding_box(geometry))
+# # Show the content based on the state
+
+# with st.expander(st.markdown(text, unsafe_allow_html=True), expanded=st.session_state.show_expander):
+#     st.write("This expander is dynamically controlled by the button.")
+#     st.text_input("Input something here")
+
+
+
+
+# # Create an expander
+# with st.expander(r"$\textsf{\Huge Pipeline Selection}$"):
+#     st.markdown("This text is styled using injected CSS.")
+
+
+# def change_label_style(label, font_size='12px', font_color='black', font_family='sans-serif'):
+#     html = f"""
+#     <script>
+#         var elems = window.parent.document.querySelectorAll('p');
+#         var elem = Array.from(elems).find(x => x.innerText == '{label}');
+#         elem.style.fontSize = '{font_size}';
+#         elem.style.color = '{font_color}';
+#         elem.style.fontFamily = '{font_family}';
+#     </script>
+#     """
+#     st.components.v1.html(html)
+
+# label = "Pipeline Selection"
+# with st.expander(label):
+#     st.markdown("This text is styled using injected CSS.")
+# change_label_style(label, '20px')
+
+
+def change_label_style(label, font_size='12px', font_color='black', font_family='sans-serif', font_weight='normal'):
+    html = f"""
+    <script>
+        var elems = window.parent.document.querySelectorAll('p');
+        var elem = Array.from(elems).find(x => x.innerText == '{label}');
+        elem.style.fontSize = '{font_size}';
+        elem.style.color = '{font_color}';
+        elem.style.fontFamily = '{font_family}';
+        elem.style.fontWeight = '{font_weight}';
+    </script>
+    """
+    st.components.v1.html(html)
+
