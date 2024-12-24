@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY streamlit.py streamlit_map.py questions.py api_calls.py requirements.txt config.toml /home/ubuntu/Genes_from_Space_interface/
+COPY streamlit.py streamlit_map.py questions.py api_calls.py requirements.txt config.toml images /home/ubuntu/Genes_from_Space_interface/
 
 
 RUN pip3 install -r requirements.txt

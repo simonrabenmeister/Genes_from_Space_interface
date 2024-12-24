@@ -4,8 +4,6 @@ import streamlit as st
 from streamlit_map import mapcsv
 from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
-import api_calls
-import webbrowser 
 
 import questions
 
@@ -96,7 +94,7 @@ with st.expander("Expand for more information", expanded=False):
 \n Using these inputs, the tool assesses how the size of suitable habitat for each population changes over time. This analysis can identify populations that have completely lost their habitat over a given period (estimating the PM indicator). Additionally, by combining suitable habitat size with an estimate of population density, the tool can estimate the size of each population, which is then used to estimate the Ne500 indicator.
 The interactive form will ask which data to use for representing the populations distribution, habitat change, and set the parameters to estimate the indicators. 
 ''')
-    st.image("pipeline_description.png")
+    st.image("images/pipeline_description.png")
 st.divider() 
 ###Pipeline Selection
 LCtype= st.selectbox(
@@ -156,8 +154,8 @@ if LCtype:
         with st.expander("Expand for more information", expanded=False):
             st.markdown('''The tool can generate population polygons by processing geographic coordinates of species observations. These coordinates can either be supplied by the user (Figure below, option 1) or retrieved from a public species observation repository [GBIF](https://www.gbif.org/); option 2). 
         ''')
-            st.image("polygons_option1.png")
-            st.image("polygons_option2.png")
+            st.image("images/polygons_option1.png")
+            st.image("images/polygons_option2.png")
 
         if points=="preexisting observations":
                 st.session_state.save["points"]="pre"
