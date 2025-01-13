@@ -303,9 +303,10 @@ if species:
         rtext('1_2_in'),
         key="visibility",
         options=["yes", "no"],
-        index=None
+        index=None,
+        disabled=True
     )
-    
+    poly="no"
 
 ### 1.3.a: if pop polygons available
     if (poly=='yes'):
@@ -452,6 +453,7 @@ if buffer_size and pop_distance:
 
             with st.expander(rtext('2_1_1_ex_ti'), expanded=False):
                 st.markdown(rtext('2_1_1_ex_te'))
+                st.image("images/LC_types.png")
             
             LC_mode= st.selectbox(
             rtext('2_1_1_in1'),
