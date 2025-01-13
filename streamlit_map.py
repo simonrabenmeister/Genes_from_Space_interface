@@ -19,7 +19,7 @@ def mapcsv():
         bytes_data = obs_file.getvalue()
         # accepts TSV files:
         obs = pd.read_csv(obs_file, sep='\t')
-        st.write(obs)
+        #st.write(obs)
 ##Initialize the session state:
     #obs is the uploaded file
         if "obs" not in st.session_state:
@@ -40,10 +40,10 @@ def mapcsv():
             return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
     ##Get center of Points for Map display       
         rangepoints=get_point_range(obs)
-        st.write (rangepoints)
+        #st.write (rangepoints)
         y=rangepoints[2]-(rangepoints[2]-rangepoints[0])/2
         x=rangepoints[3]-(rangepoints[3]-rangepoints[1])/2
-        st.write (x,y)
+        #st.write (x,y)
     #Initialize the center of the map,  will be automaticially changed when the map is interacted with
         if "center" not in st.session_state:
             st.session_state["center"] = [ y, x]  # Default center for the map
@@ -62,7 +62,6 @@ def mapcsv():
         lat_col = "decimal_latitude"
         lon_col = "decimal_longitude"
         obs_edit=st.session_state.obs_edit
-
 
     #Create the map
         fg = folium.FeatureGroup(name="Markers")
@@ -106,13 +105,13 @@ def mapcsv():
             return df.to_csv(index=False,sep='\t').encode('utf-8')
 
         #create download button for the csv file
-        st.download_button(
-        "Download observations",
-        convert_df(csv),
-        "observations_GFS_tool.csv",
-        "text/csv",
-        key='download-csv'
-        )
+        # st.download_button(
+        # "Download observations",
+        # convert_df(csv),
+        # "observations_GFS_tool.csv",
+        # "text/csv",
+        # key='download-csv'
+        # )
         return str([tuple(csv.columns)] + [tuple(x) for x in csv.values])
     
 
@@ -134,10 +133,10 @@ def mapgeojson():
             coords = np.array(list(gj.utils.coords(geom)))
             return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
         bbox=get_bounding_box(poly_file)
-        st.write (bbox)
+        #st.write (bbox)
         y=bbox[2]-(bbox[2]-bbox[0])/2
         x=bbox[3]-(bbox[3]-bbox[1])/2
-        st.write (x,y)
+        #st.write (x,y)
 
         #set Map center to the center of the polygon
         if "center" not in st.session_state:

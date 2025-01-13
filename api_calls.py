@@ -78,15 +78,15 @@ def LC_country(session):
     data = {
         "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@178|pipeline@123": years,
         "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@178|pipeline@124": cover_types,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": [ne_nc],
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": [pop_density],
+        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
+        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": runtitle,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|data>getObservations.yml@10|year_end": end_year,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@12": species,
         "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@14": start_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@22": [countries]
+        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@22": countries
     }
     headers = {"Content-Type": "application/json"}
 
@@ -222,8 +222,8 @@ def LC_poly(session):
     data = {
         "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@39|pipeline@123": years,
         "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@39|pipeline@124": cover_types,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": [ne_nc],
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": [pop_density],
+        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
+        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
         "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": runtitle,
         "pipeline@38": geojson
     }

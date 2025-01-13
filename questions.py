@@ -7,7 +7,7 @@ import pycountry
 
 
 LC_names = [
-    "Most common land cover",
+    "AUTOMATIC: Don't want to specify / don't know (the tool will identify most common classes)",
     "Cropland, rainfed",
     "Herbaceous cover",
     "Tree or shrub cover",
@@ -46,73 +46,73 @@ values = [
 import streamlit as st
 
 def species_name_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The Name of the Species is used by the tool to source point data from GBIF. 
-        The name has to be in Latin and spelled as in the GBIF Database. 
-        We suggest that you check your species of interest on [GBIF](https://www.gbif.org/) and copy the Species name from there.
-        ''')
+    st.markdown('###### Name of species')
+    st.markdown('The species name is used by the tool to retrieve species observation coordinates from GBIF. Please ensure the name entered matches the scientific name in the [GBIF database](https://www.gbif.org/).')
 
 def list_of_countries_info():
-    with st.expander("Expand for more information", expanded=False):
+    st.markdown('###### Countries of interest')
+    st.markdown('Choose one or more countries from which to retrieve species observations from GBIF. ')
+
+def start_year_info():
+    st.markdown('###### Period of species observation')
+    st.markdown('Specify the start year and end year to define the time range for retrieving species observations from GBIF.')
+
+def buffer_size_info():
+    st.markdown('###### Distances for population definition')
+    st.markdown('Using coordinates of species observations, the tool generates polygons representing the spatial distribution of populations. These polygons are determined based on two distances: the observation distance and the population distance, which you need to specify below in kilometers.')
+
+    with st.expander("**-> What do these distances represent?**", expanded=False):
         st.markdown('''
-        The selection you made uses Countries to define the area of interest. 
-        It takes either one or multiple countries. 
-        Make sure that the country names are spelled correctly and separated by a comma in the case of multiple ones.
+        The species observation coordinates are first converted into circles, representing the local areas where the species is expected to occur. These circles are defined using the **observation distance**, which corresponds to the radius of the circles. This distance accounts for the potential margin of error associated with the observation coordinates.
+        \nCircles that are geographically close to one another are merged into population polygons. This merging is based on the **population distance**, a threshold that defines the maximum distance within which individuals of the same species are expected to share genetic similarity. Distances beyond this threshold indicate a separation in different populations. 
+        ''')
+        st.image("images/distances_def.png")
+
+def ne_nc_ratio_info():
+    st.markdown('###### Parameters for population size estimation')
+    st.markdown('The surface area of each population polygon is used to estimate the population size (census size, Nc) based on a specified population density. This estimate is then converted into an effective population size (Ne) using a specified Ne:Nc ratio. You can provide multiple alternative values for both population density and the Ne:Nc ratio below, separated by a comma.')
+
+    with st.expander("**-> What do these parameters represent?**", expanded=False):
+        st.markdown('''More info to be added here, with one figure.  
+          ''')
+
+def land_cover_class_types_info():
+    st.markdown('######  Landcover classes for suitable habitat identification')
+    st.markdown('The ESA Landcover dataset includes 23 classifiers representing various land use or vegetation types. You can specify below which of these categories constitute suitable habitat for the species being studied. Alternatively, **you can choose the option for the tool to automatically identify the most common landcover classes**, without the need for manual selection.')
+
+    with st.expander("**Which landcover classes are described?**", expanded=False):
+        st.markdown('''
+        To be filled with figure of hierarhical list of lc classes. 
         ''')
 
 def years_of_interest_info():
-    with st.expander("Expand for more information", expanded=False):
+    st.markdown('######  Years of interest for habitat change')
+    st.markdown('Choose the years of interest below to extract habitat change data, assess the potential size of suitable habitat over time, estimate population size, and compute the genetic diversity indicators. Note that the years typically begin after the species observation period specified above.')
+
+def upload_tsv_file_info():
+    st.markdown('######  Upload a species observation coordinates')
+    st.markdown('''Click below to upload a tab-separated document containing the geographic coordinates of species occurrences.
+                Once uploaded, the coordinates will be displayed on an interactive map. You can click on a point and use the "Remove" button to delete specific coordinates if needed. ''')
+
+    with st.expander("**How should the document be formatted before upload?**", expanded=False):
         st.markdown('''
-        A list of years for which Land cover data should be extracted. 
-        These years must fall within the range of 2000 to 2023 for Forest cover data 
-        and 1998 to 2020 for Land cover data. The pipeline calculates Habitat loss 
-        at these time intervals and displays them in a graph.
+        The uploaded document must be in TSV (Tab-separated values) format. It should include columns labeled decimal_longitude and decimal_latitude for the geographic coordinates. Additionally, the coordinate system must be World Geodetic System 1984 (WGS 84), which is commonly used in GPS (EPSG:4326).
         ''')
 
-def buffer_size_info():
-    with st.expander("Expand for more information", expanded=False):
+def bbox_info():
+    st.markdown('######  Draw the bounding box of the study area')
+    st.markdown('Use the interactive map below to define the boundaries of the area of interest.')
+
+def upload_geojson_file_info():
+    st.markdown('######  Upload polygons of populations distribution')
+    st.markdown('Click below to upload a geojson document containing the polygons defining the spatial distribution of populations.')
+
+    with st.expander("**-> How should the geojson document be formatted before upload?**", expanded=False):
         st.markdown('''
-        The radius, in kilometers, used to define a buffer around species observation coordinates. 
-        This determines the area considered as the population presence.
+        The uploaded document must be in GeoJSON format and can include multiple polygons representing the spatial distribution of the studied populations. Each polygon must have an attribute named “pop” that contains a unique identifier for each population (e.g., "pop_1," "pop_2," "pop_3," etc.). The coordinate system must be World Geodetic System 1984 (WGS 84), commonly used in GPS (EPSG:4326).
         ''')
 
-def distance_between_populations_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The minimum distance, in kilometers, required to consider two groups of observations as separate populations. 
-        This parameter helps in identifying distinct populations based on spatial clustering of observations.
-        ''')
 
-def ne_nc_ratio_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The ratio of the effective population size (Ne) to the census population size (Nc) for the studied species. 
-        Multiple values can be provided, separated by commas, to explore different scenarios.
-        ''')
-
-def population_density_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The estimated density of the species populations, given as the number of individuals per square kilometer. 
-        Multiple values can be provided, separated by commas, to explore different scenarios.
-        ''')
-
-def start_year_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The earliest year for retrieving species occurrence data. 
-        This sets the start of the temporal range for the GBIF data to be retrieved. 
-        We suggest setting this maximum 10 years before the start of the analysis.
-        ''')
-
-def end_year_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The latest year for retrieving species occurrence data. 
-        This sets the end of the temporal range for the GBIF data to be retrieved. 
-        Make sure that this doesn’t overlap too much with the Analysis timespan (first year of interest).
-        ''')
 
 def title_of_run_info():
     with st.expander("Expand for more information", expanded=False):
@@ -122,103 +122,70 @@ def title_of_run_info():
         We suggest that Species name and Land cover type are mentioned.
         ''')
 
-def land_cover_class_types_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        A list of land cover types produced by the ESA Climate Change Initiative (CCI). 
-        These classes categorize all Land cover into 23 classes listed above.
-        ''')
-
-def upload_tsv_file_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        The tool uses Point observations to create population polygons. 
-        You selected that you have preexisting observation data. 
-        Please upload the file with coordinates here. You will be able to confirm the uploaded data 
-        in the map viewer and remove specific data points by selecting them and pressing remove. 
-        The file has to be in the following format: TSV (Tab separated values), 
-        longitudinal and latitude in columns `decimal_longitude`, `decimal_latitude` and the coordinate system 
-        has to be World Geodetic System 1984, used in GPS - EPSG:4326.
-        ''')
-
-def upload_geojson_file_info():
-    with st.expander("Expand for more information", expanded=False):
-        st.markdown('''
-        Population polygons describe the theoretical bounds of each population. 
-        These can be either created by creating buffer zones around point observations 
-        or more advanced methods like Species distribution models. 
-        Please upload the file as a GeoJSON. You will then be able to confirm the uploaded file visualized on the map viewer.
-        ''')
-
-#1. TC_obs (Tree Canopy - Observations)
+#1. TC_obs (Tree Canopy - Observations) ok
 def TC_obs():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
+    upload_tsv_file_info()
     csv = mapcsv()
     if csv:
-        upload_tsv_file_info()
-        years = st.multiselect("Years of interest", list(range(1992, 2021)))
-        years_of_interest_info()
-        if years:
-            buffer_size = st.text_input("Buffer size for polygons", placeholder="Example: 15")
-            buffer_size_info()
-            if buffer_size:
-                pop_distance = st.text_input("Distance between populations", placeholder="Example: 25")
-                distance_between_populations_info()
-                if pop_distance:
-                    ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
-                    ne_nc_ratio_info()
-                    if ne_nc:
-                        pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                        population_density_info()
-                        if pop_density:
-                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
+        buffer_size_info()
+        buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+        pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+        if buffer_size and pop_distance:
+                ne_nc_ratio_info()
+                ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                if ne_nc and pop_density:
+                        years_of_interest_info()       
+                        years = st.multiselect("Years of interest", list(range(2000, 2023)))
+                        if years: 
+                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
                             title_of_run_info()
                             if runtitle:
                                 st.session_state.input = {
-                                    "csv": csv,
-                                    "years": years,
-                                    "buffer_size": float(buffer_size),
-                                    "pop_distance": float(pop_distance),
-                                    "ne_nc": list(map(float, ne_nc.split(','))),
-                                    "pop_density": list(map(float, pop_density.split(','))),
-                                    "runtitle": runtitle,
-                                }
+                            "csv": csv,
+                            "years": years,
+                            "buffer_size": float(buffer_size),
+                            "pop_distance": float(pop_distance),
+                            "ne_nc": list(map(float, ne_nc.split(','))),
+                            "pop_density": list(map(float, pop_density.split(','))),
+                            "runtitle": runtitle,
+                        }
                                 Finished = True
                                 return Finished
 
 
-# 2. TC_bbox (Tree Canopy - Bounding Box)
+# 2. TC_bbox (Tree Canopy - Bounding Box) ok
 def TC_bbox():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    species = st.text_input("Name of the species", placeholder="Example: Species name")
     species_name_info()
+    species = st.text_input("Name of the species", placeholder="Example: Quercus sartorii")
     if species:
+        bbox_info()
         bbox = mapbbox()
-        if bbox:
-            years = st.multiselect("Years of interest", list(range(2000, 2024)))
-            years_of_interest_info()
-            if years:
-                buffer_size = st.text_input("Buffer size for polygons", placeholder="Example: 15")
+        if bbox:            
+            start_year_info()
+            start_year = st.text_input("Start year", placeholder="Example: 1980", key="start_year")
+            end_year = st.text_input("End year", placeholder="Example: 2020", key="end_year")
+            if start_year and end_year:
                 buffer_size_info()
-                if buffer_size:
-                    pop_distance = st.text_input("Distance between populations", placeholder="Example: 25")
-                    distance_between_populations_info()
-                    if pop_distance:
-                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
+                buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+                pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+                if buffer_size and pop_distance:
                         ne_nc_ratio_info()
-                        if ne_nc:
-                            pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                            population_density_info()
-                            if pop_density:
-                                start_year = st.text_input("Start year of the study", placeholder="Example: 1980")
-                                start_year_info()
-                                if start_year:
-                                    end_year = st.text_input("End year of the study", placeholder="Example: 2020")
-                                    end_year_info()
-                                    if end_year:
-                                        runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                        title_of_run_info()
-                                        if runtitle:
+                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                        pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                        if ne_nc and pop_density:
+                                years_of_interest_info()       
+                                years = st.multiselect("Years of interest", list(range(2000, 2023)))
+                                if years: 
+                                    runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                                    title_of_run_info()
+                                    if runtitle:
                                             st.session_state.input = {
                                                 "species": species,
                                                 "bbox": bbox,
@@ -234,122 +201,115 @@ def TC_bbox():
                                             Finished = True
                                             return Finished
 
-# 3. LC_country (Land Cover - Country)
+# 3. LC_country (Land Cover - Country) ok
 def LC_country():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    species = st.text_input("Name of the species", placeholder="Example: Species name", key="species")
     species_name_info()
+    species = st.text_input("Name of the species", placeholder="Example: Quercus sartorii")
     if species:
+        list_of_countries_info()
         country_names = [country.name for country in pycountry.countries]
         countries = st.multiselect("Select countries", country_names)
-        list_of_countries_info()
         if countries:
-            years = st.multiselect("Years of interest", list(range(1992, 2021)))
-            years_of_interest_info()
-            if years:
-                LC_class = st.multiselect("Land cover class types", options=LC_names, key="LC_class")
-                land_cover_class_types_info()
-                if LC_class:
-                    buffer_size = st.text_input("Buffer size for polygons", placeholder="Example: 15", key="buffer_size")
-                    buffer_size_info()
-                    if buffer_size:
-                        pop_distance = st.text_input("Distance between populations", placeholder="Example: 25", key="pop_distance")
-                        distance_between_populations_info()
-                        if pop_distance:
-                            ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01", key="ne_nc")
-                            ne_nc_ratio_info()
-                            if ne_nc:
-                                pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000", key="pop_density")
-                                population_density_info()
-                                if pop_density:
-                                    start_year = st.text_input("Start year of the study", placeholder="Example: 1980", key="start_year")
-                                    start_year_info()
-                                    if start_year:
-                                        end_year = st.text_input("End year of the study", placeholder="Example: 2020", key="end_year")
-                                        end_year_info()
-                                        if end_year:
-                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
-                                            title_of_run_info()
-                                            if runtitle:
-                                                st.session_state.input = {
-                                                    "species": species,
-                                                    "countries": countries,
-                                                    "years": years,
-                                                    "LC_class": [values[LC_names.index(name)] for name in LC_class],
-                                                    "buffer_size": float(buffer_size),
-                                                    "pop_distance": float(pop_distance),
-                                                    "ne_nc": list(map(float, ne_nc.split(','))),
-                                                    "pop_density": list(map(float, pop_density.split(','))),
-                                                    "start_year": float(start_year),
-                                                    "end_year": float(end_year),
-                                                    "runtitle": runtitle,
-                                                }
-                                                Finished = True
-                                                return Finished
+            start_year_info()
+            start_year = st.text_input("Start year", placeholder="Example: 1980", key="start_year")
+            end_year = st.text_input("End year", placeholder="Example: 2020", key="end_year")
+            if start_year and end_year:
+                buffer_size_info()
+                buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+                pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+                if buffer_size and pop_distance:
+                        ne_nc_ratio_info()
+                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                        pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                        if ne_nc and pop_density:
+                            land_cover_class_types_info()
+                            LC_class = st.multiselect("Select Land cover class(es)", options=LC_names, key="LC_class")
+                            if LC_class:
+                                years_of_interest_info()       
+                                years = st.multiselect("Years of interest", list(range(1992, 2021)))
+                                if years: 
+                                    runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                                    title_of_run_info()
+                                    if runtitle:
+                                        st.session_state.input = {
+                                            "species": species,
+                                            "countries": countries,
+                                            "years": years,
+                                            "LC_class": [values[LC_names.index(name)] for name in LC_class],
+                                            "buffer_size": float(buffer_size),
+                                            "pop_distance": float(pop_distance),
+                                            "ne_nc": list(map(float, ne_nc.split(','))),
+                                            "pop_density": list(map(float, pop_density.split(','))),
+                                            "start_year": float(start_year),
+                                            "end_year": float(end_year),
+                                            "runtitle": runtitle,
+                                        }
+                                        Finished = True
+                                        return Finished
 
-# 4. TC_polygon (Tree Canopy - Polygon)
+# 4. TC_polygon (Tree Canopy - Polygon) ok
 def TC_poly():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    geojson = str(json.dumps(mapgeojson()))
     upload_geojson_file_info()
+    geojson = str(json.dumps(mapgeojson()))
     if geojson:
-        years = st.multiselect("Years of interest", list(range(2000, 2024)))
-        years_of_interest_info()
-        if years:
-            ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
-            ne_nc_ratio_info()
-            if ne_nc:
-                pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                population_density_info()
-                if pop_density:
-                    runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                    title_of_run_info()
-                    if runtitle:
-                        st.session_state.input = {
-                            "geojson": geojson,
-                            "years": years,
-                            "ne_nc": list(map(float, ne_nc.split(','))),
-                            "pop_density": list(map(float, pop_density.split(','))),
-                            "runtitle": runtitle,
-                        }
-                        Finished = True
-                        return Finished
+                ne_nc_ratio_info()
+                ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                if ne_nc and pop_density:
+                        years_of_interest_info()       
+                        years = st.multiselect("Years of interest", list(range(2000, 2023)))
+                        if years: 
+                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                            title_of_run_info()
+                            if runtitle:
+                                st.session_state.input = {
+                                    "geojson": geojson,
+                                    "years": years,
+                                    "ne_nc": list(map(float, ne_nc.split(','))),
+                                    "pop_density": list(map(float, pop_density.split(','))),
+                                    "runtitle": runtitle,
+                                }
+                                Finished = True
+                                return Finished
 
-# 5. LC_bbox (Land Cover - Bounding Box)
+# 5. LC_bbox (Land Cover - Bounding Box) ok
 def LC_bbox():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    species = st.text_input("Name of the species", placeholder="Example: Species name")
     species_name_info()
+    species = st.text_input("Name of the species", placeholder="Example: Quercus sartorii")
     if species:
+        bbox_info()
         bbox = mapbbox()
-        if bbox:
-            years = st.multiselect("Years of interest", list(range(1992, 2021)))
-            years_of_interest_info()
-            if years:
-                LC_class = st.multiselect("Land cover class types", options=LC_names)
-                land_cover_class_types_info()
-                if LC_class:
-                    buffer_size = st.text_input("Buffer size for polygons", placeholder="Example: 15")
-                    buffer_size_info()
-                    if buffer_size:
-                        pop_distance = st.text_input("Distance between populations", placeholder="Example: 25")
-                        distance_between_populations_info()
-                        if pop_distance:
-                            ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
-                            ne_nc_ratio_info()
-                            if ne_nc:
-                                pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                                population_density_info()
-                                if pop_density:
-                                    start_year = st.text_input("Start year of the study", placeholder="Example: 1980")
-                                    start_year_info()
-                                    if start_year:
-                                        end_year = st.text_input("End year of the study", placeholder="Example: 2020")
-                                        end_year_info()
-                                        if end_year:
-                                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                            title_of_run_info()
-                                            if runtitle:
+        if bbox:            
+            start_year_info()
+            start_year = st.text_input("Start year", placeholder="Example: 1980", key="start_year")
+            end_year = st.text_input("End year", placeholder="Example: 2020", key="end_year")
+            if start_year and end_year:
+                buffer_size_info()
+                buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+                pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+                if buffer_size and pop_distance:
+                        ne_nc_ratio_info()
+                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                        pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                        if ne_nc and pop_density:
+                            land_cover_class_types_info()
+                            LC_class = st.multiselect("Select Land cover class(es)", options=LC_names, key="LC_class")
+                            if LC_class:
+                                years_of_interest_info()       
+                                years = st.multiselect("Years of interest", list(range(1992, 2021)))
+                                if years: 
+                                    runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                                    title_of_run_info()
+                                    if runtitle:
                                                 st.session_state.input = {
                                                     "species": species,
                                                     "bbox": bbox,
@@ -366,34 +326,32 @@ def LC_bbox():
                                                 Finished = True
                                                 return Finished
 
+# 6. LC_obs (Land Cover - Observations) ok
 
-# 6. LC_obs (Land Cover - Observations)
 def LC_obs():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    csv = mapcsv()
+    upload_tsv_file_info()
+    csv = mapcsv()    
     if csv:
-        upload_tsv_file_info()
-        years = st.multiselect("Years of interest", list(range(1992, 2021)))
-        years_of_interest_info()
-        if years:
-            LC_class = st.multiselect("Land cover class types", options=LC_names)
-            land_cover_class_types_info()
-            if LC_class:
-                buffer_size = st.text_input("Buffer size for polygons", placeholder="Example: 15")
-                buffer_size_info()
-                if buffer_size:
-                    pop_distance = st.text_input("Distance between populations", placeholder="Example: 25")
-                    distance_between_populations_info()
-                    if pop_distance:
-                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
-                        ne_nc_ratio_info()
-                        if ne_nc:
-                            pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                            population_density_info()
-                            if pop_density:
-                                runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                                title_of_run_info()
-                                if runtitle:
+        buffer_size_info()
+        buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+        pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+        if buffer_size and pop_distance:
+                ne_nc_ratio_info()
+                ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                if ne_nc and pop_density:
+                    land_cover_class_types_info()
+                    LC_class = st.multiselect("Select Land cover class(es)", options=LC_names, key="LC_class")
+                    if LC_class:
+                        years_of_interest_info()       
+                        years = st.multiselect("Years of interest", list(range(1992, 2021)))
+                        if years: 
+                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                            title_of_run_info()
+                            if runtitle:
                                     st.session_state.input = {
                                         "csv": csv,
                                         "years": years,
@@ -407,72 +365,68 @@ def LC_obs():
                                     Finished = True
                                     return Finished
 
-# 7. LC_polygon (Land Cover - Polygon)
+# 7. LC_polygon (Land Cover - Polygon) ok
 def LC_poly():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    geojson = str(json.dumps(mapgeojson()))
     upload_geojson_file_info()
+    geojson = str(json.dumps(mapgeojson()))
     if geojson:
-        years = st.multiselect("Years of interest", list(range(1992, 2021)))
-        years_of_interest_info()
-        if years:
-            LC_class = st.multiselect("Land cover class types", options=LC_names)
-            land_cover_class_types_info()
-            if LC_class:
-                ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01")
                 ne_nc_ratio_info()
-                if ne_nc:
-                    pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                    population_density_info()
-                    if pop_density:
-                        runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title")
-                        title_of_run_info()
-                        if runtitle:
-                            st.session_state.input = {
+                ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                if ne_nc and pop_density:
+                    land_cover_class_types_info()
+                    LC_class = st.multiselect("Select Land cover class(es)", options=LC_names, key="LC_class")
+                    if LC_class:
+                        years_of_interest_info()       
+                        years = st.multiselect("Years of interest", list(range(1992, 2021)))
+                        if years: 
+                            runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                            title_of_run_info()
+                            if runtitle:
+                                st.session_state.input = {
                                 "geojson": geojson,
                                 "years": years,
                                 "LC_class": [values[LC_names.index(name)] for name in LC_class],
                                 "ne_nc": list(map(float, ne_nc.split(','))),
                                 "pop_density": list(map(float, pop_density.split(','))),
                                 "runtitle": runtitle,
-                            }
-                            Finished = True
-                            return Finished
+                                }
+                                Finished = True
+                                return Finished
 
-# 8. TC_country (Tree Canopy - Country)
+# 8. TC_country (Tree Canopy - Country) ok
 def TC_country():
+    st.divider()
+    st.markdown('##### Step 3: Set run-specific parameters')
     Finished = False
-    species = st.text_input("Name of the species", placeholder="Example: Species name")
     species_name_info()
+    species = st.text_input("Name of the species", placeholder="Example: Quercus sartorii")
     if species:
+        list_of_countries_info()
         country_names = [country.name for country in pycountry.countries]
         countries = st.multiselect("Select countries", country_names)
-        list_of_countries_info()
         if countries:
-            years = st.multiselect("Years of interest", list(range(2000, 2024)))
-            years_of_interest_info()
-            if years:
-                buffer_size = st.text_input("Buffer size for population polygons", placeholder="Example: 15")
+            start_year_info()
+            start_year = st.text_input("Start year", placeholder="Example: 1980", key="start_year")
+            end_year = st.text_input("End year", placeholder="Example: 2020", key="end_year")
+            if start_year and end_year:
                 buffer_size_info()
-                if buffer_size:
-                    pop_distance = st.text_input("Distance between populations", placeholder="Example: 25")
-                    distance_between_populations_info()
-                    if pop_distance:
-                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.01, 0.1, 0.5")
+                buffer_size = st.text_input("Observation distance [km]", placeholder="Example: 1", key="buffer_size")
+                pop_distance = st.text_input("Population distance [km]", placeholder="Example: 50", key="pop_distance")
+                if buffer_size and pop_distance:
                         ne_nc_ratio_info()
-                        if ne_nc:
-                            pop_density = st.text_input("Population density", placeholder="Example: 50, 100, 1000")
-                            population_density_info()
-                            if pop_density:
-                                start_year = st.text_input("Start year of the study", placeholder="Example: 1980", key="start_year")
-                                start_year_info()
-                                if start_year:
-                                    end_year = st.text_input("End year of the study", placeholder="Example: 2020", key="end_year")
-                                    end_year_info()
-                                    if end_year:
-                                        runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
-                                        title_of_run_info()
-                                        if runtitle:
+                        ne_nc = st.text_input("Ne:Nc ratio", placeholder="Example: 0.1", key="ne_nc")
+                        pop_density = st.text_input("Population density [individuals per km2]", placeholder="Example: 50, 100, 1000", key="pop_density")
+                        if ne_nc and pop_density:
+                                years_of_interest_info()       
+                                years = st.multiselect("Years of interest", list(range(2000, 2023)))
+                                if years: 
+                                    runtitle = st.text_input("Title of the run", placeholder="Example: Analysis title", key="runtitle")
+                                    title_of_run_info()
+                                    if runtitle:
                                             st.session_state.input = {
                                                 "species": species,
                                                 "countries": countries,
