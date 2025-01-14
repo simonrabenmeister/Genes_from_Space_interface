@@ -582,9 +582,13 @@ if title:
         st.markdown(rtext('6_te')+link)
 
         with st.expander(rtext('6_ex1_ti'), expanded=False):
-            st.markdown(rtext('6_ex1_te'))      
+            st.markdown(rtext('6_ex1_te'))
+            st.image("images/biab_interface.png")
+    
         with st.expander(rtext('6_ex2_ti'), expanded=False):
-            st.markdown(rtext('6_ex2_te'))      
+            st.markdown(rtext('6_ex2_te'))  
+            st.image("images/example_interface.png")
+    
         with st.expander(rtext('6_ex3_ti'), expanded=False):
             st.markdown(rtext('6_ex3_te'))
 
