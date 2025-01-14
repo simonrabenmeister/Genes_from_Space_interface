@@ -75,17 +75,18 @@ import requests
 
 
 def TC_obs():
-
     url = "https://run.gfstool.com/pipeline/GenesFromSpace>Tool>Forest_cover_v_obs_server.json/run"
 
     data = {
-        "GFS_IndicatorsTool>read_csv.yml@40|csv": csv,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_GFW_tree_canopy_2000-2023.json@33|pipeline@38": years,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@39|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance":pop_distance,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@39|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
+        "GFS_IndicatorsTool>read_csv.yml@58|csv": csv,
+        "pipeline@41": buffer_size,
+        "pipeline@42": pop_distance,
+        "pipeline@44": years,
+        "pipeline@45": ne_nc,
+        "pipeline@46": title,
+        "pipeline@47": pop_density,
+        "pipeline@52": Name,
+        "pipeline@53": Email
     }
     headers = {"Content-Type": "application/json"}
     response = requests.post(url, json=data, headers=headers)
@@ -95,18 +96,19 @@ def TC_obs():
 def TC_bbox():
      
     url = "https://run.gfstool.com/pipeline/GenesFromSpace>Tool>Forest_cover_v_GBIF_bbox.json/run"
-
     data = {
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|pipeline@12": species,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|pipeline@14": start_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|pipeline@15": end_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@204|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_GFW_tree_canopy_2000-2023.json@189|pipeline@38": years,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@204|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@204|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@199|pipeline@21": bbox
+        "pipeline@211": species,
+        "pipeline@212": bbox,
+        "pipeline@213": buffer_size,
+        "pipeline@214": pop_distance,
+        "pipeline@215": end_year,
+        "pipeline@216": start_year,
+        "pipeline@217": years,
+        "pipeline@218": title,
+        "pipeline@219": ne_nc,
+        "pipeline@220": pop_density,
+        "pipeline@221": Name,
+        "pipeline@222": Email
     }
     headers = {"Content-Type": "application/json"}
 
@@ -119,17 +121,19 @@ def LC_country():
     url = "https://run.gfstool.com/pipeline/GenesFromSpace>Tool>Land_cover_v_GBIF_countries.json/run"
 
     data = {
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@178|pipeline@123": years,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@178|pipeline@124": LC_class,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@176|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|data>getObservations.yml@10|year_end": end_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@12": species,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@14": start_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@177|pipeline@22": countries
+        "pipeline@186": species,
+        "pipeline@187": end_year,
+        "pipeline@188": countries,
+        "pipeline@189": buffer_size,
+        "pipeline@190": pop_distance,
+        "pipeline@191": start_year,
+        "pipeline@193": years,
+        "pipeline@194": LC_class,
+        "pipeline@195": ne_nc,
+        "pipeline@196": title,
+        "pipeline@197": pop_density,
+        "pipeline@199": Name,
+        "pipeline@200": Email
     }
 
     headers = {"Content-Type": "application/json"}
@@ -144,16 +148,18 @@ def TC_country():
     url = "https://run.gfstool.com/pipeline/GenesFromSpace>Tool>Forest_cover_v_GBIF_countries.json/run"
 
     data = {
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_GFW_tree_canopy_2000-2023.json@189|pipeline@38": years,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@199|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@199|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@199|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|data>getObservations.yml@10|year_end": end_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|pipeline@12": species,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|pipeline@14": start_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_country.json@198|pipeline@22": countries
+        "pipeline@207": years,
+        "pipeline@208": species,
+        "pipeline@209": countries,
+        "pipeline@210": end_year,
+        "pipeline@211": buffer_size,
+        "pipeline@212": pop_distance,
+        "pipeline@213": start_year,
+        "pipeline@214": ne_nc,
+        "pipeline@215": title,
+        "pipeline@216": pop_density,
+        "pipeline@218": Name,
+        "pipeline@219": Email
     }
     headers = {"Content-Type": "application/json"}
 
@@ -184,17 +190,19 @@ def LC_bbox():
     url = "https://run.gfstool.com/pipeline/GenesFromSpace>Tool>Land_cover_v_GBIF_bbox.json/run"
 
     data = {
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@176|pipeline@123": years,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@176|pipeline@124": LC_class,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@177|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@177|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@177|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|pipeline@12": species,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|pipeline@14": start_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|pipeline@15": end_year,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_GBIF_occurences_bbox.json@178|pipeline@21": bbox
+        "pipeline@185": years,
+        "pipeline@186": LC_class,
+        "pipeline@187": species,
+        "pipeline@188": bbox,
+        "pipeline@190": buffer_size,
+        "pipeline@191": pop_distance,
+        "pipeline@192": start_year,
+        "pipeline@193": end_year,
+        "pipeline@194": Name,
+        "pipeline@195": Email,
+        "pipeline@198": ne_nc,
+        "pipeline@199": title,
+        "pipeline@200": pop_density
     }
     headers = {"Content-Type": "application/json"}
 
@@ -208,13 +216,15 @@ def LC_obs():
                           
     data = {
         "GFS_IndicatorsTool>read_csv.yml@42|csv": csv,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@39|pipeline@123": years,
-        "GenesFromSpace>ToolComponents>GetHabitatMaps>GFS_Habitat_map_Landcover_1992_2020.json@39|pipeline@124": LC_class,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|ne_nc": ne_nc,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|pop_density": pop_density,
-        "GenesFromSpace>ToolComponents>GetIndicators>GFS_Indicators.json@32|GFS_IndicatorsTool>get_Indicators.yml@162|runtitle": title,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@40|GFS_IndicatorsTool>get_pop_poly.yml@5|buffer_size": buffer_size,
-        "GenesFromSpace>ToolComponents>GetPopulationPolygons>GFS_Population_polygons_from_table_observations.json@40|GFS_IndicatorsTool>get_pop_poly.yml@5|pop_distance": pop_distance
+        "pipeline@43": pop_distance,
+        "pipeline@44": buffer_size,
+        "pipeline@45": LC_class,
+        "pipeline@46": years,
+        "pipeline@47": ne_nc,
+        "pipeline@48": title,
+        "pipeline@49": pop_density,
+        "pipeline@55": Name,
+        "pipeline@56": Email
     }
     headers = {"Content-Type": "application/json"}
 
@@ -292,6 +302,9 @@ ne_nc=False
 pop_density=False
 bbox=False
 countries=False
+title=False
+Name=False
+Email=False
 
 if species:
 
@@ -371,7 +384,7 @@ if species:
                     st.markdown(rtext('1_3b21_te'))
 
                     bbox = mapbbox()
-                    
+                    st.write("boundry selected:",[bbox[0], bbox[1], bbox[2], bbox[3]])
                     if bbox: 
                         PI=area_type
 
@@ -494,33 +507,38 @@ if years:
 
     ne_nc = st.text_input(rtext('3_in1'), placeholder="Example: 0.1 or 0.1,0.2", key="ne_nc").split(',')
     pop_density = st.text_input(rtext('3_in2'), placeholder="Example: 50 or 50,100,1000", key="pop_density").split(',')
-    
-
-#### 4. Title for the run
-
 
 if ne_nc and pop_density:
 
-     # draft a title based on input
+#### 4. Name and email
 
-    titledraft = species # start with species name
-
-    if (PI=='Country'): titledraft = titledraft+', '+rtext('4_te1')+' '+str(start_year)+"-"+str(end_year)+" in "+', '.join(countries)+'.'
-    if (PI=='Bounding box'): titledraft = titledraft+', '+rtext('4_te2')+' '+str(start_year)+"-"+str(end_year)+" in a user-defined region."
-    if (PI=='UP'): titledraft = titledraft+', '+rtext('4_te3')+' '+str(start_year)+"-"+str(end_year)+"."
-    if (PI=='geojson'): titledraft = titledraft+', '+rtext('4_te4')+' '+str(start_year)+"-"+str(end_year)+"."
-
-    if (LCtype=='Tree cover (GFW)'): titledraft = titledraft+' '+rtext('4_te5')+' '+str(min(years))+'-'+str(max(years))
-    if (LCtype=='Landcover (ESA)'): titledraft = titledraft+' '+rtext('4_te6')+' '+str(min(years))+'-'+str(max(years))
-
-     
     st.markdown(rtext('4_ti'))
     st.markdown(rtext('4_te'))
-    title=st.text_input(rtext('4_in'), value=titledraft)
 
+    Name=st.text_input(rtext('4_in1'))
+if Name:
+    Email=st.text_input(rtext('4_in2'))
 
-    if st.button(rtext('4_bu')): 
+if Email:
+     # draft a title based on input
+##### 5. Title for the run
+    titledraft = species # start with species name
 
+    if (PI=='Country'): titledraft = titledraft+', '+rtext('5_te1')+' '+str(start_year)+"-"+str(end_year)+" in "+', '.join(countries)+'.'
+    if (PI=='Bounding box'): titledraft = titledraft+', '+rtext('5_te2')+' '+str(start_year)+"-"+str(end_year)+" in a user-defined region."
+    if (PI=='UP'): titledraft = titledraft+', '+rtext('5_te3')+' '+str(start_year)+"-"+str(end_year)+"."
+    if (PI=='geojson'): titledraft = titledraft+', '+rtext('5_te4')+' '+str(start_year)+"-"+str(end_year)+"."
+
+    if (LCtype=='Tree cover (GFW)'): titledraft = titledraft+' '+rtext('5_te5')+' '+str(min(years))+'-'+str(max(years))
+    if (LCtype=='Landcover (ESA)'): titledraft = titledraft+' '+rtext('5_te6')+' '+str(min(years))+'-'+str(max(years))
+
+     
+    st.markdown(rtext('5_ti'))
+    st.markdown(rtext('5_te'))
+    title=st.text_input(rtext('5_in'), value=titledraft)
+
+if title:
+    if st.button(rtext('5_bu')): 
         ### run the relevant pipeline
         
         ### TC - poly
@@ -560,15 +578,15 @@ if ne_nc and pop_density:
         ### Step 5 : explore results
 
             
-        st.markdown(rtext('5_ti'))
-        st.markdown(rtext('5_te')+link)
+        st.markdown(rtext('6_ti'))
+        st.markdown(rtext('6_te')+link)
 
-        with st.expander(rtext('5_ex1_ti'), expanded=False):
-            st.markdown(rtext('5_ex1_te'))      
-        with st.expander(rtext('5_ex2_ti'), expanded=False):
-            st.markdown(rtext('5_ex2_te'))      
-        with st.expander(rtext('5_ex3_ti'), expanded=False):
-            st.markdown(rtext('5_ex3_te'))      
+        with st.expander(rtext('6_ex1_ti'), expanded=False):
+            st.markdown(rtext('6_ex1_te'))      
+        with st.expander(rtext('6_ex2_ti'), expanded=False):
+            st.markdown(rtext('6_ex2_te'))      
+        with st.expander(rtext('6_ex3_ti'), expanded=False):
+            st.markdown(rtext('6_ex3_te'))
 
 
 
