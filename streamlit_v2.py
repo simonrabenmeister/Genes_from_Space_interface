@@ -25,7 +25,11 @@ st.set_page_config(
 
 # Load texts
 texts = pd.read_csv("texts.csv").set_index("id")
-lan = st.radio("Select Language", ["en", "sp"], index=0)
+lan = st.radio("Select Language", ["en"], index=0)
+
+# Load countries
+country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
+
 
 # function to render text
 def rtext(id):
@@ -167,7 +171,6 @@ def TC_country():
     }
     headers = {"Content-Type": "application/json"}
 
-    print(data)
     
     response = requests.post(url, json=data, headers=headers)
     return response
@@ -421,11 +424,10 @@ if st.session_state["species"]: # once species is defined, everything below can 
                 st.markdown(rtext('1_3b22_ti'))
                 st.markdown(rtext('1_3b22_te'))
 
-                country_names = [country.name for country in pycountry.countries]
-                countries = st.multiselect("Select countries", country_names)
-                
-                if countries: 
-                    PI=area_type
+                    countries = st.multiselect("Select countries", country_names)
+                    
+                    if countries: 
+                        PI=area_type
 
     ### 1.4: set temporal frame of species observation
 
