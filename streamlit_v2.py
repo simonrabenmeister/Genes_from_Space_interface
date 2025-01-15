@@ -384,7 +384,7 @@ if species:
                     st.markdown(rtext('1_3b21_te'))
 
                     bbox = mapbbox()
-                    st.write("boundry selected:",[bbox[0], bbox[1], bbox[2], bbox[3]])
+
                     if bbox: 
                         PI=area_type
 

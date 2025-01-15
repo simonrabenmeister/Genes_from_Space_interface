@@ -175,10 +175,20 @@ def mapgeojson():
 def mapbbox():
     #create the map
     m = folium.Map(location=[0,0], zoom_start=2)
-    draw = Draw(export=True)
+    draw = Draw(export=False,   draw_options={
+        'polyline': False,  # Disable polyline
+        'polygon': False,    # Enable polygon
+        'circle': False,    # Disable circle
+        'rectangle': True,  # Enable rectangle
+        'marker': False,     # Enable marker
+        'circlemarker': False  # Disable circle marker
+    },
+    edit_options={
+        'edit': False,   # Enable editing of drawn shapes
+        'remove': True  # Enable deleting of drawn shapes
+    })
     draw.add_to(m)
-
-
+    
     def get_bounding_box(geom):
         coords = np.array(list(gj.utils.coords(geom)))
         
