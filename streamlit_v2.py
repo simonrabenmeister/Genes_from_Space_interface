@@ -489,10 +489,10 @@ if LC_class:
     st.markdown(rtext('2_2_te'))
 
     if LCtype=='Landcover (ESA)':
-        years = st.multiselect(rtext('2_2_in1'), list(range(1992, 2021)))
+        years = sorted(st.multiselect(rtext('2_2_in1'), list(range(1992, 2021))))
 
     if LCtype=='Tree cover (GFW)':
-        years = st.multiselect(rtext('2_2_in2'), list(range(2000, 2023)))
+        years = sorted(st.multiselect(rtext('2_2_in2'), list(range(2000, 2023))))
 
 ### 3. Paramters of indicators estimation
         

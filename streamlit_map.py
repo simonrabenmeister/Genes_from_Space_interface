@@ -96,7 +96,7 @@ def mapcsv():
                 st.session_state.obs_edit=obs_edit.drop(index)
 
             #Remove the point if the remove button is clicked
-            st.button("remove_point", on_click=remove_point, args=(st.session_state.index,)) 
+            st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
 
         csv=st.session_state.obs_edit.loc[:, [lat_col, lon_col]]
 
