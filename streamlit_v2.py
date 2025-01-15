@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import json
 import pycountry
+import requests
+import webbrowser
+import time
 
 
 ##Page configuration
@@ -22,7 +25,7 @@ st.set_page_config(
 
 # Load texts
 texts = pd.read_csv("texts.csv").set_index("id")
-lan = st.radio("Select Language", ["en"], index=0)
+lan = st.radio("Select Language", ["en", "sp"], index=0)
 
 # function to render text
 def rtext(id):
@@ -70,7 +73,7 @@ values = [
 
 ### Set API calls
 
-import requests
+
 
 
 
@@ -273,6 +276,10 @@ Name=False
 Email=False
 year=False
 
+
+##Disclaimer
+with st.expander(rtext('disclaimer_ti'), expanded=False):
+        st.markdown(rtext('disclaimer_te'))
 ##Header
 st.markdown("# Genes from Space Monitoring Tool")
 st.markdown(rtext('h_title'))
@@ -430,7 +437,7 @@ if st.session_state["species"]: # once species is defined, everything below can 
             with st.expander(rtext('1_5_ex_ti'), expanded=False):
                 st.markdown(rtext('1_5_ex_te'))
                 st.image("images/distances_def.png")
-            buffer_size = st.number_input(rtext('1_5_in1'), value=None, key="buffer_size", step=1)
+            buffer_size = st.number_input(rtext('1_5_in1'), value=None, key="buffer_size")
             pop_distance = st.number_input(rtext('1_5_in2'), value=None, key="pop_distance", step=1)
 
     ### 2. define habitat change
@@ -453,9 +460,8 @@ if st.session_state["species"]: # once species is defined, everything below can 
                 ('Landcover (ESA)', 'Tree cover (GFW)'),
                 index=None,
                 placeholder="Select habitat change dataset")
-
+        st.warning(rtext('2_1_war'))
     ### 2.1.1. Select LC class 
-
 
         if LCtype=='Landcover (ESA)':
                 
@@ -476,6 +482,7 @@ if st.session_state["species"]: # once species is defined, everything below can 
                 if (LC_mode=='manual'):
                     LC_class = st.multiselect(rtext('2_1_1_in2'), options=LC_names, key="LC_class")
                     LC_class = [values[LC_names.index(name)] for name in LC_class]
+        
         if LCtype=='Tree cover (GFW)':
                     LC_class = 'Ignore'
 
@@ -499,13 +506,22 @@ if st.session_state["species"]: # once species is defined, everything below can 
 
         baseline_year = st.number_input(rtext('2_2_in'), min_value=minyear, max_value=maxyear, value=None)
 
+    # 2.3. baseline year
+
+
         if baseline_year:
-            resolution = st.radio(rtext('2_2_in'), options=["high resolution", "low resolution"], index=None)
 
-            if resolution == "high resolution":
-                years = range(baseline_year, maxyear + 1)
+            st.markdown(rtext('2_3_ti'))
+            st.markdown(rtext('2_3_te'))
 
-            if resolution == "low resolution":
+            start_year= 1970
+            end_year= baseline_year
+            resolution = st.radio(rtext('2_3_in'), options=["Detailed", "Fast"], index=None)
+
+            if resolution == "Detailed":
+                years = list(range(baseline_year, maxyear + 1, 1))
+
+            if resolution == "Fast":
                 years = np.linspace(baseline_year, maxyear, num=5, dtype=int).tolist()
 
 
@@ -546,10 +562,12 @@ if ne_nc and pop_density:
     st.markdown(rtext('4_te'))
 
     Name = st.text_input(rtext('4_in1'))
+    Email="NA"
 
 
 if Name:
     # draft a title based on input
+
     ##### 5. Title for the run
     titledraft = species  # start with species name
 
@@ -608,12 +626,64 @@ if title:
             req = LC_bbox()
 
         ### get link from request
-        link = "https://run.gfstool.com/pipeline-form/" + req.text[:-33] + '/' + req.text[-32:]
-
+        link = "https://run.gfstool.com/pipeline-form/" + req.text[:-33] + '/' + req.text[-32:]     
+        
         ### Step 5 : explore results
-
         st.markdown(rtext('6_ti'))
         st.markdown(rtext('6_te') + link)
+
+
+        ### Step 6 : monitor run status and show Output link
+        with st.spinner(text="In progress..."):
+
+            while True:
+                    status = requests.get("https://run.gfstool.com/api/history").json()
+                    for i in range(0, 165):
+                        if status[i]["runId"] == req.text:
+
+                            break
+
+                    try:
+                        run_status = status[i]["status"]
+                        history_ID = status[i]["runId"]
+                        if run_status == "completed":
+                            
+                            
+                            output=requests.get(f"https://run.gfstool.com/api/{req.text}/outputs").json() 
+                            if "aborted" in output.values():
+                                st.error(rtext("error_1") + link)
+                                break
+                            # if output["error"]:
+                            #     error=output["error"]
+                            #     gbiferror="""Script "data > GBIF Observations < 100 000"""
+                            #     if gbiferror in error:
+                            #         st.error("Error: no GBIF observations found for the selected species. Adjust Region of Interest or Baseline Year.")
+                            #     else:
+                            #         st.error(f"Error:\n\n {error}")
+
+                            #     break
+                            # else:
+                            else:
+                                st.success(rtext("success_1"))
+    
+                            #st.write(output)   
+                                for k in output:
+                                        if "get_Indicators" in k:
+                                            outputlink = output[k][-32:]
+
+                                link_out=f"https://run.gfstool.com/output/GFS_IndicatorsTool/get_Indicators/{outputlink}/interactive_plot.html"
+                                st.markdown(rtext("success_2") + link_out)
+                                break
+                        if run_status == "error":
+                            
+                            st.error(rtext("error_1") + link)
+                            break
+
+                    except requests.exceptions.RequestException as e:
+                        st.error(f"Error during API call: {e}")
+                        break  # Exit loop on error
+        
+        
 
         with st.expander(rtext('6_ex1_ti'), expanded=False):
             st.markdown(rtext('6_ex1_te'))
@@ -623,8 +693,7 @@ if title:
             st.markdown(rtext('6_ex2_te'))
             st.image("images/example_interface.png")
 
-        with st.expander(rtext('6_ex3_ti'), expanded=False):
-            st.markdown(rtext('6_ex3_te'))
+
 
 
 
