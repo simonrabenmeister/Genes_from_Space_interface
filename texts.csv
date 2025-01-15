@@ -29,7 +29,7 @@ h_exp3_te,"The tool runs within [Bon in a Box](https://boninabox.geobon.org/), a
 1_3b1_ti,###### Upload a species observation coordinates,,
 1_3b1_te,"Click below to upload a tab-separated document containing the geographic coordinates of species occurrences.\n\n Once uploaded, the coordinates will be displayed on an interactive map. You can click on a point and use the ""Remove"" button to delete specific coordinates if needed. ",,
 1_3b1_ex_ti,**How should the document be formatted before upload?**,,
-1_3b1_ex_te,"The uploaded document must be in TSV (Tab-separated values) format. It should include columns labeled decimal_longitude and decimal_latitude for the geographic coordinates. Additionally, the coordinate system must be World Geodetic System 1984 (WGS 84), which is commonly used in GPS (EPSG:4326).",,
+1_3b1_ex_te,"The uploaded document must be in TSV (Tab-separated values) format. It should include columns labeled decimal_longitude and decimal_latitude for the geographic coordinates. Additionally, the coordinate system must be World Geodetic System 1984 (WGS 84), which is commonly used in GPS (EPSG:4326). Download this [File](https://github.com/simonrabenmeister/Genes_from_Space_interface/blob/main/ex_occurrence_table.tsv) as a Formatting reference",,
 1_3b2_in,**How will the GBIF region of interest be specified?**,,
 1_3b21_ti,###### Draw the bounding box of the study area,,
 1_3b21_te,Use the interactive map below to define the boundaries of the area of interest.,,
