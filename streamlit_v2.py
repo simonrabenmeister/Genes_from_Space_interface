@@ -3,6 +3,7 @@ from streamlit_map import mapcsv
 from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
 import pandas as pd
+import numpy as np
 import json
 import pycountry
 
@@ -249,6 +250,29 @@ def LC_poly():
     return response
 
 
+
+
+# create empty containers of inputs 
+PI=False
+start_year=False
+end_year=False
+buffer_size=False
+pop_distance=False
+geojson=False
+LC_mode=False
+LCtype=False
+LC_class=False
+years=False
+area_type=False
+ne_nc=False
+pop_density=False
+bbox=False
+countries=False
+title=False
+Name=False
+Email=False
+year=False
+
 ##Header
 st.markdown("# Genes from Space Monitoring Tool")
 st.markdown(rtext('h_title'))
@@ -284,311 +308,321 @@ with st.expander(rtext('1_exp_ti'), expanded=False):
 st.markdown(rtext('1_1_ti'))
 st.markdown(rtext('1_1_te'))
 
-species = st.text_input(rtext('1_1_in'), placeholder="Example: Quercus sartorii")
 
-# create empty containers of inputs 
-PI=False
-start_year=False
-end_year=False
-buffer_size=False
-pop_distance=False
-geojson=False
-LC_mode=False
-LCtype=False
-LC_class=False
-years=False
-area_type=False
-ne_nc=False
-pop_density=False
-bbox=False
-countries=False
-title=False
-Name=False
-Email=False
 
-if species:
+## initialize a session variable called "species"
+if "species" not in st.session_state:
+     st.session_state["species"] = False
 
-### 1.2 - pop definition
+
+name_to_species = st.text_input(rtext('1_1_in'), placeholder="Example: Quercus sartorii", disabled=st.session_state["species"]!=False)
+
+
+if name_to_species:
+    
+    if st.session_state["species"]==False: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 
+
+        # Make the API call
+
+        response = requests.get(f"https://api.gbif.org/v1/species/match", params={"name": name_to_species})
+        response = response.json()
+
+        # Check if the request was successful
+
+        if response["matchType"] != "NONE":
+        # Parse the JSON response
+
+            st.write(rtext('1_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_1_in_te2'))
+            if st.button(rtext('1_1_in_bu1')):
+                st.session_state["species"] = response["scientificName"]
+                st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
+        else:
+
+            st.write(rtext('1_1_in_te3'))
+            if st.button(rtext('1_1_in_bu2')):
+                st.session_state["species"] = name_to_species                
+                st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
+
+        
+if st.session_state["species"]: # once species is defined, everything below can happen
+        
+    species = st.session_state["species"]
+
+
+    ### 1.2 - pop definition
+    
     st.markdown(rtext('1_2_ti'))
     st.markdown(rtext('1_2_te'))
 
-    poly=st.radio(
-        rtext('1_2_in'),
-        key="visibility",
-        options=["yes", "no"],
-        index=None,
-        disabled=True
+    with st.expander(rtext('1_3b_ex_ti'), expanded=False):
+        st.markdown(rtext('1_3b_ex_te'))
+        st.image("images/polygons_option1.png")
+        st.image("images/polygons_option2.png")
+
+
+    points=st.radio(
+        rtext('1_3b_in'),
+        options=["User-provided","Retrieved from GBIF"],
+        index=None
     )
-    poly="no"
 
-### 1.3.a: if pop polygons available
-    if (poly=='yes'):
-        st.markdown(rtext('1_3a_ti'))
-        st.markdown(rtext('1_3a_te'))
+    ## 1.3.b.1 User provided obs
 
-        with st.expander(rtext('1_3a_ex_ti'), expanded=False):
-            st.markdown(rtext('1_3a_ex_te'))
+    if points=="User-provided":
+            
+            st.markdown(rtext('1_3b1_ti'))
+            st.markdown(rtext('1_3b1_te'))
+
+            with st.expander(rtext('1_3b1_ex_ti'), expanded=False):
+                st.markdown(rtext('1_3b1_ex_te'))
+
+            csv = mapcsv()    
+
+            if csv:
+                PI='UP'
+
+    ### 1.3.b.2 GBIF retrieved obs
+
+    if points=="Retrieved from GBIF":
+            area_type=st.radio(
+                rtext('1_3b2_in'),
+                options=["Draw region of interest on a map", "Select one or more countries from a list"],
+                index=None
+            )
+
+    ### 1.3.b.2.1 - set study area by bounding box                        
+
+            if area_type=='Draw region of interest on a map':
+
+                area_type='Bounding box'
+                st.markdown(rtext('1_3b21_ti'))
+                st.markdown(rtext('1_3b21_te'))
+
+                bbox = mapbbox()
+
+                if bbox: 
+                    PI=area_type
+
+                    
+    ### 1.3.b.2.2 - set study area by country                        
+
+            if area_type=='Select one or more countries from a list':
+                area_type='Country'
+                
+                st.markdown(rtext('1_3b22_ti'))
+                st.markdown(rtext('1_3b22_te'))
+
+                country_names = [country.name for country in pycountry.countries]
+                countries = st.multiselect("Select countries", country_names)
+                
+                if countries: 
+                    PI=area_type
+
+    ### 1.4: set temporal frame of species observation
+
+    if (PI):
         
-        geojson = str(json.dumps(mapgeojson()))
+            st.markdown(rtext('1_5_ti'))
+            st.markdown(rtext('1_5_te'))
 
-        if (geojson!='null'):
+            with st.expander(rtext('1_5_ex_ti'), expanded=False):
+                st.markdown(rtext('1_5_ex_te'))
+                st.image("images/distances_def.png")
+            buffer_size = st.number_input(rtext('1_5_in1'), value=None, key="buffer_size", step=1)
+            pop_distance = st.number_input(rtext('1_5_in2'), value=None, key="pop_distance", step=1)
 
-            PI="geojson"
+    ### 2. define habitat change
 
-### 1.3.b: if pop poly not available: GBIF or custom input? 
-    if (poly=="no"):
+    if buffer_size and pop_distance:
         
-        st.markdown(rtext('1_3b_te'))
-        
-        with st.expander(rtext('1_3b_ex_ti'), expanded=False):
-            st.markdown(rtext('1_3b_ex_te'))
-            st.image("images/polygons_option1.png")
-            st.image("images/polygons_option2.png")
+        st.divider()
+        st.markdown(rtext('2_ti'))
+        st.markdown(rtext('2_te'))
 
-    
-        points=st.radio(
-            rtext('1_3b_in'),
-            options=["User-provided","Retrieved from GBIF"],
-            index=None
+        with st.expander(rtext('2_ex_ti'), expanded=False):
+            st.markdown(rtext('2_ex_te')
         )
 
-## 1.3.b.1 User provided obs
 
-        if points=="User-provided":
+    ### 2.1. set habitat change variable
+
+        LCtype= st.selectbox(
+                rtext('2_1_in'),
+                ('Landcover (ESA)', 'Tree cover (GFW)'),
+                index=None,
+                placeholder="Select habitat change dataset")
+
+    ### 2.1.1. Select LC class 
+
+
+        if LCtype=='Landcover (ESA)':
                 
-                st.markdown(rtext('1_3b1_ti'))
-                st.markdown(rtext('1_3b1_te'))
+                st.markdown(rtext('2_1_1_ti'))
+                st.markdown(rtext('2_1_1_te'))
 
-                with st.expander(rtext('1_3b1_ex_ti'), expanded=False):
-                    st.markdown(rtext('1_3b1_ex_te'))
+                with st.expander(rtext('2_1_1_ex_ti'), expanded=False):
+                    st.markdown(rtext('2_1_1_ex_te'))
+                    st.image("images/LC_types.png")
+                
+                LC_mode= st.selectbox(
+                rtext('2_1_1_in1'),
+                ('automatic (most common)', 'manual'),
+                index=None)
 
-                csv = mapcsv()    
+                if (LC_mode=='automatic (most common)'):
+                    LC_class = [0]
+                if (LC_mode=='manual'):
+                    LC_class = st.multiselect(rtext('2_1_1_in2'), options=LC_names, key="LC_class")
+                    LC_class = [values[LC_names.index(name)] for name in LC_class]
+        if LCtype=='Tree cover (GFW)':
+                    LC_class = 'Ignore'
 
-                if csv:
-                    PI='UP'
+    # 2.2. baseline year
 
-### 1.3.b.2 GBIF retrieved obs
-
-        if points=="Retrieved from GBIF":
-                area_type=st.radio(
-                    rtext('1_3b2_in'),
-                    options=["Bounding box", "Country"],
-                    index=None
-                )
-
-### 1.3.b.2.1 - set study area by bounding box                        
-
-                if area_type=='Bounding box':
-                     
-                    st.markdown(rtext('1_3b21_ti'))
-                    st.markdown(rtext('1_3b21_te'))
-
-                    bbox = mapbbox()
-
-                    if bbox: 
-                        PI=area_type
-
-                        
-### 1.3.b.2.2 - set study area by country                        
-
-                if area_type=='Country':
-                    
-                    st.markdown(rtext('1_3b22_ti'))
-                    st.markdown(rtext('1_3b22_te'))
-
-                    country_names = [country.name for country in pycountry.countries]
-                    countries = st.multiselect("Select countries", country_names)
-                    
-                    if countries: 
-                        PI=area_type
-
-### 1.4: set temporal frame of species observation
-
-if (PI):
-
-    st.markdown(rtext('1_4_ti'))
-    if (PI=='Country' or PI=='Bounding box'):
-        st.markdown(rtext('1_4_te1'))
-    if (PI=='UP'):
-        st.markdown(rtext('1_4_te2'))
-    if (PI=='geojson'):
-        st.markdown(rtext('1_4_te3'))
-
-    start_year = st.number_input(rtext('1_4_in1'), min_value=1950, max_value=2025, value=None)
-    end_year = st.number_input(rtext('1_4_in2'),  min_value=1950, max_value=2025, value=None)
-
-### 1.5: set parameters to calculate polygons
-
-if start_year and end_year:
-
-    if (PI=='geojson'):
-        buffer_size=pop_distance='Ignore'
-    
-    else:
-    
-        st.markdown(rtext('1_5_ti'))
-        st.markdown(rtext('1_5_te'))
-
-        with st.expander(rtext('1_5_ex_ti'), expanded=False):
-            st.markdown(rtext('1_5_ex_te'))
-            st.image("images/distances_def.png")
-        buffer_size = st.text_input(rtext('1_5_in1'), placeholder="Example: 1", key="buffer_size")
-        pop_distance = st.text_input(rtext('1_5_in2'), placeholder="Example: 50", key="pop_distance")
-
-### 2. define habitat change
-
-if buffer_size and pop_distance:
-     
-    st.divider()
-    st.markdown(rtext('2_ti'))
-    st.markdown(rtext('2_te'))
-
-    with st.expander(rtext('2_ex_ti'), expanded=False):
-        st.markdown(rtext('2_ex_te')
-    )
-
-
-### 2.1. set habitat change variable
-
-    LCtype= st.selectbox(
-            rtext('2_1_in'),
-            ('Landcover (ESA)', 'Tree cover (GFW)'),
-            index=None,
-            placeholder="Select habitat change dataset")
-
-### 2.1.1. Select LC class 
-
-
-    if LCtype=='Landcover (ESA)':
-            
-            st.markdown(rtext('2_1_1_ti'))
-            st.markdown(rtext('2_1_1_te'))
-
-            with st.expander(rtext('2_1_1_ex_ti'), expanded=False):
-                st.markdown(rtext('2_1_1_ex_te'))
-                st.image("images/LC_types.png")
-            
-            LC_mode= st.selectbox(
-            rtext('2_1_1_in1'),
-            ('automatic (most common)', 'manual'),
-            index=None)
-
-            if (LC_mode=='automatic (most common)'):
-                LC_class = [0]
-            if (LC_mode=='manual'):
-                LC_class = st.multiselect(rtext('2_1_1_in2'), options=LC_names, key="LC_class")
-                LC_class = [values[LC_names.index(name)] for name in LC_class]
-    if LCtype=='Tree cover (GFW)':
-                LC_class = 'Ignore'
-
-# 2.2. Years of interest - habitat change
-
-if LC_class:
-     
-    st.markdown(rtext('2_2_ti'))
-    st.markdown(rtext('2_2_te'))
-
-    if LCtype=='Landcover (ESA)':
-        years = sorted(st.multiselect(rtext('2_2_in1'), list(range(1992, 2021))))
-
-    if LCtype=='Tree cover (GFW)':
-        years = sorted(st.multiselect(rtext('2_2_in2'), list(range(2000, 2023))))
-
-### 3. Paramters of indicators estimation
+    if LC_class:
         
+        st.markdown(rtext('2_2_ti'))
+        st.markdown(rtext('2_2_te'))
+
+        with st.expander(rtext('2_2_ex_ti'), expanded=False):
+            st.markdown(rtext('2_2_ex_te')
+        )
+        if LCtype == 'Landcover (ESA)':
+            minyear = 1992
+            maxyear = 2020
+
+        if LCtype == 'Tree cover (GFW)':
+            minyear = 2000
+            maxyear = 2023
+
+        baseline_year = st.number_input(rtext('2_2_in'), min_value=minyear, max_value=maxyear, value=None)
+
+        if baseline_year:
+            resolution = st.radio(rtext('2_2_in'), options=["high resolution", "low resolution"], index=None)
+
+            if resolution == "high resolution":
+                years = range(baseline_year, maxyear + 1)
+
+            if resolution == "low resolution":
+                years = np.linspace(baseline_year, maxyear, num=5, dtype=int).tolist()
+
+
+
+### 3. Parameters of indicators estimation
+
 if years:
-    
     st.divider()
     st.markdown(rtext('3_ti'))
     st.markdown(rtext('3_te'))
 
     with st.expander(rtext('3_ex_ti'), expanded=False):
-        st.markdown(rtext('3_ex_te'))      
+        st.markdown(rtext('3_ex_te'))
 
-    ne_nc = st.text_input(rtext('3_in1'), placeholder="Example: 0.1 or 0.1,0.2", key="ne_nc").split(',')
-    pop_density = st.text_input(rtext('3_in2'), placeholder="Example: 50 or 50,100,1000", key="pop_density").split(',')
+    ne_numbers = st.text_input(rtext('3_in1'), placeholder="Example: 0.1 or 0.1,0.2", key="ne_nc")
+    if ne_numbers:
+        try:
+            ne_numbers = [float(num) for num in ne_numbers.split(",")]
+            if all(0 < num <= 1 for num in ne_numbers):
+                ne_nc = ne_numbers
+            else :
+                st.error(rtext('3_er1'))
+        except ValueError:
+            st.error(rtext('3_er2'))
 
+    pop_numbers = st.text_input(rtext('3_in2'), placeholder="Example: 50 or 50,100,1000", key="pop_density")
+    if pop_numbers:
+        try:
+            pop_numbers = [float(num) for num in pop_numbers.split(",")]
+            pop_density = pop_numbers
+        except ValueError:
+            st.error(rtext('3_er2'))
+
+### 4. Contafct information
 if ne_nc and pop_density:
-
-#### 4. Name and email
-
+    #### 4. Name and email
     st.markdown(rtext('4_ti'))
     st.markdown(rtext('4_te'))
 
-    Name=st.text_input(rtext('4_in1'))
+    Name = st.text_input(rtext('4_in1'))
+
+
 if Name:
-    Email=st.text_input(rtext('4_in2'))
+    # draft a title based on input
+    ##### 5. Title for the run
+    titledraft = species  # start with species name
 
-if Email:
-     # draft a title based on input
-##### 5. Title for the run
-    titledraft = species # start with species name
+    if PI == 'Country':
+        titledraft = titledraft + ', ' + rtext('5_te1') + ' ' + str(start_year) + "-" + str(end_year) + " in " + ', '.join(countries) + '.'
+    if PI == 'Bounding box':
+        titledraft = titledraft + ', ' + rtext('5_te2') + ' ' + str(start_year) + "-" + str(end_year) + " in a user-defined region."
+    if PI == 'UP':
+        titledraft = titledraft + ', ' + rtext('5_te3') + ' ' + str(start_year) + "-" + str(end_year) + "."
+    if PI == 'geojson':
+        titledraft = titledraft + ', ' + rtext('5_te4') + ' ' + str(start_year) + "-" + str(end_year) + "."
 
-    if (PI=='Country'): titledraft = titledraft+', '+rtext('5_te1')+' '+str(start_year)+"-"+str(end_year)+" in "+', '.join(countries)+'.'
-    if (PI=='Bounding box'): titledraft = titledraft+', '+rtext('5_te2')+' '+str(start_year)+"-"+str(end_year)+" in a user-defined region."
-    if (PI=='UP'): titledraft = titledraft+', '+rtext('5_te3')+' '+str(start_year)+"-"+str(end_year)+"."
-    if (PI=='geojson'): titledraft = titledraft+', '+rtext('5_te4')+' '+str(start_year)+"-"+str(end_year)+"."
+    if LCtype == 'Tree cover (GFW)':
+        titledraft = titledraft + ' ' + rtext('5_te5') + ' ' + str(min(years)) + '-' + str(max(years))
+    if LCtype == 'Landcover (ESA)':
+        titledraft = titledraft + ' ' + rtext('5_te6') + ' ' + str(min(years)) + '-' + str(max(years))
 
-    if (LCtype=='Tree cover (GFW)'): titledraft = titledraft+' '+rtext('5_te5')+' '+str(min(years))+'-'+str(max(years))
-    if (LCtype=='Landcover (ESA)'): titledraft = titledraft+' '+rtext('5_te6')+' '+str(min(years))+'-'+str(max(years))
-
-     
     st.markdown(rtext('5_ti'))
     st.markdown(rtext('5_te'))
-    title=st.text_input(rtext('5_in'), value=titledraft)
+    title = st.text_input(rtext('5_in'), value=titledraft)
 
 if title:
-    if st.button(rtext('5_bu')): 
+    if st.button(rtext('5_bu')):
         ### run the relevant pipeline
-        
-        ### TC - poly
-        if (LCtype=='Tree cover (GFW)' and PI=='geojson'): req=TC_poly()
 
+        ### TC - poly
+        if LCtype == 'Tree cover (GFW)' and PI == 'geojson':
+            req = TC_poly()
 
         ### TC - obs
-        if (LCtype=='Tree cover (GFW)' and PI=='UP'): req=TC_obs()
+        if LCtype == 'Tree cover (GFW)' and PI == 'UP':
+            req = TC_obs()
 
         ### TC - country
-        if (LCtype=='Tree cover (GFW)' and PI=='Country'): req=TC_country()
-
+        if LCtype == 'Tree cover (GFW)' and PI == 'Country':
+            req = TC_country()
 
         ### TC - bbox
-        if (LCtype=='Tree cover (GFW)' and PI=='Bounding box'): req=TC_bbox()
-
+        if LCtype == 'Tree cover (GFW)' and PI == 'Bounding box':
+            req = TC_bbox()
 
         ### LC - poly
-        if (LCtype=='Landcover (ESA)' and PI=='geojson'): req=LC_poly()
-
+        if LCtype == 'Landcover (ESA)' and PI == 'geojson':
+            req = LC_poly()
 
         ### LC - obs
-        if (LCtype=='Landcover (ESA)' and PI=='UP'): req=LC_obs()
-
+        if LCtype == 'Landcover (ESA)' and PI == 'UP':
+            req = LC_obs()
 
         ### LC - country
-        if (LCtype=='Landcover (ESA)' and PI=='Country'): req=LC_country()
-             
+        if LCtype == 'Landcover (ESA)' and PI == 'Country':
+            req = LC_country()
 
         ### LC - bbox
-        if (LCtype=='Landcover (ESA)' and PI=='Bounding box'): req=LC_bbox()
+        if LCtype == 'Landcover (ESA)' and PI == 'Bounding box':
+            req = LC_bbox()
 
         ### get link from request
-        link="https://run.gfstool.com/pipeline-form/"+req.text[:-33] + '/' + req.text[-32:]
+        link = "https://run.gfstool.com/pipeline-form/" + req.text[:-33] + '/' + req.text[-32:]
 
+        ### Step 5 : explore results
 
-        ### Step 5 : explore results
-
-            
         st.markdown(rtext('6_ti'))
-        st.markdown(rtext('6_te')+link)
+        st.markdown(rtext('6_te') + link)
 
         with st.expander(rtext('6_ex1_ti'), expanded=False):
             st.markdown(rtext('6_ex1_te'))
             st.image("images/biab_interface.png")
-    
+
         with st.expander(rtext('6_ex2_ti'), expanded=False):
-            st.markdown(rtext('6_ex2_te'))  
+            st.markdown(rtext('6_ex2_te'))
             st.image("images/example_interface.png")
-    
+
         with st.expander(rtext('6_ex3_ti'), expanded=False):
             st.markdown(rtext('6_ex3_te'))
 
