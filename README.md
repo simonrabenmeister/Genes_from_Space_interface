@@ -2,7 +2,12 @@
 
 ## FAQ:
 
+<details closed>
+<summary> <b>English FAQ</b> </summary>
+<br>
+  
 ### About genetic diversity (e.g. for non geneticists)
+
 
 <details closed>
 <summary>What is genetic diversity?</summary>
@@ -278,7 +283,12 @@ Use these for the first demonstration publication, to which you are invited to c
 There is a publication about the concept and workflows [here](https://doi.org/10.32942/X2RS58).
 
 </details>
+</details>
+<details closed>
+<summary> <b>Preguntas Frecuentes en Español</b> </summary>
 
+  
+</details>
 
 # Technical Instructions for developers:
 A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
