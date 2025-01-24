@@ -2,7 +2,7 @@
 
 ## FAQ:
 
-### About genetic diversity (e.g. for non geneticists):
+### About genetic diversity (e.g. for non geneticists)
 
 <details closed>
 <summary>What is genetic diversity?</summary>
@@ -73,7 +73,7 @@ There are also indicators that can be measured with DNA-based techniques. DNA-ba
 <summary>What is Ne?</summary>
 <br>
   
-Ne is an abbreviation for the genetically effective population size. It is a standard metric in population genetics that quantifies the size of a demographically ideal population with the same rate of genetic diversity loss as the real population. It is important because it relates to the adaptive capacity and long-term viability of a population. It can be estimated with DNA-based methods or from demographic data (birth- and death rates, reproductive rates, etc). An Ne > 500 is recommended as a minimum limit for a population to maintain adaptive capacity. Ne is useful because it is a metric we can apply to all species.
+Ne is an abbreviation for the genetically effective population size. It is a standard metric in population genetics that quantifies the size of a demographically ideal population with the same rate of genetic diversity loss as the real population. It is important because it relates to the adaptive capacity and long-term viability of a population. It can be estimated with DNA-based methods or from demographic data (birth- and death rates, reproductive rates, etc). An Ne > 500 is recommended as a minimum limit for a population to maintain adaptive capacity. Ne is useful because it is a metric we can apply to all species. You can learn more about what are Ne and Nc and how they are estimated from different data sources [here](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/docs/3_Howto_guides_examples/Populations_sizes.html).
 </details>
 
 <details closed>
@@ -96,7 +96,7 @@ Two major resources for learning more about the genetic indicators are:
 
 ---
 
-### About the Tool
+### About the tool
 
 <details closed>
 <summary>Where can I find the tool? Is there a manual for users?</summary>
@@ -169,6 +169,7 @@ The population buffer size should be determined based on knowledge of the typica
 <details closed>
 <summary>GBIF does not recognize my species name</summary>
 <br>
+  
 - If you provide your own data, this does not matter, only if you need GBIF data.  
 - Check the use of capital letters (usually Genus species).  
 - Check spelling.
@@ -178,6 +179,7 @@ The population buffer size should be determined based on knowledge of the typica
 <details closed>
 <summary>I can not import my .csv coordinate file.</summary>
 <br>
+  
 The monitoring tool requires a .tsv file (tab separated).  
 Quick fix: Export a .txt file and change the ending to .tsv.
 
@@ -186,6 +188,7 @@ Quick fix: Export a .txt file and change the ending to .tsv.
 <details closed>
 <summary>My excel uses commas to export and not periods.</summary>
 <br>
+  
 This happens if your Excel is set to use commas for the decimal separator.  
 Either change the above settings or save as a .txt file, search and replace commas with periods.
 
@@ -194,6 +197,7 @@ Either change the above settings or save as a .txt file, search and replace comm
 <details closed>
 <summary>How do I draw the bounding box?</summary>
 <br>
+  
 Click on the square on the left and then drag to select the region of interest on the map.
 
 </details>
@@ -201,6 +205,7 @@ Click on the square on the left and then drag to select the region of interest o
 <details closed>
 <summary>My buffer/observation distance values are rather small and in [m] not [km].</summary>
 <br>
+  
 If your observation distance is smaller than 1 km, please enter 1 km into the tool. Buffers smaller than 1 km are a functionality that we will consider adding in the future.
 
 </details>
@@ -208,6 +213,7 @@ If your observation distance is smaller than 1 km, please enter 1 km into the to
 <details closed>
 <summary>Should I use Landcover or Forest cover?</summary>
 <br>
+  
 - Landcover gives you more options and a longer timeline: 23 classes, 300m, 1992-2021, select relevant class.  
 - Forest cover provides better resolution, but only for species dependent on forest ecosystems: forests, 20m, 2000-2023.  
 Forest cover is much slower: Use a smaller polygon (max. 40’000 km2, size of Switzerland).
@@ -216,10 +222,11 @@ Forest cover is much slower: Use a smaller polygon (max. 40’000 km2, size of S
 
 <details closed>
 <summary>I get the Error: 
-Script "data > GBIF Observations < 100 000": ℹ In argument: `dplyr::all_of(c(lon, lat))`.
+<code>Script "data > GBIF Observations < 100 000": ℹ In argument: `dplyr::all_of(c(lon, lat))`.
 Caused by error in `dplyr::all_of()`:
 ! Can't subset elements that don't exist.
-✖ Elements `decimal_longitude` and `decimal_latitude` don't exist.
+✖ Elements `decimal_longitude` and `decimal_latitude` don't exist.</code>
+  
 What do I do?</summary>
 <br>
 No GBIF data found for you selected region/country. Select a larger/different polygon, earlier baseline year or a different species of interest.
@@ -233,12 +240,14 @@ No GBIF data found for you selected region/country. Select a larger/different po
 <details closed>
 <summary>Where can I find more information about the project and its background?</summary>
 <br>
+  
 You can read about the project ISSI Genes from Space [here](https://teams.issibern.ch/genesfromspace/).
 </details>
 
 <details closed>
 <summary>Can I join the project or contribute in some way?</summary>
 <br>
+  
 Please contact the team leaders, whose webpages are linked [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
@@ -246,16 +255,18 @@ Please contact the team leaders, whose webpages are linked [here](https://teams.
 <details closed>
 <summary>What is the next step of the project?</summary>
 <br>
-Making technical improvements to the tool.  
-Publishing a first demonstration of the tool.  
-Validating the tool outputs in comparison to DNA-based indicator calculations to make it useful for research, reporting, and conservation.  
-Adding capacities to the tool to include population boundaries based on genetic data and make use of more nuanced habitat and phenotype information available from Earth observation.
+  
+- Making technical improvements to the tool.  
+- Publishing a first demonstration of the tool.  
+- Validating the tool outputs in comparison to DNA-based indicator calculations to make it useful for research, reporting, and conservation.  
+- Adding capacities to the tool to include population boundaries based on genetic data and make use of more nuanced habitat and phenotype information available from Earth observation.
 
 </details>
 
 <details closed>
 <summary>What are you going to do with the results that we collect?</summary>
 <br>
+  
 Use these for the first demonstration publication, to which you are invited to contribute as a co-author.
 
 </details>
@@ -263,12 +274,13 @@ Use these for the first demonstration publication, to which you are invited to c
 <details closed>
 <summary>Are there publications from the project?</summary>
 <br>
+  
 There is a publication about the concept and workflows [here](https://doi.org/10.32942/X2RS58).
 
 </details>
 
 
-## Technical Instructions for developers:
+# Technical Instructions for developers:
 A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
 
 Bon in a Box: https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/main  <br /> 
