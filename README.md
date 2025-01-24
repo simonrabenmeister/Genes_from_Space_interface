@@ -58,6 +58,7 @@ The deadline for submitting the seventh national report is 28 February 2026, and
 <details closed>
 <summary>How many species do countries need to report on?</summary>
 <br>
+
 There is not a mandatory minimum, but scientists recommend reporting indicators for at least 100 species for the seventh national report, and more over time as capacity increases.
 </details>
 
@@ -71,6 +72,7 @@ All types of species (birds, mammals, plants, etc.), ideally in all types of env
 <details closed>
 <summary>Which indicators for genetic diversity exist?</summary>
 <br>
+  
 Two established indicators for genetic diversity under the CBD framework are the focus of the Genes from Space tool. These are the “Proportion of populations within species with an Ne > 500,” which is especially important (a headline indicator), and “Proportion of populations maintained within species.” They can be measured with DNA data but also with proxies in case DNA data is not available. A proxy for Ne is Nc, or in the case of this tool, habitat area combined with density estimates.
 
 There are also indicators that can be measured with DNA-based techniques. DNA-based indicators are based on Essential Biodiversity Variables for genetic diversity ([EBVs](https://onlinelibrary.wiley.com/doi/10.1111/brv.12852)), such as genetic diversity, inbreeding levels, effective size, and genetic differentiation. Examples of such work include [fish](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.16710) and [moose](https://www.nature.com/articles/s42003-023-05385-x).
@@ -79,12 +81,14 @@ There are also indicators that can be measured with DNA-based techniques. DNA-ba
 <details closed>
 <summary>What is Ne?</summary>
 <br>
+  
 Ne is an abbreviation for the genetically effective population size. It is a standard metric in population genetics that quantifies the size of a demographically ideal population with the same rate of genetic diversity loss as the real population. It is important because it relates to the adaptive capacity and long-term viability of a population. It can be estimated with DNA-based methods or from demographic data (birth- and death rates, reproductive rates, etc). An Ne > 500 is recommended as a minimum limit for a population to maintain adaptive capacity. Ne is useful because it is a metric we can apply to all species.
 </details>
 
 <details closed>
 <summary>What is Nc?</summary>
 <br>
+  
 Nc is the census size, or the number of sexually mature individuals in a population.
 </details>
 
