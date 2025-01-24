@@ -1,13 +1,4 @@
-# Genes_from_Space_interface
-A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
-
-Bon in a Box: https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/main  <br /> 
-Streamlit Documentation: https://docs.streamlit.io/  <br /> 
-Genes from Space: https://teams.issibern.ch/genesfromspace/monitoring-tool-backup/  <br /> 
-
-## Quick start:
--> create a conda environment with all dependencies (see requirements.txt)
--> run app with: streamlit run streamlit.py --server.port 8080
+# Genes from Space Tool
 
 ## FAQ:
 
@@ -272,3 +263,15 @@ Use these for the first demonstration publication, to which you are invited to c
 There is a publication about the concept and workflows [here](https://doi.org/10.32942/X2RS58).
 
 </details>
+
+
+## Technical Instructions for developers:
+A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
+
+Bon in a Box: https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/main  <br /> 
+Streamlit Documentation: https://docs.streamlit.io/  <br /> 
+Genes from Space: https://teams.issibern.ch/genesfromspace/monitoring-tool-backup/  <br /> 
+
+## Quick start:
+-> create a conda environment with all dependencies (see requirements.txt)
+-> run app with: streamlit run streamlit.py --server.port 8080
