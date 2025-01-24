@@ -287,7 +287,379 @@ There is a publication about the concept and workflows [here](https://doi.org/10
 <details closed>
 <summary> <b>Preguntas Frecuentes en Español</b> </summary>
 
-  
+  ### Acerca de la diversidad genética (p. ej., para personas no genetistas)
+
+<details closed>
+
+<summary>¿Qué es la diversidad genética?</summary>
+
+<br>
+
+La diversidad genética es la variación a nivel del ADN, la secuencia del ADN, que, junto con el entorno en el que vive un organismo, determina su fenotipo individual (apariencia, rasgos, etc.) y su supervivencia. Hay variación dentro de las poblaciones y entre ellas. Una mayor diversidad genética puede aumentar las posibilidades de supervivencia de una población o especie en un entorno cambiante.
+
+</details>
+
+<details closed>
+
+<summary>¿Cómo se estudia la diversidad genética?</summary>
+
+<br>
+
+Durante más de 40 años, las y los científicos han utilizado técnicas de genética molecular que pueden evaluar la variación a nivel del ADN. Existen muchas técnicas que estudian ya sea todo el genoma (todo el ADN de un individuo) o partes seleccionadas de este. Se necesita recolectar tejido de muchas individuos en toda la región de estudio para obtener un buen conocimiento de dónde se encuentran poblaciones genéticamente distintas y cuánta variación ocurre dentro de las poblaciones, así como entre ellas. El ADN se extrae del tejido y luego se analiza para cuantificar la variación genética. Estos procedimientos de laboratorio molecular no están disponibles para todas las especies, ya que aún pueden ser costosos y requieren acceso a los tejidos de los organismos, para muchos organismos dentro de una especie.
+
+</details>
+
+<details closed>
+
+<summary>¿Cómo se puede estudiar la diversidad genética desde el espacio?</summary>
+
+<br>
+
+No podemos evaluar la variación del ADN desde el espacio, pero es posible medir algunos de los procesos que influyen en el mantenimiento de la diversidad genética y, en algunos casos, observar partes del fenotipo. Las poblaciones muy pequeñas perderán diversidad genética más rápido. Además, la pérdida de poblaciones conlleva la pérdida de diversidad genética. Desde el espacio, podemos estimar el tamaño de determinados hábitats y, con información sobre la densidad de individuos de las especies en esos hábitats, se puede estimar de manera aproximada el tamaño de las poblaciones. También se puede medir la pérdida de poblaciones como la pérdida de hábitat (por ejemplo, la conversión de hábitat a no hábitat). Por último, en el caso de algunos organismos como árboles grandes y dominantes, podemos observar directamente algunos de sus rasgos y cuán variables son. (La información de rasgos o fenotipo aún no se utiliza en la herramienta “Genes from Space”, pero planeamos usarla en el futuro). Para obtener más información, consulta nuestro preprint [aquí](https://ecoevorxiv.org/repository/view/7274/).
+
+</details>
+
+<details closed>
+
+<summary>¿Cuál es el objetivo de los indicadores/por qué tenemos indicadores?</summary>
+
+<br>
+
+Los indicadores son necesarios para medir tendencias a lo largo del tiempo, para informar y posteriormente orientar la acción o la toma de decisiones. Para la diversidad genética, hay varias métricas que miden la diversidad genética dentro y entre poblaciones que debemos seguir para ver si mantenemos la diversidad genética o no. Puedes leer más sobre los indicadores genéticos “Proporción de poblaciones con Ne > 500” y “Poblaciones mantenidas” [aquí](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/).
+
+</details>
+
+<details closed>
+
+<summary>¿Qué es una población? ¿Cómo se definen genéticamente las poblaciones?</summary>
+
+<br>
+
+Una población es un grupo de organismos de una especie que pueden interactuar y aparearse entre sí y que están separados de alguna manera de otros grupos. Esto es importante para la diversidad genética porque las poblaciones pueden desarrollar adaptaciones a su entorno local con el tiempo. Para obtener más información sobre la definición de poblaciones, consulta este material de referencia [aquí](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/docs/3_Howto_guides_examples/Howto_define_populations.html).
+
+</details>
+
+<details closed>
+
+<summary>¿Cuándo necesitan los países informar sobre los indicadores bajo el CBD GBF?</summary>
+
+<br>
+
+La fecha límite para presentar el séptimo informe nacional es el 28 de febrero de 2026, y para el octavo informe nacional es el 30 de junio de 2029 (consulta el sitio web del CDB [aquí](https://www.cbd.int/reports)).
+
+</details>
+
+<details closed>
+
+<summary>¿Cuántas especies necesitan informar los países?</summary>
+
+<br>
+
+No existe un mínimo obligatorio, pero la comunidad científica recomienda informar indicadores para al menos 100 especies para el séptimo informe nacional, y aumentar este número con el tiempo a medida que aumente la capacidad.
+
+</details>
+
+<details closed>
+
+<summary>¿Sobre qué especies necesitan informar los países?</summary>
+
+<br>
+
+Todo tipo de especies (aves, mamíferos, plantas, etc.), idealmente en todo tipo de entornos. Para más información al respecto, consulta [aquí](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/docs/4_Species_list/Species_list.html).
+
+</details>
+
+<details closed>
+
+<summary>¿Qué indicadores de diversidad genética existen?</summary>
+
+<br>
+
+Bajo el marco del CDB, dos indicadores establecidos para la diversidad genética son el foco de la herramienta Genes from Space. Estos son la “Proporción de poblaciones dentro de las especies con un Ne > 500”, que es especialmente importante (un indicador principal), y la “Proporción de poblaciones mantenidas dentro de las especies”. Pueden medirse con datos de ADN, pero también con proxies en caso de que no se disponga de datos de ADN. Un proxy para Ne es Nc, o en el caso de esta herramienta, el área de hábitat combinada con estimaciones de densidad.
+
+También existen indicadores que pueden medirse con técnicas basadas en ADN. Los indicadores basados en ADN se fundamentan en las Variables Esenciales de Biodiversidad para la diversidad genética ([EBVs](https://onlinelibrary.wiley.com/doi/10.1111/brv.12852)), como la diversidad genética, los niveles de endogamia, el tamaño efectivo y la diferenciación genética. Ejemplos de este tipo de trabajo incluyen [peces](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.16710) y [alces](https://www.nature.com/articles/s42003-023-05385-x).
+
+</details>
+
+<details closed>
+
+<summary>¿Qué es Ne?</summary>
+
+<br>
+
+Ne es la abreviatura de tamaño efectivo de población genéticamente. Es una métrica estándar en genética de poblaciones que cuantifica el tamaño de una población demográficamente ideal con la misma tasa de pérdida de diversidad genética que la población real. Es importante porque se relaciona con la capacidad de adaptación y la viabilidad a largo plazo de una población. Puede estimarse con métodos basados en ADN o a partir de datos demográficos (tasas de nacimiento y muerte, tasas de reproducción, etc.). Se recomienda un Ne > 500 como límite mínimo para que una población mantenga su capacidad de adaptación. Ne es útil porque es una métrica que podemos aplicar a todas las especies. Puedes obtener más información sobre qué son Ne y Nc y cómo se estiman a partir de distintas fuentes de datos [aquí](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/docs/3_Howto_guides_examples/Populations_sizes.html).
+
+</details>
+
+<details closed>
+
+<summary>¿Qué es Nc?</summary>
+
+<br>
+
+Nc es el tamaño de censo, o el número de individuos sexualmente maduros en una población.
+
+</details>
+
+<details closed>
+
+<summary>¿Dónde puedo leer más sobre los indicadores de diversidad genética?</summary>
+
+<br>
+
+Dos recursos principales para aprender más sobre los indicadores genéticos son:
+
+- Antecedentes: *[Too simple, too complex, or just right? Advantages, challenges, and guidance for indicators of genetic diversity](https://academic.oup.com/bioscience/article/74/4/269/7625302)*
+
+- Cálculo real de indicadores genéticos utilizando datos existentes sobre especies: *[Guideline materials and documentation for the Genetic Diversity Indicators of the monitoring framework for the Kunming-Montreal Global Biodiversity Framework](https://ccgenetics.github.io/guidelines-genetic-diversity-indicators/)*
+
+</details>
+
+---
+
+### Acerca de la herramienta
+
+<details closed>
+
+<summary>¿Dónde puedo encontrar la herramienta? ¿Existe un manual para usuarios?</summary>
+
+<br>
+
+La herramienta se encuentra aquí: [https://www.gfstool.com/]. Esta es una versión de prueba: Ten en cuenta los descargos de responsabilidad y otra información en el sitio web de la herramienta.
+
+Todavía no existe un manual, pero se ofrece una introducción [aquí](https://teams.issibern.ch/genesfromspace/monitoring-tool-pilot/), y el sitio web de la herramienta te guiará paso a paso en el uso de la misma y en los supuestos en los que se basa la versión actual.
+
+</details>
+
+<details closed>
+
+<summary>¿Es gratuita? ¿Puedo usarla ahora para otros propósitos? ¿Tiene derechos de autor?</summary>
+
+<br>
+
+La herramienta está en desarrollo y su uso con fines comerciales está prohibido. Participar en el taller también implica que aceptas no utilizar la herramienta con fines científicos propios hasta que se publiquen los resultados del taller de Genes from Space (al menos como preprint). Ten en cuenta que las y los participantes del taller también están invitados a contribuir como coautores en esta publicación inicial.
+
+</details>
+
+<details closed>
+
+<summary>¿Puedo usar la herramienta para calcular indicadores para informar al CDB?</summary>
+
+<br>
+
+No, todavía no, porque sigue en desarrollo. La herramienta no se ha probado ni validado lo suficiente. Sin embargo, estamos en proceso de mejorarla y prepararla para un uso práctico futuro, incluido el CDB.
+
+</details>
+
+<details closed>
+
+<summary>¿Dónde puedo obtener ayuda para usar la herramienta si tengo problemas?</summary>
+
+<br>
+
+La información de contacto del equipo ISSI Genes from Space se encuentra [aquí](https://teams.issibern.ch/genesfromspace/team-member/).
+
+</details>
+
+<details closed>
+
+<summary>¿Puede utilizarse la herramienta para todas las especies? ¿Para qué especies NO debería usarse la herramienta?</summary>
+
+<br>
+
+La herramienta funcionará para cualquier especie, pero podría no ser apropiada para todas. Aún no hemos definido para qué especies funcionará mejor la herramienta, pero somos conscientes de las siguientes limitaciones dada la implementación actual:
+
+- Las especies con datos inexactos en GBIF no se representarán con precisión en esta herramienta si dependes de las entradas de GBIF. Esto no aplica si proporcionas tus propias coordenadas.
+
+- Actualmente no implementamos definiciones para hábitats acuáticos y estamos trabajando en ello. Sin embargo, por ahora la herramienta está limitada a su uso en especies terrestres.
+
+- La precisión de los resultados depende en la actualidad de estimaciones realistas de densidad poblacional para obtener un Nc preciso, al menos en el orden de magnitud correcto.
+
+</details>
+
+<details closed>
+
+<summary>¿Se ha validado la herramienta para la diversidad genética medida con métodos de ADN?</summary>
+
+<br>
+
+Todavía no, pero planeamos hacerlo en un futuro cercano.
+
+</details>
+
+<details closed>
+
+<summary>¿Cómo hago referencia a la herramienta si la utilizo?</summary>
+
+<br>
+
+Por favor, espera hasta que proporcionemos la publicación inicial de la herramienta, al menos en forma de preprint [aquí](https://ecoevorxiv.org/repository/view/7274/). En ese momento la herramienta se abrirá para su uso, siempre que se respeten los términos de uso y limitaciones, y se cite la publicación (preprint).
+
+</details>
+
+<details closed>
+
+<summary>¿Cómo elijo la densidad y los tamaños de buffer de población?</summary>
+
+<br>
+
+La densidad debe ser una estimación del número de individuos sexualmente maduros (capaces de reproducirse) (Nc, tamaño de censo) por kilómetro cuadrado, en hábitat normal.
+
+El tamaño del buffer de población debe determinarse con base en el conocimiento de la distancia típica de dispersión de la especie. Para especies con distancias de dispersión más grandes, incluida la dispersión de gametos (p. ej., polen, esperma), el buffer debe ser mayor. La mejor referencia será la literatura que documente el comportamiento de apareamiento y dispersión de la especie o, si está disponible, que documente la diferenciación genética en un conjunto de poblaciones de estudio representativas.
+
+</details>
+
+---
+
+### Preguntas técnicas sobre la ejecución de la herramienta
+
+<details closed>
+
+<summary>GBIF no reconoce el nombre de mi especie</summary>
+
+<br>
+
+- Si proporcionas tus propios datos, esto no importa, solo si necesitas datos de GBIF.  
+- Revisa el uso de mayúsculas (normalmente Género especie).  
+- Revisa la ortografía.
+
+</details>
+
+<details closed>
+
+<summary>No puedo importar mi archivo .csv de coordenadas.</summary>
+
+<br>
+
+La herramienta de monitoreo requiere un archivo .tsv (separado por tabulaciones).
+
+Solución rápida: Exporta un archivo .txt y cambia la extensión a .tsv.
+
+</details>
+
+<details closed>
+
+<summary>Mi Excel usa comas en lugar de puntos.</summary>
+
+<br>
+
+Esto sucede si tu Excel está configurado para usar comas como separador decimal.
+
+Puedes cambiar la configuración anterior o guardar como un archivo .txt y buscar y reemplazar las comas por puntos.
+
+</details>
+
+<details closed>
+
+<summary>¿Cómo dibujo el cuadro delimitador?</summary>
+
+<br>
+
+Haz clic en el cuadrado a la izquierda y luego arrastra para seleccionar la región de interés en el mapa.
+
+</details>
+
+<details closed>
+
+<summary>Mis valores de buffer/distancia de observación son bastante pequeños y están en [m] en lugar de [km].</summary>
+
+<br>
+
+Si tu distancia de observación es menor a 1 km, ingresa 1 km en la herramienta. El uso de buffers menores a 1 km es una funcionalidad que consideraremos agregar en el futuro.
+
+</details>
+
+<details closed>
+
+<summary>¿Debo usar Landcover o Forest cover?</summary>
+
+<br>
+
+- Landcover te da más opciones y una línea de tiempo más larga: 23 clases, 300 m, 1992-2021, selecciona la clase relevante.
+
+- Forest cover proporciona mejor resolución, pero solo para especies que dependen de ecosistemas forestales: bosques, 20 m, 2000-2023.
+
+Forest cover es mucho más lento: Usa un polígono más pequeño (máx. 40,000 km², tamaño de Suiza).
+
+</details>
+
+<details closed>
+
+<summary>Me aparece el Error:
+
+<code>Script "data > GBIF Observations < 100 000": ℹ In argument: `dplyr::all_of(c(lon, lat))`.
+
+Caused by error in `dplyr::all_of()`:
+
+! Can't subset elements that don't exist.
+
+✖ Elements `decimal_longitude` and `decimal_latitude` don't exist.</code>
+
+¿Qué hago?</summary>
+
+<br>
+
+No se encontraron datos de GBIF para la región/país que seleccionaste. Selecciona un polígono más grande/diferente, un año base anterior o una especie de interés distinta.
+
+</details>
+
+---
+
+### Acerca del proyecto
+
+<details closed>
+
+<summary>¿Dónde puedo encontrar más información sobre el proyecto y sus antecedentes?</summary>
+
+<br>
+
+Puedes leer sobre el proyecto ISSI Genes from Space [aquí](https://teams.issibern.ch/genesfromspace/).
+
+</details>
+
+<details closed>
+
+<summary>¿Puedo unirme al proyecto o contribuir de alguna manera?</summary>
+
+<br>
+
+Por favor, contacta a las y los líderes del equipo, cuyas páginas web están vinculadas [aquí](https://teams.issibern.ch/genesfromspace/team-member/).
+
+</details>
+
+<details closed>
+
+<summary>¿Cuál es el siguiente paso del proyecto?</summary>
+
+<br>
+
+- Realizar mejoras técnicas a la herramienta.  
+- Publicar una primera demostración de la herramienta.  
+- Validar los resultados de la herramienta en comparación con cálculos de indicadores basados en ADN para hacerla útil en investigación, informes y conservación.  
+- Agregar capacidades a la herramienta para incluir límites de población basados en datos genéticos y utilizar información más detallada de hábitat y fenotipo disponible a partir de observación de la Tierra.
+
+</details>
+
+<details closed>
+
+<summary>¿Qué harán con los resultados que recolectemos?</summary>
+
+<br>
+
+Utilizarlos para la primera publicación de demostración, a la cual se invita a contribuir como coautor o coautora.
+
+</details>
+
+<details closed>
+
+<summary>¿Existen publicaciones del proyecto?</summary>
+
+<br>
+
+Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://doi.org/10.32942/X2RS58).
+
+</details>
+
 </details>
 
 # Technical Instructions for developers:
