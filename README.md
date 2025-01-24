@@ -103,13 +103,11 @@ Two major resources for learning more about the genetic indicators are:
 
 ### About the Tool
 
-### About the Tool
-
 <details closed>
 <summary>Where can I find the tool? Is there a manual for users?</summary>
 
 The tool can be found here: [https://www.gfstool.com/]. This is a version for testing: Please note the disclaimers and other information on the tool website.  
-There is no manual yet, but an introduction is provided here, and the tool website will walk you step-by-step through the use of the tool and the assumptions the current version is based on.
+There is no manual yet, but an introduction is provided [here](https://teams.issibern.ch/genesfromspace/monitoring-tool-pilot/), and the tool website will walk you step-by-step through the use of the tool and the assumptions the current version is based on.
 
 </details>
 
@@ -130,7 +128,7 @@ No, not yet, because it is still under development. The tool has not been suffic
 <details closed>
 <summary>Where can I get help to use the tool if running into problems?</summary>
 
-Contact information for the ISSI Genes from Space team can be found here.
+Contact information for the ISSI Genes from Space team can be found [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
 
@@ -154,7 +152,7 @@ Not yet, but we plan to do so in near future.
 <details closed>
 <summary>How do I refer to the tool if I use it?</summary>
 
-Please wait until we have provided the initial publication of the tool, at least in preprint form (here). At that time the tool will be opened for use given that the terms of use and limitations are respected, and the (preprinted) publication should then be cited.
+Please wait until we have provided the initial publication of the tool, at least in preprint form [here](https://ecoevorxiv.org/repository/view/7274/). At that time the tool will be opened for use given that the terms of use and limitations are respected, and the (preprinted) publication should then be cited.
 
 </details>
 
@@ -162,7 +160,7 @@ Please wait until we have provided the initial publication of the tool, at least
 <summary>How do I pick the density and population buffer sizes?</summary>
 
 The density should be an estimate of the number of sexually mature (capable of reproducing) individuals (Nc, census size) per square kilometer, in normal habitat.  
-The population buffer size should be determined based on knowledge of the typical dispersal distance of the species. For species with larger dispersal distances, including the exchange of gametes (e.g. pollen, sperm), the buffer should be larger. The best reference will be literature documenting the mating and dispersal behavior of the species or, if available, documenting genetic differentiation for a set of representative study populations. An example is here.
+The population buffer size should be determined based on knowledge of the typical dispersal distance of the species. For species with larger dispersal distances, including the exchange of gametes (e.g. pollen, sperm), the buffer should be larger. The best reference will be literature documenting the mating and dispersal behavior of the species or, if available, documenting genetic differentiation for a set of representative study populations.
 
 </details>
 
@@ -198,7 +196,7 @@ Either change the above settings or save as a .txt file, search and replace comm
 <details closed>
 <summary>How do I draw the bounding box?</summary>
 
-Click on the square on the left and then click on the region of interest on the map.
+Click on the square on the left and then drag to select the region of interest on the map.
 
 </details>
 
@@ -237,14 +235,14 @@ No GBIF data found for you selected region/country. Select a larger/different po
 <details closed>
 <summary>Where can I find more information about the project and its background?</summary>
 
-You can read about the project ISSI Genes from Space here.
+You can read about the project ISSI Genes from Space [here](https://teams.issibern.ch/genesfromspace/).
 
 </details>
 
 <details closed>
 <summary>Can I join the project or contribute in some way?</summary>
 
-Please contact the team leaders, whose webpages are linked here.
+Please contact the team leaders, whose webpages are linked [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
 
@@ -268,6 +266,6 @@ Use these for the first demonstration publication, to which you are invited to c
 <details closed>
 <summary>Are there publications from the project?</summary>
 
-There is a publication about the concept and workflows here.
+There is a publication about the concept and workflows [here](https://doi.org/10.32942/X2RS58).
 
 </details>
