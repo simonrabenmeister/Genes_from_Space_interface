@@ -109,7 +109,7 @@ Two major resources for learning more about the genetic indicators are:
 
 <details closed>
 <summary>Where can I find the tool? Is there a manual for users?</summary>
-
+<br>
 The tool can be found here: [https://www.gfstool.com/]. This is a version for testing: Please note the disclaimers and other information on the tool website.  
 There is no manual yet, but an introduction is provided [here](https://teams.issibern.ch/genesfromspace/monitoring-tool-pilot/), and the tool website will walk you step-by-step through the use of the tool and the assumptions the current version is based on.
 
@@ -117,28 +117,28 @@ There is no manual yet, but an introduction is provided [here](https://teams.iss
 
 <details closed>
 <summary>Is it free to use? Can I use this now for other purposes? Is it copyrighted?</summary>
-
+<br>
 The tool is under development and its use for commercial purposes is prohibited. Participation in the workshop also means that you agree to not use the tool for your own scientific purposes until the results from the Genes from Space workshop are published (at least as a preprint). Please keep in mind that workshop participants are also invited to contribute as co-authors to this initial publication.
 
 </details>
 
 <details closed>
 <summary>Can I use the tool for calculating indicators for reporting to the CBD?</summary>
-
+<br>
 No, not yet, because it is still under development. The tool has not been sufficiently tested or validated. However, we are in the process of improving this tool and getting it ready for future practical use, including for the CBD.
 
 </details>
 
 <details closed>
 <summary>Where can I get help to use the tool if running into problems?</summary>
-
+<br>
 Contact information for the ISSI Genes from Space team can be found [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
 
 <details closed>
 <summary>Can the tool be used for all species? Which species should the tool NOT be used for?</summary>
-
+<br>
 The tool will run for any species, but it might not be appropriate for all species. We have not yet defined which species the tool will work best for, but we are aware of the following limitations given the current implementation:  
 - Species with inaccurate entries in GBIF will not be accurately represented in this tool if you rely on GBIF entries. This does not apply if you provide your own coordinates.  
 - We do not currently implement definitions for aquatic habitats and are working on implementing this. However currently, the tool is limited to use for terrestrial species.  
@@ -148,21 +148,21 @@ The tool will run for any species, but it might not be appropriate for all speci
 
 <details closed>
 <summary>Has the tool been validated for genetic diversity measured with DNA methods?</summary>
-
+<br>
 Not yet, but we plan to do so in near future.
 
 </details>
 
 <details closed>
 <summary>How do I refer to the tool if I use it?</summary>
-
+<br>
 Please wait until we have provided the initial publication of the tool, at least in preprint form [here](https://ecoevorxiv.org/repository/view/7274/). At that time the tool will be opened for use given that the terms of use and limitations are respected, and the (preprinted) publication should then be cited.
 
 </details>
 
 <details closed>
 <summary>How do I pick the density and population buffer sizes?</summary>
-
+<br>
 The density should be an estimate of the number of sexually mature (capable of reproducing) individuals (Nc, census size) per square kilometer, in normal habitat.  
 The population buffer size should be determined based on knowledge of the typical dispersal distance of the species. For species with larger dispersal distances, including the exchange of gametes (e.g. pollen, sperm), the buffer should be larger. The best reference will be literature documenting the mating and dispersal behavior of the species or, if available, documenting genetic differentiation for a set of representative study populations.
 
@@ -174,7 +174,7 @@ The population buffer size should be determined based on knowledge of the typica
 
 <details closed>
 <summary>GBIF does not recognize my species name</summary>
-
+<br>
 - If you provide your own data, this does not matter, only if you need GBIF data.  
 - Check the use of capital letters (usually Genus species).  
 - Check spelling.
@@ -183,7 +183,7 @@ The population buffer size should be determined based on knowledge of the typica
 
 <details closed>
 <summary>I can not import my .csv coordinate file.</summary>
-
+<br>
 The monitoring tool requires a .tsv file (tab separated).  
 Quick fix: Export a .txt file and change the ending to .tsv.
 
@@ -191,7 +191,7 @@ Quick fix: Export a .txt file and change the ending to .tsv.
 
 <details closed>
 <summary>My excel uses commas to export and not periods.</summary>
-
+<br>
 This happens if your Excel is set to use commas for the decimal separator.  
 Either change the above settings or save as a .txt file, search and replace commas with periods.
 
@@ -199,21 +199,21 @@ Either change the above settings or save as a .txt file, search and replace comm
 
 <details closed>
 <summary>How do I draw the bounding box?</summary>
-
+<br>
 Click on the square on the left and then drag to select the region of interest on the map.
 
 </details>
 
 <details closed>
 <summary>My buffer/observation distance values are rather small and in [m] not [km].</summary>
-
+<br>
 If your observation distance is smaller than 1 km, please enter 1 km into the tool. Buffers smaller than 1 km are a functionality that we will consider adding in the future.
 
 </details>
 
 <details closed>
 <summary>Should I use Landcover or Forest cover?</summary>
-
+<br>
 - Landcover gives you more options and a longer timeline: 23 classes, 300m, 1992-2021, select relevant class.  
 - Forest cover provides better resolution, but only for species dependent on forest ecosystems: forests, 20m, 2000-2023.  
 Forest cover is much slower: Use a smaller polygon (max. 40’000 km2, size of Switzerland).
@@ -227,7 +227,7 @@ Caused by error in `dplyr::all_of()`:
 ! Can't subset elements that don't exist.
 ✖ Elements `decimal_longitude` and `decimal_latitude` don't exist.
 What do I do?</summary>
-
+<br>
 No GBIF data found for you selected region/country. Select a larger/different polygon, earlier baseline year or a different species of interest.
 
 </details>
@@ -238,21 +238,20 @@ No GBIF data found for you selected region/country. Select a larger/different po
 
 <details closed>
 <summary>Where can I find more information about the project and its background?</summary>
-
+<br>
 You can read about the project ISSI Genes from Space [here](https://teams.issibern.ch/genesfromspace/).
-
 </details>
 
 <details closed>
 <summary>Can I join the project or contribute in some way?</summary>
-
+<br>
 Please contact the team leaders, whose webpages are linked [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
 
 <details closed>
 <summary>What is the next step of the project?</summary>
-
+<br>
 Making technical improvements to the tool.  
 Publishing a first demonstration of the tool.  
 Validating the tool outputs in comparison to DNA-based indicator calculations to make it useful for research, reporting, and conservation.  
@@ -262,14 +261,14 @@ Adding capacities to the tool to include population boundaries based on genetic 
 
 <details closed>
 <summary>What are you going to do with the results that we collect?</summary>
-
+<br>
 Use these for the first demonstration publication, to which you are invited to contribute as a co-author.
 
 </details>
 
 <details closed>
 <summary>Are there publications from the project?</summary>
-
+<br>
 There is a publication about the concept and workflows [here](https://doi.org/10.32942/X2RS58).
 
 </details>
