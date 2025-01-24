@@ -658,7 +658,11 @@ Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://d
 
 </details>
 
-# Technical Instructions for developers:
+<details closed>
+
+<summary><b>Technical Instructions for developers<b></summary>
+
+
 A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
 
 Bon in a Box: https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/main  <br /> 
@@ -668,3 +672,6 @@ Genes from Space: https://teams.issibern.ch/genesfromspace/monitoring-tool-backu
 ## Quick start:
 -> create a conda environment with all dependencies (see requirements.txt)
 -> run app with: streamlit run streamlit.py --server.port 8080
+
+</details>
+
