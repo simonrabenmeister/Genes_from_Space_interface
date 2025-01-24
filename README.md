@@ -586,13 +586,9 @@ Forest cover es mucho más lento: Usa un polígono más pequeño (máx. 40,000 k
 <details closed>
 
 <summary>Me aparece el Error:
-
 <code>Script "data > GBIF Observations < 100 000": ℹ In argument: `dplyr::all_of(c(lon, lat))`.
-
 Caused by error in `dplyr::all_of()`:
-
 ! Can't subset elements that don't exist.
-
 ✖ Elements `decimal_longitude` and `decimal_latitude` don't exist.</code>
 
 ¿Qué hago?</summary>
