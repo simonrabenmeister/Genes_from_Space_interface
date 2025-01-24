@@ -101,6 +101,7 @@ Two major resources for learning more about the genetic indicators are:
 <details closed>
 <summary>Where can I find the tool? Is there a manual for users?</summary>
 <br>
+  
 The tool can be found here: [https://www.gfstool.com/]. This is a version for testing: Please note the disclaimers and other information on the tool website.  
 There is no manual yet, but an introduction is provided [here](https://teams.issibern.ch/genesfromspace/monitoring-tool-pilot/), and the tool website will walk you step-by-step through the use of the tool and the assumptions the current version is based on.
 
@@ -123,6 +124,7 @@ No, not yet, because it is still under development. The tool has not been suffic
 <details closed>
 <summary>Where can I get help to use the tool if running into problems?</summary>
 <br>
+  
 Contact information for the ISSI Genes from Space team can be found [here](https://teams.issibern.ch/genesfromspace/team-member/).
 
 </details>
@@ -147,6 +149,7 @@ Not yet, but we plan to do so in near future.
 <details closed>
 <summary>How do I refer to the tool if I use it?</summary>
 <br>
+  
 Please wait until we have provided the initial publication of the tool, at least in preprint form [here](https://ecoevorxiv.org/repository/view/7274/). At that time the tool will be opened for use given that the terms of use and limitations are respected, and the (preprinted) publication should then be cited.
 
 </details>
