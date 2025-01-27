@@ -4,8 +4,7 @@ from streamlit_map import mapgeojson
 from streamlit_map import mapbbox
 import pandas as pd
 import numpy as np
-import json
-import pycountry
+
 import requests
 import webbrowser
 import time
@@ -424,10 +423,10 @@ if st.session_state["species"]: # once species is defined, everything below can 
                 st.markdown(rtext('1_3b22_ti'))
                 st.markdown(rtext('1_3b22_te'))
 
-                    countries = st.multiselect("Select countries", country_names)
-                    
-                    if countries: 
-                        PI=area_type
+                countries = st.multiselect("Select countries", country_names)
+                
+                if countries: 
+                    PI=area_type
 
     ### 1.4: set temporal frame of species observation
 
