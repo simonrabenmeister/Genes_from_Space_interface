@@ -51,6 +51,10 @@ if "name" not in st.session_state:
     st.session_state.name=None
 if "height" not in st.session_state:
     st.session_state.height=1000
+if "zoom" not in st.session_state:
+    st.session_state.zoom=2
+if "center" not in st.session_state:
+    st.session_state.center={"lat": 0, "lng": 0}
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
 LC_names = ["automatic"
@@ -185,7 +189,7 @@ def edit_points():
     obs_edit=st.session_state.obs_edit
     # Remove duplicate points based on latitude and longitude
     
-    m = folium.Map(location=[0, 0], zoom_start=2)
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
     # Add the observations to the map
     fg = folium.FeatureGroup(name="Markers")
@@ -195,6 +199,55 @@ def edit_points():
             location=corr,
             radius=6,
             color="red" if st.session_state.index is not None and i in st.session_state.index else "blue",
+            fill_opacity=1,
+            fill=True,
+            fill_color='lightblue'
+        ).add_to(fg)
+
+
+    st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
+#Get the index of the clicked point
+    if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
+        st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
+        (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
+
+        def remove_point(index):
+            st.session_state.obs_edit=obs_edit.drop(index)
+
+        #Remove the point if the remove button is clicked
+        st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
+        st.session_state.obs=obs_edit
+        if (
+            "last_object_clicked" in st.session_state.output
+            and st.session_state.output["last_object_clicked"] != st.session_state["last_object_clicked"]
+        ):
+            st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
+            st.rerun(scope="fragment")
+    
+    if st.button("Save points"):
+        st.session_state.stage="polygon_clustering"
+        st.session_state.zoom=st.session_state.output["zoom"]
+        st.session_state.center=st.session_state.output["center"]
+        st.session_state.obs=obs_edit
+        st.rerun()
+
+@st.fragment
+def polygon_clustering():
+    obs = st.session_state.obs
+
+    if "index" not in st.session_state:
+        st.session_state.index=None
+    
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+
+    # Add the observations to the map
+    fg = folium.FeatureGroup(name="Markers")
+    for i, row in obs.iterrows():
+        corr=[row["decimal_latitude"], row["decimal_longitude"]]
+        folium.CircleMarker(
+            location=corr,
+            radius=6,
+            color="blue",
             fill_opacity=1,
             fill=True,
             fill_color='lightblue'
@@ -223,18 +276,6 @@ def edit_points():
         fg2 = folium.FeatureGroup(name="Markers")
         fg2.add_child(folium.GeoJson(st.session_state.polygons, popup=folium.GeoJsonPopup(fields=["name", "population_density"])))
         st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)
-
-#Get the index of the clicked point
-    if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
-        st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
-        (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
-
-        def remove_point(index):
-            st.session_state.obs_edit=obs_edit.drop(index)
-
-        #Remove the point if the remove button is clicked
-        st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
-        st.session_state.obs=obs_edit
     # Create circle object for points
     if st.button("Remove Polygons"):
         del st.session_state["polygons"]
@@ -249,19 +290,57 @@ def edit_points():
         st.rerun(scope="fragment")
     obs['geometry'] = obs.apply(lambda row: Point((row["decimal_longitude"], row["decimal_latitude"])), axis=1)
     geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
+    # points_gdf = gpd.GeoDataFrame(
+    #     points_df,
+    #     geometry=gpd.points_from_xy(points_df["longitude"], points_df["latitude"]),
+    #     crs="EPSG:4326"
+    # )
     new_df = geo_df.set_crs(epsg=4326)
     new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
-    with st.form(key='buffer', enter_to_submit=False):
-        size = st.number_input("Buffer", value=None)*1000
+    # circles_gdf = points_gdf.copy()
+    # circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius * 1000).to_crs(epsg=4326)
 
-        if  st.form_submit_button("Draw Polygon"):
+    points_df = pd.DataFrame(obs)
+
+    points_gdf = gpd.GeoDataFrame(
+        points_df,
+        geometry=gpd.points_from_xy(points_df["decimal_longitude"], points_df["decimal_latitude"]),
+        crs="EPSG:4326"
+    )
+
+    # Define the buffer radius in kilometers
+    radius = 10  # Example: 10 km
+
+    # Create circular buffers around each point
+    circles_gdf = points_gdf.copy()
+    circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius * 1000).to_crs(epsg=4326)
+    st.write("obs")
+    obs
+    st.write("geodf")
+    geo_df
+    st.write("new_df")
+    new_df
+    st.write("ponts_df")
+    points_gdf
+    st.write("circles_df")
+    circles_gdf
+
+    
+    with st.form(key='buffer', enter_to_submit=False):
+        size = st.number_input("Buffer", value=None)
+        if size is not None:
+            size=size*1000
+        if st.form_submit_button("Draw Polygon"):
             if size is None:
                 st.error("Please enter a buffer size")
-            elif st.session_state.output["all_drawings"] ==[]:
+            elif st.session_state.output["all_drawings"] == []:
                 st.error("Please draw a polygon on the map")
             else:
                 circles = new_df['geometry'].buffer(size)
                 obs['circles'] = circles.to_crs(epsg=4326)
+                st.write("circles")
+                obs
+                
                 # Group the circles into clusters depending on drawn polygons
                 clusters = pd.DataFrame()
                 for i in range(0, len(st.session_state.output["all_drawings"])):
@@ -282,18 +361,69 @@ def edit_points():
                     feature = geojson.Feature(geometry=poly, properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
                     features.append(feature)
 
-                st.session_state.polygons  = geojson.FeatureCollection(features)
+                st.session_state.polygons = geojson.FeatureCollection(features)
                 st.rerun(scope="fragment")
     if "polygons" in st.session_state:  
         if st.button("Confirm and Proceed"):
-            st.session_state.stage="LC"
+
+            st.session_state.zoom=st.session_state.output["zoom"]
+            st.session_state.center=st.session_state.output["center"]
+            st.session_state.stage = "LC"
             with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
                 geojson.dump(st.session_state.polygons, f)
             st.success("Polygons saved successfully.")
             st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
             st.rerun()
 
-        
+
+
+
+
+
+# import geopandas as gpd
+# import pandas as pd
+# from shapely.geometry import Point
+# from scipy.cluster.hierarchy import linkage, fcluster
+# from scipy.spatial.distance import squareform
+
+# # Create a dummy DataFrame for point data
+
+# points_df = geo_df.copy()
+
+# points_gdf = gpd.GeoDataFrame(
+#     points_df,
+#     geometry=gpd.points_from_xy(points_df["longitude"], points_df["latitude"]),
+#     crs="EPSG:4326"
+# )
+
+# # Define the buffer radius in kilometers
+# radius = 10  # Example: 10 km
+
+# # Create circular buffers around each point
+# circles_gdf = points_gdf.copy()
+# circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius * 1000).to_crs(epsg=4326)
+
+# # Perform clustering if there are multiple points
+# if len(circles_gdf) > 1:
+#     # Calculate the distance matrix between points
+#     distances = points_gdf.geometry.apply(lambda geom: points_gdf.geometry.distance(geom)).to_numpy()
+#     distances_km = distances / 1000  # Convert to kilometers
+
+#     # Perform hierarchical clustering
+#     linkage_matrix = linkage(squareform(distances_km), method="average")
+#     pop_distance = 15  # Example: maximum distance to split populations (in km)
+#     circles_gdf["pop"] = ["pop_" + str(cluster) for cluster in fcluster(linkage_matrix, t=pop_distance, criterion="distance")]
+# else:
+#     circles_gdf["pop"] = "pop_1"
+
+# # Print the resulting GeoDataFrame
+# print(circles_gdf)
+
+
+
+
+
+
 @st.fragment
 def convert_df():
     polygons =   st.session_state.polygons
@@ -362,7 +492,7 @@ def convert_df():
 @st.fragment
 def mapbbox():
     #create the map
-    m = folium.Map(location=[0,0], zoom_start=2)
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
     draw = Draw(export=False,   draw_options={
         'polyline': False,  # Disable polyline
         'polygon': False,    # Enable polygon
@@ -388,6 +518,8 @@ def mapbbox():
         geometry=output["last_active_drawing"]["geometry"]
         st.session_state.bbox =  get_bounding_box(geometry)
     if st.button("Confirm Bounding Box"):
+        st.session_state.zoom=output["zoom"]
+        st.session_state.center=output["center"]
         st.rerun()
 
 col1, col2= st.columns(2)
@@ -540,8 +672,10 @@ with col2:
         mapbbox()
     if st.session_state.stage=="Manipulate points":
         edit_points()
+    if st.session_state.stage=="polygon_clustering":
+        polygon_clustering()
     if st.session_state.stage=="LC":
-        m = folium.Map(location=[0, 0], zoom_start=2)
+        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
         # Add the polygons to the map
         fg = folium.FeatureGroup(name="Polygons")
