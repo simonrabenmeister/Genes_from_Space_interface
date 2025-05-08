@@ -14,14 +14,6 @@ import plotly.express as px
 from typing import Union
 
 
-st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
-
-
-
-st.markdown("# Plotting Demo")
-st.sidebar.header("Habitat")
-
-
 if "out" not in st.session_state:
     st.session_state.out = None
 if "name" not in st.session_state:
@@ -57,6 +49,19 @@ if "LOSS" not in st.session_state:
 
 NC= None
 
+
+st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
+st.markdown("# Plotting Demo")
+st.sidebar.header("Habitat")
+with st.sidebar:
+    with st.expander("Page Height", expanded=False):
+        st.session_state.height = st.slider(
+            "Page Height", 0, 2000, st.session_state.height
+        )
+
+
+
+
 def open_tif(tif):
     src = rasterio.open(tif)
     array = src.read()
@@ -67,11 +72,7 @@ def open_tif(tif):
 
 
 
-with st.sidebar:
-    with st.expander("Page Height", expanded=False):
-        st.session_state.height = st.slider(
-            "Page Height", 0, 2000, st.session_state.height
-        )
+##Load Runs
 input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True}))
 
 if st.session_state.upload:
@@ -89,14 +90,6 @@ if st.session_state.upload:
         st.session_state.properties = pd.DataFrame(geojson_data["properties"])
         st.session_state.upload = False
 
-if st.session_state.geojson_data is not None:
-        geojson_data = json.loads(st.session_state.geojson_data)
-        st.session_state.pop_polygons = geojson_data["pop_polygons"]
-        st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
-        st.session_state.rel_habitat_change_table = pd.DataFrame(geojson_data["rel_habitat_change_table"])
-        st.session_state.NC = geojson_data["NC"]
-        st.session_state.GAIN = geojson_data["GAIN"]
-        st.session_state.LOSS = geojson_data["LOSS"]
 
 rel_habitat_change_table=st.session_state.rel_habitat_change_table
 area_table=st.session_state.area_table
@@ -110,7 +103,7 @@ properties=st.session_state.properties
 
 
 
-
+##create LC maps
 if NC is not None:
     NCarray, NCbbox = open_tif(NC)
     GAINarray, GAINbbox = open_tif(GAIN)
@@ -128,97 +121,75 @@ if NC is not None:
     LOSScolor[LOSSarray[0] == 1] = [255, 0, 0, 127]
     LOSScolor[LOSSarray[0] == 0] = [0, 0, 0, 0]
 
+##prepare polygon properties
+for i, poly in enumerate(st.session_state.pop_polygons["features"]):
+    if "pop_size" not in poly["properties"]:
+        poly["properties"]["pop_size"] = 0
+    if "effective_size" not in poly["properties"]:
+        poly["properties"]["effective_size"] = 0
+    if "Population_Density" not in poly["properties"]:
+        poly["properties"]["Population_Density"] = 0
+    if "nenc" not in poly["properties"]:
+        poly["properties"]["nenc"] = 0
+# Generate a list of colors for the polygons
+colors = [matplotlib.colors.rgb2hex(c) for c in cm.rainbow(np.linspace(0, 1, len(st.session_state.pop_polygons["features"])))]
+# Assign a color to each polygon
+for i, (feature, c) in enumerate(zip(st.session_state.pop_polygons["features"], colors)):
+    feature["properties"]["color"] = c
 
 @st.fragment
 def render_map_fragment():
-
-    for i, poly in enumerate(st.session_state.pop_polygons["features"]):
-        if "pop_size" not in poly["properties"]:
-            poly["properties"]["pop_size"] = 0
-        if "effective_size" not in poly["properties"]:
-            poly["properties"]["effective_size"] = 0
-        if "Population_Density" not in poly["properties"]:
-            poly["properties"]["Population_Density"] = 0
-        if "nenc" not in poly["properties"]:
-            poly["properties"]["nenc"] = 0
-
-
-    #Calculate the middle of NCbbox
+    # Calculate the middle of NCbbox
     middle_lat = (NCbbox[0][0] + NCbbox[1][0]) / 2
     middle_lon = (NCbbox[0][1] + NCbbox[1][1]) / 2
-    m =    m = folium.Map(location=[middle_lat, middle_lon], zoom_start=7, tiles="CartoDB Positron")
+    m = folium.Map(location=[middle_lat, middle_lon], zoom_start=7, tiles="CartoDB Positron")
 
+
+    # Use ImageOverlay for raster overlays
     folium.raster_layers.ImageOverlay(
+        image="temp_tiles/NC.png",
         name="NC",
-        image=NCcolor,
         bounds=NCbbox,
         opacity=1.0,
-        interactive=True,
-        cross_origin=False,
-        zindex=1,
+        zindex=1
     ).add_to(m)
     folium.raster_layers.ImageOverlay(
+        image="temp_tiles/GAIN.png",
         name="GAIN",
-        image=GAINcolor,
         bounds=GAINbbox,
-        opacity=1.0,            
-        interactive=True,
-        cross_origin=False,
-        zindex=1,
+        opacity=1.0,
+        zindex=1
     ).add_to(m)
     folium.raster_layers.ImageOverlay(
+        image="temp_tiles/LOSS.png",
         name="LOSS",
-        image=LOSScolor,
         bounds=LOSSbbox,
-        opacity=1.0,            
-        interactive=True,
-        cross_origin=False,
-        zindex=1,
+        opacity=1.0,
+        zindex=1
     ).add_to(m)
-    # Generate a list of colors for the polygons
-    colors = [matplotlib.colors.rgb2hex(c) for c in cm.rainbow(np.linspace(0, 1, len(st.session_state.pop_polygons["features"])))]
-    # Assign a color to each polygon
-    for i, (feature, c) in enumerate(zip(st.session_state.pop_polygons["features"], colors)):
-        feature["properties"]["color"] = c
-    fg = folium.FeatureGroup(name="Population Polygons")
 
-    if st.session_state.name is  None:
-        fg.add_child(folium.GeoJson(
-            st.session_state.pop_polygons, 
-            popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
-            style_function=lambda x: {
-            'fillOpacity': 0.5,
-            'fillColor': x['properties']['color'],
-            'color': x['properties']['color']
-            }
-        ))
-    else:
-        fg.add_child(folium.GeoJson(
-            st.session_state.pop_polygons, 
-            popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
-            style_function=lambda x: {
-            'fillOpacity': 0.5,
-            'fillColor': x['properties']['color'],
-            'color': x['properties']['color']
-            } if x['properties']['name'] == st.session_state.name else {
-            'fillOpacity': 0.2,
-            'color': x['properties']['color'],
-            'fillColor': x['properties']['color']
-            }
-        ))
     # Add the possibility to select layers in Map
     folium.LayerControl().add_to(m)
-    # call to render Folium map in Streamlit
-    st.session_state.out = st_folium(m, use_container_width=True, pixelated=True, feature_group_to_add=fg)
 
-    if st.session_state.out["last_active_drawing"] is not None:
-        if st.session_state.name != st.session_state.out["last_active_drawing"]["properties"]["name"]:
-            st.session_state.name = st.session_state.out["last_active_drawing"]["properties"]["name"]
-            st.rerun()
+    fg = folium.FeatureGroup(name="Population Polygons")
+
+    fg.add_child(folium.GeoJson(
+        st.session_state.pop_polygons,
+        popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
+        style_function=lambda x: {
+            'fillOpacity': 0.5,
+            'fillColor': x['properties']['color'],
+            'color': x['properties']['color']
+        }
+    ))
+
+    # Call to render Folium map in Streamlit
+    st.session_state.out = st_folium(m, use_container_width=True, pixelated=True, feature_group_to_add=fg)
 
 if NC is not None:
     render_map_fragment()
 
+##Input form for population density and Ne:Nc
 if st.session_state.out is not None:
     with st.form(key='polygon', enter_to_submit=False):
 
@@ -226,7 +197,7 @@ if st.session_state.out is not None:
             "Default density", 
             min_value=0.0, 
             step=0.01, 
-            format="%.2f", 
+
             key="pop_density"
         )
 
@@ -235,10 +206,10 @@ if st.session_state.out is not None:
             min_value=0.0, 
             max_value=1.0, 
             step=0.01, 
-            format="%.2f", 
+
             key="nenc"
         )
-
+#Create dataframe to be manipulated
         properties = pd.DataFrame(
             [
                 {"Name": poly["properties"]["name"]}
@@ -251,10 +222,6 @@ if st.session_state.out is not None:
         properties["pop_size"] = [0] * len(properties)
         properties["effective_size"] = [0] * len(properties)
 
-        # Ensure all polygons have the 'pop_size' property initialized
-        for poly in st.session_state.pop_polygons["features"]:
-            if "pop_size" not in poly["properties"]:
-                poly["properties"]["pop_size"] = 0
 
         if st.form_submit_button("Submit" ):
             properties = properties.assign(Population_Density=default_dens)
