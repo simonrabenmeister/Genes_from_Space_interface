@@ -131,10 +131,22 @@ if NC is not None:
 
 @st.fragment
 def render_map_fragment():
+
+    for i, poly in enumerate(st.session_state.pop_polygons["features"]):
+        if "pop_size" not in poly["properties"]:
+            poly["properties"]["pop_size"] = 0
+        if "effective_size" not in poly["properties"]:
+            poly["properties"]["effective_size"] = 0
+        if "Population_Density" not in poly["properties"]:
+            poly["properties"]["Population_Density"] = 0
+        if "nenc" not in poly["properties"]:
+            poly["properties"]["nenc"] = 0
+
+
     #Calculate the middle of NCbbox
     middle_lat = (NCbbox[0][0] + NCbbox[1][0]) / 2
     middle_lon = (NCbbox[0][1] + NCbbox[1][1]) / 2
-    m = folium.Map(location=[middle_lat, middle_lon], zoom_start=7)
+    m =    m = folium.Map(location=[middle_lat, middle_lon], zoom_start=7, tiles="CartoDB Positron")
 
     folium.raster_layers.ImageOverlay(
         name="NC",
@@ -173,22 +185,24 @@ def render_map_fragment():
     if st.session_state.name is  None:
         fg.add_child(folium.GeoJson(
             st.session_state.pop_polygons, 
-            popup=folium.GeoJsonPopup(fields=["name", "population_density"])
-            ,
+            popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
             style_function=lambda x: {
-                'fillOpacity': 0.5,
-                'fillColor': x['properties']['color']
+            'fillOpacity': 0.5,
+            'fillColor': x['properties']['color'],
+            'color': x['properties']['color']
             }
         ))
     else:
         fg.add_child(folium.GeoJson(
             st.session_state.pop_polygons, 
-            popup=folium.GeoJsonPopup(fields=["name", "population_density"]),
+            popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
             style_function=lambda x: {
-            'fillOpacity': 0.7,
-            'fillColor': x['properties']['color']
+            'fillOpacity': 0.5,
+            'fillColor': x['properties']['color'],
+            'color': x['properties']['color']
             } if x['properties']['name'] == st.session_state.name else {
-            'fillOpacity': 0.4,
+            'fillOpacity': 0.2,
+            'color': x['properties']['color'],
             'fillColor': x['properties']['color']
             }
         ))
@@ -245,9 +259,14 @@ if st.session_state.out is not None:
         if st.form_submit_button("Submit" ):
             properties = properties.assign(Population_Density=default_dens)
             properties = properties.assign(nenc=default_nenc)
-            properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(default_dens) * np.array(default_nenc)).round(2))
+            properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(default_dens) ))
             properties = properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(default_dens) * np.array(default_nenc))
             st.session_state.properties = properties
+            for i, poly in enumerate(st.session_state.pop_polygons["features"]):
+                poly["properties"]["Population_Density"] = default_dens
+                poly["properties"]["nenc"] = default_nenc
+                poly["properties"]["pop_size"] = properties["pop_size"][i]
+                poly["properties"]["effective_size"] = properties["effective_size"][i]
 
 
 
@@ -309,7 +328,7 @@ if st.session_state.properties is not None:
     # Calculate NE
     NE= area_table.copy()
     for i in range(0, len(NE)):
-        ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]
+        ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
 
         NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
 
@@ -364,7 +383,7 @@ if st.session_state.properties is not None:
                 st.session_state.properties = new_df
 
             df = st.session_state.properties
-            df["effective_size"] = df["pop_size"] * area_table.iloc[:, -1].values / area_table.iloc[:, 1].values
+            df["effective_size"] = df["pop_size"] * area_table.iloc[:, -1].values / area_table.iloc[:, 1].values* df["nenc"]
             st.session_state.properties = df
             st.rerun()
 
@@ -380,14 +399,7 @@ if st.session_state.properties is not None:
                     },
                     hide_index=True,
                 )
-                 # Clear invalid entries in nenc and Population_Density
-                if not editable_df["nenc"].equals(st.session_state.properties["nenc"]) or not editable_df["Population_Density"].equals(st.session_state.properties["Population_Density"]):
-                    editable_df["pop_size"] = (editable_df["Population_Density"] * editable_df["nenc"] * area_table.iloc[:, 1].values).round(2)
 
-                editable_df.loc[
-                    editable_df["pop_size"] != ((area_table.iloc[(editable_df.index).astype(int), 1].reset_index(drop=True).set_axis(editable_df.index) * editable_df["Population_Density"].reset_index(drop=True).set_axis(editable_df.index) * editable_df["nenc"].reset_index(drop=True).set_axis(editable_df.index))).round(2),
-                    ["Population_Density", "nenc"]
-                ] = None
 
             add_c(editable_df)
             # Calculate the ratio of populations with effective size > 500
@@ -398,33 +410,12 @@ if st.session_state.properties is not None:
             ne_greater_50 = (st.session_state.properties["effective_size"] > 50).sum()
             ratio_ne_greater_50 = ne_greater_50 / len(st.session_state.properties)
 
-            # Create a DataFrame with the calculated ratios
-            summary_df = pd.DataFrame({
-                "NE>500": [ratio_ne_greater_500],
-                "PM": [ratio_ne_greater_50]
-            })
-            def style_dataframe(df):
-                return df.style.set_table_styles(
-                [{
-                    'selector': 'th',
-                    'props': [
-                    ('background-color', 'red'),
-                    ('color', 'white'),
-                    ('font-family', 'Arial, sans-serif'),
-                    ('font-size', '16px')
-                    ]
-                }, 
-                {
-                    'selector': 'td, th',
-                    'props': [
-                    ('border', '2px solid red')
-                    ]
-                }]
-                ).hide(axis="index")  # Hide the index
-
-            styled_df = style_dataframe(summary_df)
-
-            st.write(styled_df.to_html(), unsafe_allow_html=True)
+            st.markdown(
+                "### NE > 500: {:.2f}".format(ratio_ne_greater_500)
+            )
+            st.markdown(
+                "### PM: {:.2f}".format(ratio_ne_greater_50)
+            )
 # Display the plot in Streamlit
         st.plotly_chart(ne_fig, use_container_width=True)
 
