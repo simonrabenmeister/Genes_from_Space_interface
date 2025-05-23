@@ -17,7 +17,8 @@ from functions import LC_area
 from functions import TC_area
 
 
-
+if "original_polygons" not in st.session_state:
+    st.session_state.original_polygons = None
 if "bbox" not in st.session_state:
     st.session_state.bbox = None
 if "stage" not in st.session_state:
@@ -71,7 +72,8 @@ if "GBIF_data" not in st.session_state:
 if "polyinfo" not in st.session_state:
     st.session_state.polyinfo = {
         "buffer": None,
-        "distance": None
+        "distance": None,
+        "polygons": None
     }
 if "LC" not in st.session_state:
     st.session_state.LC = {
@@ -172,7 +174,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
         st.markdown(rtext("1.1_te"))
     #Upload your own Polygon file
         poly_link= st.file_uploader("Upload your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", )
-        st.session_state.polygons = pd.read_json(poly_link, lines=True)
+        st.session_state.polyinfo["polygons"] = pd.read_json(poly_link, lines=True)
 
     #Download example file
         st.download_button(
@@ -254,7 +256,8 @@ with col1.container( border=True, key="image-container", height=st.session_state
                 
                 st.session_state.polyinfo = {
                         "buffer": None,
-                        "distance": None
+                        "distance": None,
+                        "polygons": None
                     }
                 st.session_state.LC = {
                         "LC_type": None,
@@ -306,7 +309,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
 
    
     if st.session_state.stage=="LC":
-        if st.session_state.polygons is not None:
+        if st.session_state.polyinfo["polygons"] is not None:
             st.markdown(rtext("3_ti"))
             st.markdown(rtext("3_te"))
             st.session_state.LC["LC_type"]=st.selectbox("Land Cover Type", ["Tree Cover", "manual Land Cover", "automatic Land Cover"], index=st.session_state.LC["index"])  
@@ -373,7 +376,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
         st.session_state.LOSS= f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines{st.session_state.cover_maps}/HabitatLOSS.tif"
 
         if st.button("See results"):
-            st.session_state.pop_polygons = st.session_state.polygons
+
             st.switch_page("pages/Output_display.py")
 with col2:
     if st.session_state.stage=="bbox_draw":
