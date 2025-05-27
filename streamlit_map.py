@@ -9,54 +9,11 @@ from folium.plugins import Draw
 
 
 ###Upload and display csv files
-def mapcsv():
-
-    obs=pd.DataFrame()
-##Upload the observations file: Function given by streamlit
-    obs_file = st.file_uploader("Choose a file")
-    if obs_file is not None:
-        # To read file as bytes:
-        bytes_data = obs_file.getvalue()
-        # accepts TSV files:
-        obs = pd.read_csv(obs_file, sep='\t')
-        #st.write(obs)
-##Initialize the session state:
-    #obs is the uploaded file
-        if "obs" not in st.session_state:
-            st.session_state.obs= obs
-    #obs_edit is the file that is edited
-        if "obs_edit" not in st.session_state:
-            st.session_state.obs_edit= obs
-    #out is the displayed map
-        if "out" not in st.session_state:
-            st.session_state.out={}
+def mapcsv(obs):
     #index is the index of the point that is clicked
         if "index" not in st.session_state:
             st.session_state.index=None
         
-    ##Get min max coordinates of points to set the center of the map
-        def get_point_range(geom):
-            coords = np.array([geom["decimal_latitude"].values, geom["decimal_longitude"].values]).T
-            return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
-    ##Get center of Points for Map display       
-        rangepoints=get_point_range(obs)
-        #st.write (rangepoints)
-        y=rangepoints[2]-(rangepoints[2]-rangepoints[0])/2
-        x=rangepoints[3]-(rangepoints[3]-rangepoints[1])/2
-        #st.write (x,y)
-    #Initialize the center of the map,  will be automaticially changed when the map is interacted with
-        if "center" not in st.session_state:
-            st.session_state["center"] = [ y, x]  # Default center for the map
-
-        if not obs.equals(st.session_state.obs): #reset Center and Zoom if new file is uploaded
-            st.session_state.obs=obs
-            st.session_state.obs_edit=obs
-            st.session_state["center"] = [y, x]
-            st.session_state["zoom"] = 6
-
-    #Initialize the zoom level of the map, will be automaticially changed when the map is interacted with
-        if "zoom" not in st.session_state:
-            st.session_state["zoom"] = 6  # Default zoom level
 
     #Set the columns for the latitude and longitude
         lat_col = "decimal_latitude"
@@ -118,16 +75,8 @@ def mapcsv():
 
 
 ###Upload and display polygon files
-def mapgeojson():
+def mapgeojson(poly_file):
 ##Upload the polygon file
-    poly_file = st.file_uploader("Choose a file")
-
-    if poly_file is not None:    
-        if "poly" not in st.session_state:
-            st.session_state.poly=poly_file
-        # read geojson:
-        poly_file = gj.load(poly_file)
-
         #Get the center of the Polygon for Map display
         def get_bounding_box(geom):
             coords = np.array(list(gj.utils.coords(geom)))
@@ -145,10 +94,10 @@ def mapgeojson():
         if "zoom" not in st.session_state:
             st.session_state["zoom"] = 6 # Default zoom level
 
-        if poly_file != st.session_state.poly: #reset if new file is uploaded
-            st.session_state.poly=poly_file
-            st.session_state["center"] = [x,y]
-            st.session_state["zoom"] = 6
+        # if poly_file != st.session_state.poly: #reset if new file is uploaded
+        #     st.session_state.poly=poly_file
+        #     st.session_state["center"] = [x,y]
+        #     st.session_state["zoom"] = 6
 
 ##Create the map
         m = folium.Map(location=st.session_state["center"], zoom_start=st.session_state["zoom"])
@@ -168,7 +117,6 @@ def mapgeojson():
                 
             )
     
-    return poly_file
 
 
 ### BBox selector

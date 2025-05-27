@@ -14,17 +14,23 @@ from shapely.ops import unary_union
 import glasbey
 import seaborn as sns
 import plotly.express as px
-import rasterio
-import matplotlib
 from matplotlib import cm
-import matplotlib.colors
 import json
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
 
 st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
-
+st.markdown("""
+        <style>
+               .block-container {
+                    padding-top: 3rem;
+                    padding-bottom: 0rem;
+                    padding-left: 5rem;
+                    padding-right: 5rem;
+                }
+        </style>
+        """, unsafe_allow_html=True)
 end_y=None
 bbox_input=None
 species=None
@@ -37,7 +43,9 @@ Indicator=None
 
 
 if "stage" not in st.session_state:
-    st.session_state.stage="start"
+    st.session_state["stage"] = "start"
+if "text_stage" not in st.session_state:
+    st.session_state.text_stage=0
 if "bbox" not in st.session_state:
     st.session_state.bbox=None
 if "country" not in st.session_state:
@@ -60,7 +68,21 @@ if "center" not in st.session_state:
     st.session_state.center={"lat": 0, "lng": 0}
 if "buffer" not in st.session_state:
     st.session_state.buffer=None
+if "index" not in st.session_state:
+    st.session_state.index=None
+if "start_y" not in st.session_state:
+    st.session_state.start_y=None
+    # Load texts
+texts = pd.read_csv("texts.csv").set_index("id")
+
+
+# Load countries
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
+
+
+# function to render text
+def rtext(id):
+        return texts.loc[id,lan].replace("\\n","\n")
 
 LC_names = ["automatic"
     "Cropland, rainfed",
@@ -122,18 +144,18 @@ def get_output(response_code):
         return output_bbiab
     
 def GBIF():
-    url = "http://localhost/pipeline/GenesFromSpace>ToolComponents>Interface>GBIF.json/run"
-
+    url = "http://localhost/pipeline/GenesFromSpace>ToolComponents>Interface>GBIF_API.json/run"
     data = {
-        "pipeline@170": species,
-        "pipeline@171": country,
-        "pipeline@172": start_y,
-        "pipeline@173": end_y,
-        "pipeline@174": bbox
+        "pipeline@24": species,
+        "pipeline@25": st.session_state.country,
+        "pipeline@26": [st.session_state.start_y],
+        "pipeline@27": [st.session_state.end_y],
+        "pipeline@28": [0.1],  # Example value for coordinate precision
+        "pipeline@29": [0.1],  # Example value for coordinate uncertainty
+        "pipeline@30": st.session_state.bbox
     }
-
     headers = {"Content-Type": "application/json"}
-
+    data
     return requests.post(url, json=data, headers=headers)
 
 def LC_area():
@@ -179,19 +201,14 @@ def Indicators():
 @st.fragment
 def edit_points():
 
-    obs = st.session_state.obs
-
-    if "index" not in st.session_state:
-        st.session_state.index=None
-
+    obs = st.session_state.obs_edit
 
 #Set the columns for the latitude and longitude
-    lat_col = "decimal_latitude"
-    lon_col = "decimal_longitude"
+    lat_col = "decimallatitude"
+    lon_col = "decimallongitude"
+
     obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
-    if "obs_edit" not in st.session_state:
-        st.session_state.obs_edit=obs
-    obs_edit=st.session_state.obs_edit
+    obs_edit = obs.copy()
     # Remove duplicate points based on latitude and longitude
     
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
@@ -199,7 +216,7 @@ def edit_points():
     # Add the observations to the map
     fg = folium.FeatureGroup(name="Markers")
     for i, row in obs_edit.iterrows():
-        corr=[row["decimal_latitude"], row["decimal_longitude"]]
+        corr=[row["decimallatitude"], row["decimallongitude"]]
         folium.CircleMarker(
             location=corr,
             radius=6,
@@ -221,7 +238,7 @@ def edit_points():
 
         #Remove the point if the remove button is clicked
         st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
-        st.session_state.obs=obs_edit
+
         if (
             "last_object_clicked" in st.session_state.output
             and st.session_state.output["last_object_clicked"] != st.session_state["last_object_clicked"]
@@ -230,10 +247,12 @@ def edit_points():
             st.rerun(scope="fragment")
     
     if st.button("Save points"):
+        if "polygons" in st.session_state:
+            del st.session_state["polygons"]
+        st.session_state.obs=obs_edit
         st.session_state.stage="polygon_clustering"
         st.session_state.zoom=st.session_state.output["zoom"]
         st.session_state.center=st.session_state.output["center"]
-        st.session_state.obs=obs_edit
         st.rerun()
 
 
@@ -246,7 +265,7 @@ def polygon_clustering():
     # Convert the DataFrame to a GeoDataFrame
     points_gdf = gpd.GeoDataFrame(
         points_df,
-        geometry=gpd.points_from_xy(points_df["decimal_longitude"], points_df["decimal_latitude"]),
+        geometry=gpd.points_from_xy(points_df["decimallongitude"], points_df["decimallatitude"]),
         crs="EPSG:4326"
     )
 
@@ -322,7 +341,7 @@ def polygon_clustering():
     # Add the observations to the map
     fg = folium.FeatureGroup(name="Markers")
     for i, row in obs.iterrows():
-        corr=[row["decimal_latitude"], row["decimal_longitude"]]
+        corr=[row["decimallatitude"], row["decimallongitude"]]
         folium.CircleMarker(
             location=corr,
             radius=6,
@@ -364,7 +383,7 @@ def polygon_clustering():
     ):
         st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
         st.rerun(scope="fragment")
-    obs['geometry'] = obs.apply(lambda row: Point((row["decimal_longitude"], row["decimal_latitude"])), axis=1)
+    obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
     geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
     new_df = geo_df.set_crs(epsg=4326)
     new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
@@ -385,9 +404,10 @@ def polygon_clustering():
             for i in range(0, len(st.session_state.output["all_drawings"])):
                 polygon_coords = st.session_state.output["all_drawings"][i]["geometry"]["coordinates"][0]
                 polygon = Polygon(polygon_coords)
-                obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimal_longitude"], row["decimal_latitude"])), axis=1)
-                polys = obs[obs[f"Pop{i+1}"]]['circles']
-                clusters = pd.concat([clusters, gpd.GeoDataFrame(geometry=[unary_union(polys)])], ignore_index=True)
+                obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimallongitude"], row["decimallatitude"])), axis=1)
+                if obs[f"Pop{i+1}"].any():  # Skip if the polygon does not contain any observations
+                    polys = obs[obs[f"Pop{i+1}"]]['circles']
+                    clusters = pd.concat([clusters, gpd.GeoDataFrame(geometry=[unary_union(polys)])], ignore_index=True)
 
             for i, row1 in clusters.iterrows():
                 for j, row2 in clusters.iterrows():
@@ -422,7 +442,10 @@ def polygon_clustering():
         if st.button("reset polygons"):
             del st.session_state["polygons"]
             st.rerun(scope="fragment")
+    if "polygons" in st.session_state or "original_polygons" in st.session_state:
         if st.button("Confirm and Proceed"):
+            if "polygons" not in st.session_state:
+                st.session_state.polygons = st.session_state.original_polygons
 
             st.session_state.zoom=st.session_state.output["zoom"]
             st.session_state.center=st.session_state.output["center"]
@@ -506,20 +529,21 @@ def convert_df():
 def mapbbox():
     #create the map
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-    draw = Draw(export=False,   draw_options={
-        'polyline': False,  # Disable polyline
-        'polygon': False,    # Enable polygon
-        'circle': False,    # Disable circle
-        'rectangle': True,  # Enable rectangle
-        'marker': False,     # Enable marker
-        'circlemarker': False  # Disable circle marker
-    },
-    edit_options={
-        'edit': False,   # Enable editing of drawn shapes
-        'remove': True  # Enable deleting of drawn shapes
-    })
-    draw.add_to(m)
-    
+    # draw = Draw(export=False,   draw_options={
+    #     'polyline': False,  # Disable polyline
+    #     'polygon': False,    # Enable polygon
+    #     'circle': False,    # Disable circle
+    #     'rectangle': True,  # Enable rectangle
+    #     'marker': False,     # Enable marker
+    #     'circlemarker': False  # Disable circle marker
+    # },
+    # edit_options={
+    #     'edit': True,   # Enable editing of drawn shapes
+    #     'remove': True  # Enable deleting of drawn shapes
+    # }
+    # )
+    # draw.add_to(m)
+    Draw(export=True).add_to(m)
     def get_bounding_box(geom):
         coords = np.array(list(geojson.utils.coords(geom)))
         
@@ -530,7 +554,7 @@ def mapbbox():
     if output["last_active_drawing"] is not None:
         geometry=output["last_active_drawing"]["geometry"]
         st.session_state.bbox =  get_bounding_box(geometry)
-    if st.button("Confirm Bounding Box"):
+
         st.session_state.zoom=output["zoom"]
         st.session_state.center=output["center"]
         st.rerun()
@@ -538,14 +562,17 @@ def mapbbox():
 col1, col2= st.columns(2)
 with st.sidebar:
     with st.expander("Settings", expanded=False):
-        colheight = st.slider(
+        st.session_state.height = st.slider(
             "Page Height",0, 2000, st.session_state.height
         )
+        lan = st.radio("Select Language", ["en"], index=0)
 
-
-with col1.container( border=True, key="image-container", height=colheight):
+with col1.container( border=True, key="image-container", height=st.session_state.height):
 
     st.title("Genes from Space Tool")
+
+
+
     point_source = st.selectbox("Select a tool", [ "Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"], index=None,  placeholder="Select Point source")
     if point_source=="Upload your own point observations":
         st.write("Upload your own point observations")
@@ -555,8 +582,8 @@ with col1.container( border=True, key="image-container", height=colheight):
         with st.form(key='GBIF', enter_to_submit=False):
 
             species=st.text_input("Species Name", placeholder="Example: Quercus sartorii")
-            start_y=st.number_input("Start year", value=None, step=1, min_value=1900, max_value=2021)
-            end_y=st.number_input("End year", value=None, step=1, min_value=1900, max_value=2021)
+            st.session_state.start_y=st.number_input("Start year", value=st.session_state.start_y, step=1, min_value=1900, max_value=2021)
+            st.session_state.end_y=st.number_input("End year", value=None, step=1, min_value=1900, max_value=2021)
             region=st.radio("Area of interest selection", ["Map selection", "Country"])
             if st.form_submit_button("Submit"):
                 if region=="Country":
@@ -566,14 +593,16 @@ with col1.container( border=True, key="image-container", height=colheight):
                     st.session_state.stage="bbox_draw"
                     st.session_state.country=None
     
-        if end_y and region == "Country": 
+        if st.session_state.end_y and region == "Country": 
             countries = st.multiselect("Select countries", country_names)
             bbox=[]
-            st.write("Selected countries: ", country)
+            st.write("Selected countries: ", countries)
             if countries:
                 if st.button("Fetch Points"):
                     st.session_state.stage="Manipulate points"
-        if end_y and region=="Map selection":
+                    st.session_state.bbox=None
+                    st.session_state.country=countries
+        if st.session_state.end_y and region=="Map selection":
             if st.session_state.bbox is None:
                 st.info("Draw a bounding box on the map to select the area of interest or enter the bbox bellow")
             bbox_input = st.text_input("Bounding Box",placeholder="[5.831977, 45.721522, 10.763195, 47.901613]", value=st.session_state.bbox)
@@ -585,19 +614,21 @@ with col1.container( border=True, key="image-container", height=colheight):
             if st.session_state.bbox is not None:
                 if st.button("Fetch Points"):
                     st.session_state.stage="Manipulate points"
-            if st.session_state.stage=="Manipulate points":
+        if st.session_state.stage=="Manipulate points":
 
-                with st.spinner("Wait for it..."): 
-                    bbox = st.session_state.bbox
-                    country=st.session_state.country
-                    GBIF_response = GBIF()
-                    output_GBIF = get_output(GBIF_response.text)
-                    GBIF_output_code=output_GBIF["data>getObservations.yml@169"]
-                    GBIF_directory=f"/output/{GBIF_output_code}/obs_data.tsv"
-                    obs_file = open(f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/output/{GBIF_output_code}/obs_data.tsv")
-                    obs = pd.read_csv(obs_file, sep='\t')
-                    st.session_state.obs = obs
-        
+            with st.spinner("Wait for it..."): 
+                bbox = st.session_state.bbox
+                country=st.session_state.country
+                GBIF_response = GBIF()
+                GBIF_response
+                output_GBIF = get_output(GBIF_response.text)
+                output_GBIF
+                GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@23"]
+                GBIF_directory=f"/output/{GBIF_output_code}/obs_data.tsv"
+                obs_file = open(f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/output/{GBIF_output_code}/GBIF_obs.csv")
+                obs = pd.read_csv(obs_file, sep='\t')
+                st.session_state.obs = obs
+
     if point_source=="Upload your own point observations":
         obs_link = st.file_uploader("Upload your own point observations", type=["csv", "tsv"], on_change=lambda: st.session_state.update(stage="Manipulate points"))
         st.session_state.obs = pd.read_csv(obs_link, sep="\t")
@@ -699,7 +730,15 @@ with col2:
     
 
 
-
+        st.session_state.pop_polygons = geojson_data["pop_polygons"]
+        st.session_state.NE= pd.DataFrame(geojson_data["NE"])
+        st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
+        st.session_state.rel_habitat_change_table  = pd.DataFrame(geojson_data["rel_habitat_change_table"])
+        st.session_state.editable_df = pd.DataFrame(geojson_data["editable_df"])
+        st.session_state.NC = geojson_data["NC"]
+        st.session_state.GAIN = geojson_data["GAIN"]
+        st.session_state.LOSS = geojson_data["LOSS"]
+        st.session_state.properties = pd.DataFrame(geojson_data["properties"])
 
 
 
