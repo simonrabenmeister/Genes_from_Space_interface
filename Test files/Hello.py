@@ -1,33 +1,37 @@
 import streamlit as st
+import pandas as pd
 
 st.set_page_config(
     page_title="GFS-tool",
     page_icon="🌍",
+    layout="wide"
 )
 
 if "height" not in st.session_state:
     st.session_state.height = 1000
 st.write("# Welcome to Genes from Space! 🌍")
-
 with st.sidebar:
-    with st.expander("Page Height", expanded=False):
+    with st.expander("Settings", expanded=False):
         st.session_state.height = st.slider(
-            "Page Height", 0, 2000, st.session_state.height
+            "Page Height",0, 2000, st.session_state.height
         )
+        st.session_state.lan = st.radio("Select Language", ["en"], index=0)
 
-st.markdown(
-    """
-    Genes from Space is a tool designed to analyze genetic diversity from space.
+texts = pd.read_csv("texts.csv").set_index("id")
 
-    **👈 Use the sidebar** to adjust settings and explore the tool's features.
 
-    ### Features:
-    - Visualize genetic data in interactive charts.
-    - Generate detailed reports for research purposes.
+def rtext(id):
+        return texts.loc[id,st.session_state.lan].replace("\\n","\n")
 
-    ### Learn more:
-    - Visit our [official website](https://genesfromspace.example.com)
-    - Check out the [documentation](https://docs.genesfromspace.example.com)
-    - Join the discussion in our [community forums](https://community.genesfromspace.example.com)
-    """
-)
+with st.expander(rtext("disclaimer_ti")):
+    st.markdown(rtext("disclaimer_te"))
+
+st.markdown(rtext("0_ti"))
+st.markdown(rtext("0_te"))
+with st.expander(rtext("h_exp1_ti")):
+    st.markdown(rtext("h_exp1_te"))
+with st.expander(rtext("h_exp2_ti")):
+    st.markdown(rtext("h_exp2_te"))
+    st.image("images/pipeline_description.png")
+with st.expander(rtext("h_exp3_ti")):
+    st.markdown(rtext("h_exp3_te"))

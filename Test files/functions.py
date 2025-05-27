@@ -95,18 +95,18 @@ def edit_points():
 
 
     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
-    st.markdown(rtext("1.3.3_te"))
 #Get the index of the clicked point
-
+    
     if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
         st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
         (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
-
         def remove_point(index):
             st.session_state.obs_edit=obs_edit.drop(index)
+            st.session_state.index=None
 
         #Remove the point if the remove button is clicked
         st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
+
         st.session_state.obs=obs_edit
         if (
             "last_object_clicked" in st.session_state.output
@@ -127,7 +127,8 @@ def edit_points():
 
 @st.fragment
 def polygon_clustering():
-    st.write("HEEEEYY")
+    if st.session_state.polyinfo["polygons"] is not None:
+        st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
     # Create a dummy DataFrame for point data
     points_df = pd.DataFrame(st.session_state.obs)
     # Convert the DataFrame to a GeoDataFrame
@@ -137,12 +138,9 @@ def polygon_clustering():
         crs="EPSG:4326"
     )
     obs = st.session_state.obs
-    st.session_state.poly_creation
     if st.session_state.poly_creation == "Buffer":
-        st.write("Buffer")
         if st.session_state.polyinfo["buffer"]is not None:
-            if "polygons" in st.session_state:
-                st.session_state["polygons"]= None
+            st.session_state.polyinfo["polygons"] = None
 
             # Define the buffer radius in kilometers
             radius = st.session_state.polyinfo["buffer"] # Example: 10 km
@@ -200,38 +198,25 @@ def polygon_clustering():
             st.session_state.original_polygons = geojson.FeatureCollection(features)
 
 
-    
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        
+            m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
-        # Add the observations to the map
-        fg = folium.FeatureGroup(name="Markers")
-        for i, row in obs.iterrows():
-            corr=[row["decimallatitude"], row["decimallongitude"]]
-            folium.CircleMarker(
-                location=corr,
-                radius=6,
-                color="blue",
-                fill_opacity=1,
-                fill=True,
-                fill_color='lightblue'
-            ).add_to(fg)
-        fg2= folium.FeatureGroup(name="Markers")
-        fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
-        st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)       
-        if st.button("Confirm and Proceed"):
-            st.session_state.polygons = st.session_state.original_polygons        
-            st.session_state.zoom=st.session_state.output["zoom"]
-            st.session_state.center=st.session_state.output["center"]
-            st.session_state.stage = "LC"
-            with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
-                geojson.dump(st.session_state.polygons, f)
-            st.success("Polygons saved successfully.")
-            st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
-            st.rerun()
-
-
-    
-    
+            # Add the observations to the map
+            fg = folium.FeatureGroup(name="Markers")
+            for i, row in obs.iterrows():
+                corr=[row["decimallatitude"], row["decimallongitude"]]
+                folium.CircleMarker(
+                    location=corr,
+                    radius=6,
+                    color="blue",
+                    fill_opacity=1,
+                    fill=True,
+                    fill_color='lightblue'
+                ).add_to(fg)
+            fg2= folium.FeatureGroup(name="Markers")
+            fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
+            st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)       
+            
 
     if st.session_state.poly_creation == "Select yourself":
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
@@ -260,8 +245,8 @@ def polygon_clustering():
         })
         draw.add_to(m)
         fg2 = folium.FeatureGroup(name="Markers")
-        if st.session_state.edit_polygons is not None:
-            fg2.add_child(folium.GeoJson(st.session_state.edit_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
+        if st.session_state.original_polygons is not None:
+            fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
         st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)
 
     obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
@@ -304,7 +289,6 @@ def polygon_clustering():
             # Create a color palette for the clusters
                 colors = glasbey.create_palette(palette_size=len(clusters), colorblind_safe=True, cvd_severity=100)
                 sns.palplot(colors)
-            clusters
             # Create features to plot
             features = []
             for i, poly in clusters.iterrows():
@@ -312,21 +296,24 @@ def polygon_clustering():
                 poly
                 feature = geojson.Feature(geometry=poly["geometry"], properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
                 features.append(feature)
-            st.session_state.edit_polygons = geojson.FeatureCollection(features)
+            st.session_state.original_polygons = geojson.FeatureCollection(features)
             st.rerun(scope="fragment")
-    if st.session_state.edit_polygons is not None:
 
+    if st.session_state.original_polygons is not None:
         if st.button("Confirm and Proceed"):
-            if st.session_state.edit_polygons is not None:
-                st.session_state.polygons = st.session_state.edit_polygons
-                    
+            if st.session_state.original_polygons is not None:
+                st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
+                st.session_state.polyinfo["polygons"]
+                
+                
                 st.session_state.zoom=st.session_state.output["zoom"]
                 st.session_state.center=st.session_state.output["center"]
                 st.session_state.stage = "LC"
                 with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
-                    geojson.dump(st.session_state.polygons, f)
+                    geojson.dump(st.session_state.polyinfo["polygons"], f)
                 st.success("Polygons saved successfully.")
                 st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
+                del st.session_state.original_polygons
                 st.rerun()
 
 
@@ -335,7 +322,7 @@ def polygon_clustering():
 
 @st.fragment
 def convert_df():
-    polygons =   st.session_state.polygons
+    polygons =   st.session_state.polyinfo["polygons"]
     if st.session_state.polygons["features"][0]["properties"]["population_density"] is None:
         for i in range(0, len(st.session_state.polygons["features"])):
             st.session_state.polygons["features"][i]["properties"].update({"population_density": "", "nenc": "", "size": ""})
@@ -395,41 +382,57 @@ def convert_df():
         st.success("Polygons saved successfully.")
         st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
         st.rerun()
-
-
-
 @st.fragment
 def mapbbox():
-    #create the map
+    # Create the map
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-    # draw = Draw(export=False,   draw_options={
-    #     'polyline': False,  # Disable polyline
-    #     'polygon': False,    # Enable polygon
-    #     'circle': False,    # Disable circle
-    #     'rectangle': True,  # Enable rectangle
-    #     'marker': False,     # Enable marker
-    #     'circlemarker': False  # Disable circle marker
-    # },
-    # edit_options={
-    #     'edit': True,   # Enable editing of drawn shapes
-    #     'remove': True  # Enable deleting of drawn shapes
-    # }
-    # )
-    # draw.add_to(m)
-    Draw(export=False).add_to(m)
-    def get_bounding_box(geom):
-        coords = np.array(list(geojson.utils.coords(geom)))
-        
-        return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
-    #display the map
-    output = st_folium(m,use_container_width=True)
-    #get the bounding box of the last clicked polygon
-    st.markdown(rtext("1.3.2_te"))
+
+    # Add the Draw tool to the map
+    draw = Draw(
+        export=False,
+        draw_options={
+            'polyline': False,  # Disable polyline
+            'polygon': False,   # Disable polygon
+            'circle': False,    # Disable circle
+            'rectangle': True,  # Enable rectangle
+            'marker': False,    # Disable marker
+            'circlemarker': False  # Disable circle marker
+        },
+        edit_options={
+            'edit': True,   # Enable editing of drawn shapes
+            'remove': True  # Enable deleting of drawn shapes
+        }
+    )
+    draw.add_to(m)
+
+    # If GBIF data contains a bounding box, draw it on the map
+    if st.session_state.GBIF_data["bbox"] is not None:
+        bbox = st.session_state.GBIF_data["bbox"]
+        rectangle = folium.Rectangle(
+            bounds=[[bbox[1], bbox[0]], [bbox[3], bbox[2]]],
+            color="blue",
+            fill=True,
+            fill_opacity=0.2
+        )
+        rectangle.add_to(m)
+
+    # Display the map
+    output = st_folium(m, use_container_width=True)
+
+    # Get the bounding box of the last clicked polygon
     if output["last_active_drawing"] is not None:
-        geometry=output["last_active_drawing"]["geometry"]
-        st.session_state.GBIF_data["bbox"] =  get_bounding_box(geometry)
+        geometry = output["last_active_drawing"]["geometry"]
 
-        st.session_state.zoom=output["zoom"]
-        st.session_state.center=output["center"]
+        # Update the bounding box in GBIF data
+        def get_bounding_box(geom):
+            coords = np.array(list(geojson.utils.coords(geom)))
+            return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
+
+        st.session_state.GBIF_data["bbox"] = get_bounding_box(geometry)
+
+        # Update map center and zoom
+        st.session_state.zoom = output["zoom"]
+        st.session_state.center = output["center"]
+
+        # Trigger a rerun to refresh the map with the new shape
         st.rerun()
-

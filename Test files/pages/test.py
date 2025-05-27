@@ -176,6 +176,15 @@ with col1.container( border=True, key="image-container", height=st.session_state
         poly_link= st.file_uploader("Upload your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", )
         st.session_state.polyinfo["polygons"] = pd.read_json(poly_link, lines=True)
 
+        # Reset subsequent session states
+        st.session_state.obs = None
+        st.session_state.poly_creation = None
+        st.session_state.LC = {
+            "LC_type": None,
+            "LC_class": None,
+            "index": None
+        }
+
     #Download example file
         st.download_button(
             label="Download Example file",
@@ -194,6 +203,15 @@ with col1.container( border=True, key="image-container", height=st.session_state
     #Upload your own point file
         obs_link = st.file_uploader("Upload your own point observations", type=["csv"], label_visibility="collapsed", key="point_source")
         st.session_state.obs = pd.read_csv(obs_link, sep="\t")
+
+        # Reset subsequent session states
+        st.session_state.poly_creation = None
+        st.session_state.LC = {
+            "LC_type": None,
+            "LC_class": None,
+            "index": None
+        }
+
     #Download example file
         st.download_button(
             label="Download Example file",
@@ -222,13 +240,18 @@ with col1.container( border=True, key="image-container", height=st.session_state
             if st.form_submit_button("Submit"):
                 st.session_state.polyinfo = {
                     "buffer": None,
-                    "distance": None
+                    "distance": None,
+                    "polygons": None
                 }
                 st.session_state.LC = {
                     "LC_type": None,
                     "LC_class": None,
                     "index": None
                 }  
+
+                # Reset subsequent session states
+                st.session_state.obs = None
+                st.session_state.poly_creation = None
 
                 if region=="Country":
                     st.session_state.GBIF_data["index boundry"]=1
@@ -243,6 +266,8 @@ with col1.container( border=True, key="image-container", height=st.session_state
             st.session_state.GBIF_data["countries"] = st.multiselect("Select countries", country_names, default=st.session_state.GBIF_data["countries"])
 
         if region=="Map selection":
+            st.markdown(rtext("1.3.2_ti"))
+            st.markdown(rtext("1.3.2_te"))
             bbox_input = st.text_input("Bounding Box",placeholder="[5.831977, 45.721522, 10.763195, 47.901613]", value=st.session_state.GBIF_data["bbox"])
             st.session_state.GBIF_data["countries"] = []
             if bbox_input is not None:
@@ -286,7 +311,8 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.session_state.obs_edit = obs
                     if st.session_state.obs_edit is not None:
                         st.session_state.stage="Manipulate points"
-    
+                        st.markdown(rtext("1.3.3_ti"))
+                        st.markdown(rtext("1.3.3_te"))
     if st.session_state.obs is not None:
         st.markdown(rtext("2_ti"))
         st.markdown(rtext("2_te"))
@@ -302,6 +328,16 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.markdown(rtext("2.2.1_te"))
                 if st.form_submit_button("Submit"):
                     st.session_state.stage="polygon_clustering"
+
+                    # Reset subsequent session states
+                    st.session_state.LC = {
+                        "LC_type": None,
+                        "LC_class": None,
+                        "index": None
+                    }
+                    st.session_state.area_table = None
+                    st.session_state.cover_maps = None
+
         if st.session_state.poly_creation=="Select yourself":
             st.session_state.index_poly=1
             st.markdown(rtext("2.1_te"))
@@ -350,6 +386,11 @@ with col1.container( border=True, key="image-container", height=st.session_state
                             "pipeline@204": timeseries
                         }
                         st.session_state.area= TC_area(data)
+
+                    # Reset subsequent session states
+                    st.session_state.area_table = None
+                    st.session_state.cover_maps = None
+
                     if "area" in st.session_state:
                         
                         output_area=get_output(st.session_state.area.text)
@@ -380,6 +421,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
             st.switch_page("pages/Output_display.py")
 with col2:
     if st.session_state.stage=="bbox_draw":
+        
         mapbbox()
     if st.session_state.stage=="Manipulate points":
         edit_points()
@@ -390,6 +432,6 @@ with col2:
 
         # Add the polygons to the map
         fg = folium.FeatureGroup(name="Polygons")
-        fg.add_child(folium.GeoJson(st.session_state.polygons, popup=folium.GeoJsonPopup(fields=["name"])))
+        fg.add_child(folium.GeoJson(st.session_state.polyinfo["polygons"], popup=folium.GeoJsonPopup(fields=["name"])))
         # Display the map
         st.session_state.output2 = st_folium(m, feature_group_to_add=fg, use_container_width=True)
