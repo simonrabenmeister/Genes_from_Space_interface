@@ -115,14 +115,7 @@ def edit_points():
             st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
             st.rerun(scope="fragment")
     
-    if st.button("Save points"):
-        if "polygons" in st.session_state:
-            del st.session_state["polygons"]
-        st.session_state.obs=obs_edit
-        st.session_state.stage="polygon_clustering"
-        st.session_state.zoom=st.session_state.output["zoom"]
-        st.session_state.center=st.session_state.output["center"]
-        st.rerun()
+
 
 
 @st.fragment

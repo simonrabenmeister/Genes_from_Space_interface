@@ -16,7 +16,8 @@ from functions import polygon_clustering
 from functions import LC_area
 from functions import TC_area
 
-
+if "output_stage" not in st.session_state:
+    st.session_state.output_stage = "upload"
 if "original_polygons" not in st.session_state:
     st.session_state.original_polygons = None
 if "bbox" not in st.session_state:
@@ -59,6 +60,8 @@ if "edit_polygons" not in st.session_state:
     st.session_state.edit_polygons = None
 if "baseyear" not in st.session_state:
     st.session_state.baseyear = None
+if "obs_edit" not in st.session_state:
+    st.session_state.obs_edit = None
 if "GBIF_data" not in st.session_state:
     st.session_state.GBIF_data = {
         "species": None,
@@ -94,7 +97,7 @@ texts = pd.read_csv("texts.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
 
-LC_names = ["automatic"
+LC_names = [
     "Cropland, rainfed",
     "Herbaceous cover",
     "Tree or shrub cover",
@@ -167,24 +170,35 @@ with col1.container( border=True, key="image-container", height=st.session_state
 
     st.markdown(rtext('1_ti'))
     st.markdown(rtext("1_te"))
-    point_source = st.selectbox("Select a tool", [ "Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"], index=st.session_state.GBIF_data["index data"],  placeholder="Select Point source")
+    point_source = st.selectbox("Select a tool", [ "Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"], index=st.session_state.GBIF_data["index data"],  placeholder="Select Point source", 
+                                on_change=lambda: st.session_state.update({
+                                    "stage": "start", 
+                                    "obs_edit": None, 
+                                    "obs": None,
+                                    "polyinfo": {
+                                        "buffer": 0,
+                                        "distance": 0,
+                                        "polygons": None
+                                    },
+                                    "poly_creation": None, 
+                                    "LC": {
+                                        "LC_type": None,
+                                        "LC_class": None,
+                                        "index": None
+                                    }}))
     if point_source=="Upload your own Polygons":
+
         st.session_state.GBIF_data["index data"]=2
         st.markdown(rtext("1.1_ti"))
         st.markdown(rtext("1.1_te"))
     #Upload your own Polygon file
-        poly_link= st.file_uploader("Upload your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", )
-        st.session_state.polyinfo["polygons"] = pd.read_json(poly_link, lines=True)
+        poly_link= st.file_uploader("Upload your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", on_change=lambda: st.session_state.update({"stage": "polygon_clustering"}))
+        if poly_link is not None:
+            try:
+                st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
 
-        # Reset subsequent session states
-        st.session_state.obs = None
-        st.session_state.poly_creation = None
-        st.session_state.LC = {
-            "LC_type": None,
-            "LC_class": None,
-            "index": None
-        }
-
+            except Exception as e:
+                st.error(f"Error reading the GeoJSON file: {e}")
     #Download example file
         st.download_button(
             label="Download Example file",
@@ -192,35 +206,42 @@ with col1.container( border=True, key="image-container", height=st.session_state
             file_name="polygon_example.geojson",
             mime="application/geo+json",
         )
-        if st.session_state.polygons:
-    ####################Missing part######################
-            ##move on to LC
-            LC = "placeholder"
+        if st.session_state.polyinfo["polygons"] is not None:
+            with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+                geojson.dump(st.session_state.polyinfo["polygons"], f)
+            st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
+            st.session_state.baseyear= st.number_input("Baseline Year", value=st.session_state.baseyear, step=1, min_value=1900, max_value=2021)
+            st.session_state.stage = "LC"
+
     if point_source=="Upload your own point observations":
-        st.session_state.GBIF_data["index data"]=0
         st.markdown(rtext("1.2_ti"))
         st.markdown(rtext("1.2_te"))
     #Upload your own point file
-        obs_link = st.file_uploader("Upload your own point observations", type=["csv"], label_visibility="collapsed", key="point_source")
-        st.session_state.obs = pd.read_csv(obs_link, sep="\t")
+        obs_link = st.file_uploader("Upload your own point observations", type=["csv"], label_visibility="collapsed", key="point_source", 
+                                    on_change=lambda: st.session_state.update({"stage": "Manipulate points"}))
+        if obs_link is not None:
+            try:
+                st.session_state.obs_edit = pd.read_csv(obs_link, sep="\t")
+                # Check if the required columns are present
+                required_columns = ["decimallongitude", "decimallatitude"]
+                if not all(col in st.session_state.obs_edit.columns for col in required_columns):
+                    st.error(f"The uploaded file must contain the following columns: {', '.join(required_columns)}")
 
-        # Reset subsequent session states
-        st.session_state.poly_creation = None
-        st.session_state.LC = {
-            "LC_type": None,
-            "LC_class": None,
-            "index": None
-        }
+            except Exception as e:
+                st.error(f"Error reading the CSV file: {e}")
+
 
     #Download example file
         st.download_button(
             label="Download Example file",
             data=open("/Users/simonrabenmeister/Desktop/Genes_from_Space/Genes_from_Space_interface/Test files/points_example.csv", "rb").read(),
             file_name="points_example.csv",
-            mime="text/csv",
+            mime="text/csv"
         )
-    ####################Missing part######################
-            ##move on to point selection
+        if  st.session_state.obs_edit is not None:
+            st.session_state.baseyear= st.number_input("Baseline Year", value=None, step=1, min_value=1900, max_value=2021)
+
+                
 
 
     if point_source=="Source points from GBIF":
@@ -232,6 +253,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
             with st.expander(rtext("1.3.1_ti"), expanded=False):
                 st.markdown(rtext("1.3.1_te"))
             st.session_state.GBIF_data["species"]=st.text_input("Species Name", placeholder="Example: Quercus sartorii", value=st.session_state.GBIF_data["species"])
+            
             st.session_state.baseyear=st.number_input("baseline Year", value=st.session_state.baseyear, step=1, min_value=1900, max_value=2021)
             if st.session_state.baseyear is not None:
                 st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
@@ -309,10 +331,23 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     obs_file = open(f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/output/{GBIF_output_code}/GBIF_obs.csv")
                     obs = pd.read_csv(obs_file, sep='\t')
                     st.session_state.obs_edit = obs
-                    if st.session_state.obs_edit is not None:
-                        st.session_state.stage="Manipulate points"
-                        st.markdown(rtext("1.3.3_ti"))
-                        st.markdown(rtext("1.3.3_te"))
+                    st.session_state.stage = "Manipulate points"
+    if st.session_state.obs_edit is not None and st.session_state.baseyear is not None:
+        st.markdown(rtext("1.3.3_ti"))
+        st.markdown(rtext("1.3.3_te"))
+        if st.button("save points"):
+            st.session_state.obs = st.session_state.obs_edit
+            st.session_state.poly_creation = None
+            st.session_state.LC = {
+                "LC_type": None,
+                "LC_class": None,
+                "index": None
+            }  
+            st.session_state.area_table = None
+            st.session_state.cover_maps = None
+            st.session_state.stage="polygon_clustering"
+
+            
     if st.session_state.obs is not None:
         st.markdown(rtext("2_ti"))
         st.markdown(rtext("2_te"))
@@ -357,17 +392,27 @@ with col1.container( border=True, key="image-container", height=st.session_state
                 st.session_state.LC["index"]=1
                 LC_class = st.multiselect("select LC class", options=LC_names, key="LC_class")
                 st.session_state.LC["LC_class"] = [values[LC_names.index(name)] for name in LC_class]
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                if 2020-st.session_state.baseyear < 5:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+                else:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
             if st.session_state.LC["LC_type"]=="automatic Land Cover":
                 st.session_state.LC["index"]=2
                 st.session_state.LC["LC_class"] = [0]
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                2020-st.session_state.baseyear
+                if 2020-st.session_state.baseyear < 5:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+                else:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
         
             if st.session_state.LC["LC_type"]=="Tree Cover":
                 st.session_state.LC["index"]=0
                 st.session_state.LC["LC_class"]="Treecover"
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2023, 5).astype(int).tolist()
+                if 2020-st.session_state.baseyear < 5:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+                else:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
             
             if st.form_submit_button("Submit"):
                 with st.spinner("Wait for it..."):
@@ -403,9 +448,12 @@ with col1.container( border=True, key="image-container", height=st.session_state
                             cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                         st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                         pop_area=f"/output/{area_output_code}/pop_habitat_area.tsv"
-
+                        if st.session_state.LC["LC_type"] == "automatic Land Cover":
+                            LC_class = json.load(open(f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/output/{cover_output_code}/output.json"))["lc_classes"]
+                            st.write(LC_class)
+                            st.session_state.LC_classnames = [LC_names[values.index(value)] for value in LC_class]
                         area_file_path = f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/output/{area_output_code}/pop_habitat_area.tsv"
-            
+                        st.write(st.session_state.LC["LC_class"])   
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
     if st.session_state.area_table is not None:
         rel_habitat_change_table = st.session_state.area_table.copy()
@@ -417,6 +465,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
         st.session_state.LOSS= f"/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines{st.session_state.cover_maps}/HabitatLOSS.tif"
 
         if st.button("See results"):
+            st.session_state.output_stage = "run"
 
             st.switch_page("pages/Output_display.py")
 with col2:
