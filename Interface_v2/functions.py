@@ -132,14 +132,15 @@ def polygon_clustering():
     )
     obs = st.session_state.obs
     if st.session_state.poly_creation == "Buffer":
-        if st.session_state.polyinfo["buffer"]is not None:
+        if st.session_state.buffer is not None:
             st.session_state.polyinfo["polygons"] = None
 
             # Define the buffer radius in kilometers
-            radius = st.session_state.polyinfo["buffer"] # Example: 10 km
+            radius = st.session_state.buffer # Example: 10 km
 
             # Create circular buffers around each point
             circles_gdf = points_gdf.copy()
+            
             circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius*1000).to_crs(epsg=4326)
 
 
@@ -153,7 +154,7 @@ def polygon_clustering():
 
             # Perform hierarchical clustering
             linkage_matrix = linkage(squareform(distances), method="average")
-            pop_distance = st.session_state.polyinfo["distance"]* 1000  # Convert maximum distance to meters
+            pop_distance = st.session_state.distance* 1000  # Convert maximum distance to meters
             # Assign population clusters
             circles_gdf["pop"] = ["pop_" + str(cluster) for cluster in fcluster(linkage_matrix, t=pop_distance, criterion="distance")]
 
@@ -249,7 +250,7 @@ def polygon_clustering():
 
     if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None:
 
-        size=st.session_state.polyinfo["buffer"]*1000
+        size=st.session_state.buffer*1000
         if st.button("Group Polygons"):
 
             circles = new_df['geometry'].buffer(size)
@@ -302,7 +303,7 @@ def polygon_clustering():
                 st.session_state.zoom=st.session_state.output["zoom"]
                 st.session_state.center=st.session_state.output["center"]
                 st.session_state.stage = "LC"
-                with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+                with open("/home/ubuntu/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
                     geojson.dump(st.session_state.polyinfo["polygons"], f)
                 st.success("Polygons saved successfully.")
                 st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
@@ -370,7 +371,7 @@ def convert_df():
         st.session_state.edited_df=edited_df
         
     if st.button("Confirm:"):
-        with open("/Users/simonrabenmeister/Desktop/Genes_from_Space/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+        with open("/home/ubuntu/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
             geojson.dump(st.session_state.polygons, f)
         st.success("Polygons saved successfully.")
         st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
@@ -421,7 +422,7 @@ def mapbbox():
             coords = np.array(list(geojson.utils.coords(geom)))
             return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
 
-        st.session_state.GBIF_data["bbox"] = get_bounding_box(geometry)
+        st.session_state.GBIF_data["bbox"] = [float(coord) for coord in get_bounding_box(geometry)]
 
         # Update map center and zoom
         st.session_state.zoom = output["zoom"]

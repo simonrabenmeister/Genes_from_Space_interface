@@ -15,6 +15,8 @@ from typing import Union
 from PIL import Image
 from fpdf import FPDF
 import io
+import uuid
+import os
 import plotly.graph_objects as go
 
 if "output_stage" not in st.session_state:
@@ -89,7 +91,6 @@ input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson
 if st.session_state.upload and input is not None:
     # Load the GeoJSON file
     geojson_data = json.load(input)
-    geojson_data["LC_class_names"] =["Jedsa", "Kleiner Wald", "Grasland", "Wasser", "Siedlung", "Landwirtschaft", "Bergwald", "Bergweide", "Bergwiese", "Bergmoor"]
     st.session_state.pop_polygons = geojson_data["pop_polygons"]
     st.session_state.NE= pd.DataFrame(geojson_data["NE"])
     st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
@@ -101,7 +102,7 @@ if st.session_state.upload and input is not None:
     st.session_state.properties = pd.DataFrame(geojson_data["properties"])
     st.session_state.upload = False
     st.session_state.LC_classnames =geojson_data["LC_class_names"]
-
+    st.session_state.run_id = geojson_data["run_id"]
 
 if st.session_state.output_stage == "run":
     st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
@@ -163,27 +164,32 @@ if input is not None or st.session_state.polyinfo is not None:
         # Use ImageOverlay for raster overlays
         # Save NC, GAIN, and LOSS arrays as images
 
-        Image.fromarray(NCcolor).save("temp_tiles/NC.png")
-        Image.fromarray(GAINcolor).save("temp_tiles/GAIN.png")
-        Image.fromarray(LOSScolor).save("temp_tiles/LOSS.png")
+
+        run_dir = os.path.join("temp_tiles", st.session_state.run_id)
+        os.makedirs(run_dir, exist_ok=True)
+        # Save the images in the run-specific directory
+        Image.fromarray(NCcolor).save(os.path.join(run_dir, "NC.png"))
+        Image.fromarray(GAINcolor).save(os.path.join(run_dir, "GAIN.png"))
+        Image.fromarray(LOSScolor).save(os.path.join(run_dir, "LOSS.png"))
+
 
         # Add NC raster overlay
         folium.raster_layers.ImageOverlay(
-            image="temp_tiles/NC.png",
+            image=os.path.join(run_dir, "NC.png"),
             name="NC",
             bounds=NCbbox,
             opacity=1.0,
             zindex=1
         ).add_to(m)
         folium.raster_layers.ImageOverlay(
-            image="temp_tiles/GAIN.png",
+            image=os.path.join(run_dir, "GAIN.png"),
             name="GAIN",
             bounds=GAINbbox,
             opacity=1.0,
             zindex=1
         ).add_to(m)
         folium.raster_layers.ImageOverlay(
-            image="temp_tiles/LOSS.png",
+            image=os.path.join(run_dir, "LOSS.png"),
             name="LOSS",
             bounds=LOSSbbox,
             opacity=1.0,
@@ -265,7 +271,6 @@ if input is not None or st.session_state.polyinfo is not None:
         rel_change = pd.DataFrame(rel_habitat_change_table)
 
         rel_change = rel_change.melt(id_vars="name", var_name="year", value_name="habitat_area")
-        rel_change["year"]
         rel_change["year"] = rel_change["year"].str.replace("y", "").astype(int)
 
         # Plot using Plotly
@@ -426,7 +431,10 @@ if input is not None or st.session_state.polyinfo is not None:
             "NC": NC,
             "GAIN": GAIN,
             "LOSS": LOSS,
-            "properties": st.session_state.properties.to_dict()
+            "properties": st.session_state.properties.to_dict(),
+            "LC_class_names": st.session_state.LC_classnames,
+            "run_id": st.session_state.run_id 
+
 
         })
         st.markdown("#### Download The Run as a GeoJSON file")
