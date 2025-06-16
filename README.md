@@ -1,5 +1,6 @@
 # Genes from Space Tool
 
+
 ## FAQ:
 
 <details closed>
@@ -662,16 +663,55 @@ Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://d
 <details closed>
 <summary><b></b></summary>
 
+# Genes from Space Interface v2
 
-A user interface designed with streamlit pyhton package to create input forms for Bon in a Box which is a biodiversity monitoring Tool. It is designed to autofill the Inputs for the Genes from Space pipelines on Bon in a Box. 
+## Overview
+The Genes from Space Interface v2 is a tool designed to . It provides an intuitive interface for for Users to interact with the Data analysis Pipeline that we created on Bon in a Box. It also visualizes the data created by this datapipeline intuitivly and interactively
 
-Bon in a Box: https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/main  <br /> 
-Streamlit Documentation: https://docs.streamlit.io/  <br /> 
-Genes from Space: https://teams.issibern.ch/genesfromspace/monitoring-tool-backup/  <br /> 
+## Content
+- **Hello.py**: This is the main streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
+- **/pages/Input_form.py**: This file is the main Input form. It is linked to and called by the "Homepage" Hello.py. The contents of this script generates all the relevant User inputs and executes the Bon in a Box scripts. It saves all relevant data in the session_state and finally redirects the User to the Output_display.py when all the Information is provided.
+- **/pages/Output_display.py**: This file uses the Output data created in Input_form.py to create interactive maps and plots to visualize the data. It also allows you to download created runs or upload previos runs as GeoJSON files.
+- **/temp_tiles**: This folder is used to save Images created in the Output_display.py and are used in the Map display. This folder is temporary since these images should be stored in a temporary storage, rather than a folder on the server
+- **countries.txt**: This file contains a list of country names that is used in the Input_form.py as a preselection of Countries compatible with rnaturalearth
+- **functions.py**: This file contains all custom functions used ind Input_form.py or Output_display.py. This includes f.e API call functions from Bon in a Box or interactive Map functions
+- **points_example.csv**: This is a example csv file with correct formatting for the function to upload custom point observations
+- **polygon_example.geojson**: This is an example GeoJSON file to demonstrate the required formatting for polygon data that can be uploaded in the Input_form.py file.
+- **text.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
+- **/images**: This folder contains all the images displayed in the diffrent Interface pages.
 
-### Quick start:
--> create a conda environment with all dependencies (see requirements.txt)
--> run app with: streamlit run streamlit.py --server.port 8080
+## Installation
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/simonrabenmeister/Genes_from_Space_interface
+    ```
+2. Navigate to the project directory:
+    ```bash
+    cd Genes_from_Space_interface/Interface_v2
+    ```
+3. Install python packages:
+    ```bash
+    pip install streamlit
+    ```
+    further packages might be required
+4. Start the application:
+    ```bash
+    streamlit run Hello.py
+    ```
 
+## Usage
+1. Launch the application in your browser.
+2. Upload your genetic dataset.
+3. Use the provided tools to analyze and visualize the data.
+4. Save or export your results as needed.
+
+## Contributing
+Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Contact
+For questions or support, please contact [support@example.com](mailto:support@example.com).
 </details>
 
