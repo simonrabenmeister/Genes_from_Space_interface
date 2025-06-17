@@ -18,6 +18,10 @@ from functions import TC_area
 import uuid
 import os
 
+
+with open("directories.txt", "r") as file:
+    directories = file.readlines()
+st.session_state.biab_dir = directories[0].strip()
 if "countries" not in st.session_state:
     st.session_state.countries = []
 if "output_stage" not in st.session_state:
@@ -66,6 +70,7 @@ if "baseyear" not in st.session_state:
     st.session_state.baseyear = None
 if "obs_edit" not in st.session_state:
     st.session_state.obs_edit = None
+  # Default base year selection
 if "GBIF_data" not in st.session_state:
     st.session_state.GBIF_data = {
         "species": None,
@@ -93,6 +98,8 @@ if "LC" not in st.session_state:
         "LC_class": None,
         "timeseries": None
     }
+if "data_source_index" not in st.session_state:
+    st.session_state.data_source_index = None  # Default index for data source selection
 if "LC_index" not in st.session_state:
     st.session_state.LC_index = None  # Default index for LC selection
 if "LC_selection" not in st.session_state:
@@ -102,13 +109,9 @@ if "species" not in st.session_state:
 if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
 if "run_dir" not in st.session_state:
-    st.session_state.run_dir= os.path.join("/home/ubuntu/bon-in-a-box-pipelines/userdata/interface_polygons/", st.session_state.run_id)
-#################### Functions ####################
-
-
-
-
-
+    st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
+if "data_source" not in st.session_state:
+    st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
 texts = pd.read_csv("texts.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
@@ -184,22 +187,61 @@ col1, col2= st.columns(2)
 with col1.container( border=True, key="image-container", height=st.session_state.height):
 
     st.title("Genes from Space Tool")
+    st.markdown(rtext("1_1_ti"))
+    st.markdown(rtext("1_1_te"))
 
-    st.markdown(rtext('1_ti'))
-    st.markdown(rtext("1_te"))
-    selection=["Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"]
+    name_to_species = st.text_input(rtext('1_1_in'), placeholder="Example: Quercus sartorii",value=st.session_state["species"],  disabled=st.session_state["species"]!=None)
+
+
+    if name_to_species:
+        
+        if st.session_state["species"]==None: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 
+
+            # Make the API call
+
+            response = requests.get(f"https://api.gbif.org/v1/species/match", params={"name": name_to_species})
+            response = response.json()
+
+            # Check if the request was successful
+
+            if response["matchType"] != "NONE":
+            # Parse the JSON response
+
+                st.write(rtext('1_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_1_in_te2'))
+                if st.button(rtext('1_1_in_bu1')):
+                    st.session_state["species"] = response["scientificName"]
+                    st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
+            else:
+
+                st.write(rtext('1_1_in_te3'))
+                if st.button(rtext('1_1_in_bu2')):
+                    st.session_state["species"] = name_to_species                
+                    st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
+    if st.session_state["species"] is not None:
+        
+        st.number_input("Baseline Year", step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+        with st.expander(rtext("1_2_exp"), expanded=False):
+            st.markdown(rtext("1_2_te"))
+    if st.session_state["baseyear"] is not None:
+
+        selection=["Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"]
     
-    point_source = st.selectbox(
-        "Select a tool", selection
-        , 
-        index=st.session_state["GBIF_index"],  
-        placeholder="Select Point source", 
-        key="GBIF_key",
-        on_change=lambda: (
-            setattr(st.session_state, 'GBIF_index', selection.index(st.session_state.GBIF_key))  # Example of another action
+        st.markdown(rtext('1_ti'))
+        st.markdown(rtext("1_te"))
+
+        st.session_state["data_source"] = st.selectbox(
+            "Select a tool", selection
+            , 
+            index=st.session_state["data_source_index"],  
+            placeholder="Select Point source", 
+            key="data_source_key",
+            on_change=lambda: (
+                setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key))  # Example of another action
+            )
         )
-    )
-    if point_source=="Upload your own Polygons":
+    if st.session_state["data_source"]=="Upload your own Polygons":
         st.markdown(rtext("1.1_ti"))
         st.markdown(rtext("1.1_te"))
     #Upload your own Polygon file
@@ -208,24 +250,36 @@ with col1.container( border=True, key="image-container", height=st.session_state
             try:
                 st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
 
+
             except Exception as e:
                 st.error(f"Error reading the GeoJSON file: {e}")
+            # Calculate the center of the polygon
+            coordinates = st.session_state.polyinfo["polygons"]["features"][0]["geometry"]["coordinates"][0]
+            flattened_coordinates = [point for sublist in coordinates for point in sublist]
+            lats = [point[1] for point in flattened_coordinates]
+            lngs = [point[0] for point in flattened_coordinates]
+            center_lat = sum(lats) / len(lats)
+            center_lng = sum(lngs) / len(lngs)
+
+            # Update session state with the center coordinates
+            st.session_state.center = {"lat": center_lat, "lng": center_lng}
     #Download example file
         st.download_button(
             label="Download Example file",
-            data=open("/home/ubuntu/Genes_from_Space_interface/Interface_v2/polygon_example.geojson", "rb").read(),
+            data=open("polygon_example.geojson", "rb").read(),
             file_name="polygon_example.geojson",
             mime="application/geo+json",
         )
+
         if st.session_state.polyinfo["polygons"] is not None:
             run=os.path.join(st.session_state.run_dir, "updated_polygons.geojson")
+            os.makedirs(os.path.dirname(run), exist_ok=True)  # Ensure the directory exists
             with open(run, "w") as f:
                 geojson.dump(st.session_state.polyinfo["polygons"], f)
             st.session_state.poly_directory = run
-            st.session_state.baseyear= st.number_input("Baseline Year", value=st.session_state.baseyear, step=1, min_value=1900, max_value=2021)
             st.session_state.stage = "LC"
 
-    if point_source=="Upload your own point observations":
+    if st.session_state["data_source"]=="Upload your own point observations":
         st.markdown(rtext("1.2_ti"))
         st.markdown(rtext("1.2_te"))
     #Upload your own point file
@@ -241,68 +295,71 @@ with col1.container( border=True, key="image-container", height=st.session_state
 
             except Exception as e:
                 st.error(f"Error reading the CSV file: {e}")
+        if st.session_state.obs_edit is not None:
+            # Calculate the center of all point observations in total
+            lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
+            lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
+            center_lat = np.mean(lats)
+            center_lng = np.mean(lngs)
 
+            # Update session state with the center coordinates
+            st.session_state.center = {"lat": center_lat, "lng": center_lng}
 
     #Download example file
         st.download_button(
             label="Download Example file",
-            data=open("/home/ubuntu/Genes_from_Space_interface/Interface_v2/points_example.csv", "rb").read(),
+            data=open("points_example.csv", "rb").read(),
             file_name="points_example.csv",
             mime="text/csv"
         )
-        if  st.session_state.obs_edit is not None:
-            st.session_state.baseyear= st.number_input("Baseline Year", value=None, step=1, min_value=1900, max_value=2021)
 
-                
-
-
-    if point_source=="Source points from GBIF":
+    if st.session_state["data_source"]=="Source points from GBIF":
         st.markdown(rtext("1.3_ti"))
         st.markdown(rtext("1.3_te"))
-        with st.form(key='GBIF_form', enter_to_submit=False):
-            with st.expander(rtext("1.3.1_ti"), expanded=False):
-                st.markdown(rtext("1.3.1_te"))
-            species=st.text_input("Species Name", placeholder="Example: Quercus sartorii", value=st.session_state["species"],key="species_entry")
-
-            baseyear=st.number_input("baseline Year", value=st.session_state.baseyear, key="baseyear_selection", step=1, min_value=1900, max_value=2021)
-            if st.session_state.baseyear is not None:
-                st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
-                st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
-            region_list=["Map selection", "Country"]
-            region = st.selectbox(
-                "Region Selection",
-                region_list,
-                index=st.session_state["region_index"],
-                placeholder="Select Region",
-                key="region_selection",
-
+        # with st.form(key='GBIF_form', enter_to_submit=False):
+        #     with st.expander(rtext("1.3.1_ti"), expanded=False):
+        #         st.markdown(rtext("1.3.1_te"))
+        #     if st.session_state.baseyear is not None:
+        #         st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
+        #         st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
+        region_list=["Map selection", "Country"]
+        region = st.selectbox(
+            "Region Selection",
+            region_list,
+            index=st.session_state["region_index"],
+            placeholder="Select Region",
+            key="region_selection",
+            on_change=lambda: (
+            setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection)),
+            setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == "Country" else "bbox_draw"),
             )
-            
-            if st.form_submit_button():
-                st.session_state.polyinfo = {
-                    "buffer": None,
-                    "distance": None,
-                    "polygons": None
-                }
-                st.session_state.LC = {
-                    "LC_type": None,
-                    "LC_class": None,
-                    "index": None
-                }  
+        )
+        
+        #     if st.form_submit_button():
+        #         st.session_state.polyinfo = {
+        #             "buffer": None,
+        #             "distance": None,
+        #             "polygons": None
+        #         }
+        #         st.session_state.LC = {
+        #             "LC_type": None,
+        #             "LC_class": None,
+        #             "index": None
+        #         }  
 
-                # Reset subsequent session states
-                st.session_state.obs = None
-                st.session_state.poly_creation = None
+        #         # Reset subsequent session states
+        #         st.session_state.obs = None
+        #         st.session_state.poly_creation = None
 
-                if region=="Country":
-                    st.session_state.stage="country"
-                if region=="Map selection":
-                    st.session_state.stage="bbox_draw"
+        #         if region=="Country":
+        #             st.session_state.stage="country"
+        #         if region=="Map selection":
+        #             st.session_state.stage="bbox_draw"
 
-                st.session_state.obs = None
-                setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection))
-                setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)
-                setattr(st.session_state, 'species', st.session_state.species_entry)
+        #         st.session_state.obs = None
+        #         setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection))
+        #         setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)
+        #         setattr(st.session_state, 'species', st.session_state.species_entry)
         if region== "Country": 
             st.session_state.GBIF_data["bbox"] = None
             countries = st.multiselect("Select countries", country_names, default=st.session_state.countries,key="country_selection", on_change=lambda: setattr(st.session_state, 'countries', st.session_state.country_selection))
@@ -333,7 +390,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                 st.session_state.obs = None
                 with st.spinner("Wait for it..."):
                     data = {
-                        "pipeline@52": species,
+                        "pipeline@52": st.session_state.species,
                         "pipeline@60": st.session_state.countries, 
                         "pipeline@54": [st.session_state.GBIF_data["start_y"]],
                         "pipeline@55": [st.session_state.GBIF_data["end_y"]],
@@ -346,7 +403,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     GBIF_response = GBIF(data)
                     output_GBIF = get_output(GBIF_response.text)
                     GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
-                    obs_file = open(f"/home/ubuntu/bon-in-a-box-pipelines/output/{GBIF_output_code}/GBIF_obs.csv")
+                    obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
                     obs = pd.read_csv(obs_file, sep='\t')
                     st.session_state.obs_edit = obs
                     st.session_state.stage = "Manipulate points"
@@ -480,18 +537,18 @@ with col1.container( border=True, key="image-container", height=st.session_state
                         if st.session_state.LC_selection == "automatic Land Cover":
                             cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                             st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
-                            LC_class = json.load(open(f"/home/ubuntu/bon-in-a-box-pipelines/output/{cover_output_code}/output.json"))["lc_classes"]
+                            LC_class = json.load(open(f"{st.session_state.biab_dir}/output/{cover_output_code}/output.json"))["lc_classes"]
                             st.session_state.LC_classnames = [LC_names[values.index(value)] for value in LC_class]
-                        area_file_path = f"/home/ubuntu/bon-in-a-box-pipelines/output/{area_output_code}/pop_habitat_area.tsv"
+                        area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
     if st.session_state.area_table is not None:
         rel_habitat_change_table = st.session_state.area_table.copy()
         for i in range(1, st.session_state.area_table.shape[1]):  # Start from the second column (index 1)
             rel_habitat_change_table.iloc[:, i] = (st.session_state.area_table.iloc[:, i] / st.session_state.area_table.iloc[:, 1] * 100) - 100
         st.session_state.rel_habitat_change_table = rel_habitat_change_table
-        st.session_state.NC= f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.cover_maps}/HabitatNC.tif"
-        st.session_state.GAIN= f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.cover_maps}/HabitatGAIN.tif"
-        st.session_state.LOSS= f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.cover_maps}/HabitatLOSS.tif"
+        st.session_state.NC= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatNC.tif"
+        st.session_state.GAIN= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatGAIN.tif"
+        st.session_state.LOSS= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatLOSS.tif"
         
         if st.button("See results"):
             st.session_state.output_stage = "run"

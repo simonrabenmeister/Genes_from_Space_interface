@@ -698,20 +698,5 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
     ```bash
     streamlit run Hello.py
     ```
-
-## Usage
-1. Launch the application in your browser.
-2. Upload your genetic dataset.
-3. Use the provided tools to analyze and visualize the data.
-4. Save or export your results as needed.
-
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
-
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
 ## Contact
-For questions or support, please contact [support@example.com](mailto:support@example.com).
-</details>
-
+For questions or support, please contact [info@genesfromspace.com](mailto:genesfromspace).

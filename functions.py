@@ -15,6 +15,11 @@ import seaborn as sns
 import glasbey
 import geopandas as gpd
 
+
+with open("directories.txt", "r") as file:
+    directories = file.readlines()
+st.session_state.biab_dir = directories[0].strip()
+
 texts = pd.read_csv("texts.csv").set_index("id")
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
@@ -131,6 +136,25 @@ def polygon_clustering():
         crs="EPSG:4326"
     )
     obs = st.session_state.obs
+    
+    if st.session_state.buffer is None and st.session_state.poly_creation != "Select yourself":
+        # Display the points without edit functionality
+        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+
+        # Add the observations to the map
+        fg = folium.FeatureGroup(name="Markers")
+        for i, row in obs.iterrows():
+            corr = [row["decimallatitude"], row["decimallongitude"]]
+            folium.CircleMarker(
+            location=corr,
+            radius=6,
+            color="blue",
+            fill_opacity=1,
+            fill=True,
+            fill_color='lightblue'
+            ).add_to(fg)
+
+        st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
     if st.session_state.poly_creation == "Buffer":
         if st.session_state.buffer is not None:
             st.session_state.polyinfo["polygons"] = None
@@ -303,7 +327,7 @@ def polygon_clustering():
                 st.session_state.zoom=st.session_state.output["zoom"]
                 st.session_state.center=st.session_state.output["center"]
                 st.session_state.stage = "LC"
-                with open("/home/ubuntu/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+                with open("{st.session_state.biab_dir}/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
                     geojson.dump(st.session_state.polyinfo["polygons"], f)
                 st.success("Polygons saved successfully.")
                 st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
@@ -371,7 +395,7 @@ def convert_df():
         st.session_state.edited_df=edited_df
         
     if st.button("Confirm:"):
-        with open("/home/ubuntu/bon-in-a-box-pipelines/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+        with open("{st.session_state.biab_dir}/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
             geojson.dump(st.session_state.polygons, f)
         st.success("Polygons saved successfully.")
         st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
