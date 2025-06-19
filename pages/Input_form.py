@@ -22,6 +22,9 @@ import os
 with open("directories.txt", "r") as file:
     directories = file.readlines()
 st.session_state.biab_dir = directories[0].strip()
+
+if "LC_class_names" not in st.session_state:
+    st.session_state.LC_class_names=None
 if "countries" not in st.session_state:
     st.session_state.countries = []
 if "output_stage" not in st.session_state:
@@ -224,28 +227,41 @@ with col1.container( border=True, key="image-container", height=st.session_state
         st.number_input("Baseline Year", step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
         with st.expander(rtext("1_2_exp"), expanded=False):
             st.markdown(rtext("1_2_te"))
-    if st.session_state["baseyear"] is not None:
-
+    if st.session_state["baseyear"] is not None:             
+        st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
+        st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
         selection=["Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"]
-    
+
         st.markdown(rtext('1_ti'))
         st.markdown(rtext("1_te"))
 
         st.session_state["data_source"] = st.selectbox(
-            "Select a tool", selection
-            , 
+            "Select a tool", selection, 
             index=st.session_state["data_source_index"],  
             placeholder="Select Point source", 
             key="data_source_key",
             on_change=lambda: (
-                setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key))  # Example of another action
+            setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key)),
+            setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
+            setattr(st.session_state, 'obs', None),
+            setattr(st.session_state, 'obs_edit', None),
+            setattr(st.session_state, 'buffer', None),
+            setattr(st.session_state, 'distance', None),
+            setattr(st.session_state, 'LC_selection', None),
+            setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
+            setattr(st.session_state, 'LC_index', None),
+            setattr(st.session_state, 'area_table', None),
+            setattr(st.session_state, 'stage', "upload"),
+            setattr(st.session_state, 'LC_class_index', None),
+            setattr(st.session_state, "index_poly", None)
             )
         )
     if st.session_state["data_source"]=="Upload your own Polygons":
+
         st.markdown(rtext("1.1_ti"))
         st.markdown(rtext("1.1_te"))
     #Upload your own Polygon file
-        poly_link= st.file_uploader("Upload your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", on_change=lambda: st.session_state.update({"stage": "polygon_clustering"}))
+        poly_link= st.file_uploader("Uplad your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", on_change=lambda: st.session_state.update({"stage": "polygon_clustering"}))
         if poly_link is not None:
             try:
                 st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
@@ -280,6 +296,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
             st.session_state.stage = "LC"
 
     if st.session_state["data_source"]=="Upload your own point observations":
+
         st.markdown(rtext("1.2_ti"))
         st.markdown(rtext("1.2_te"))
     #Upload your own point file
@@ -304,6 +321,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
 
             # Update session state with the center coordinates
             st.session_state.center = {"lat": center_lat, "lng": center_lng}
+            st.session_state.stage = "Manipulate points"
 
     #Download example file
         st.download_button(
@@ -314,14 +332,11 @@ with col1.container( border=True, key="image-container", height=st.session_state
         )
 
     if st.session_state["data_source"]=="Source points from GBIF":
+
+
         st.markdown(rtext("1.3_ti"))
         st.markdown(rtext("1.3_te"))
-        # with st.form(key='GBIF_form', enter_to_submit=False):
-        #     with st.expander(rtext("1.3.1_ti"), expanded=False):
-        #         st.markdown(rtext("1.3.1_te"))
-        #     if st.session_state.baseyear is not None:
-        #         st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
-        #         st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
+
         region_list=["Map selection", "Country"]
         region = st.selectbox(
             "Region Selection",
@@ -374,7 +389,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                 except ValueError:
                     st.error("Invalid bounding box format. Please enter in the format: [min_lon, min_lat, max_lon, max_lat]")
         if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
-            if st.button("Fetch Points"):
+            if st.button("Get observations from GBIF"):
                 
                 st.session_state.polyinfo = {
                         "buffer": None,
@@ -426,11 +441,21 @@ with col1.container( border=True, key="image-container", height=st.session_state
     if st.session_state.obs is not None:
         st.markdown(rtext("2_ti"))
         st.markdown(rtext("2_te"))
-        buffer_selection= ["Buffer", "Select yourself"]
-        st.session_state.poly_creation=st.selectbox("Polygon creation",buffer_selection, index=st.session_state.index_poly, placeholder="Select Polygon creation", 
-            on_change=lambda: setattr(st.session_state, 'index_poly', buffer_selection.index(st.session_state.index_poly_key)), key="index_poly_key")
+        buffer_selection= ["Automated calculation of population boundaries", "Draw population boundaries manually"]
+        st.session_state.poly_creation = st.selectbox(
+            "Polygon creation",
+            buffer_selection,
+            index=st.session_state.index_poly,
+            placeholder="Select Polygon creation",
+            on_change=lambda: (
+            setattr(st.session_state, 'index_poly', buffer_selection.index(st.session_state.index_poly_key)),
+            setattr(st.session_state, "polyinfo",{"buffer": None, "distance": None, "polygons": None}),
+            setattr(st.session_state, "stage", "polygon_clustering")
+            ),
+            key="index_poly_key"
+        )
 
-        if st.session_state.poly_creation=="Buffer":
+        if st.session_state.poly_creation=="Automated calculation of population boundaries":
             st.markdown(rtext("2.2_ti"))
             st.markdown(rtext("2.2_te"))
             st.session_state.index_poly=0
@@ -452,7 +477,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.session_state.cover_maps = None
                     setattr(st.session_state, 'buffer', st.session_state.buffer_input)
                     setattr(st.session_state, 'distance', st.session_state.distance_input)
-        if st.session_state.poly_creation=="Select yourself":
+        if st.session_state.poly_creation=="Draw population boundaries manually":
             st.session_state.index_poly=1
             st.markdown(rtext("2.1_te"))
             st.session_state.buffer = st.number_input("Buffer size in km", value=st.session_state.polyinfo["buffer"])
@@ -474,9 +499,9 @@ with col1.container( border=True, key="image-container", height=st.session_state
             with st.expander(rtext("3.1_ti"), expanded=False):
                 st.markdown(rtext("3.1_te"))
         with st.form(key='areas', enter_to_submit=False):
-            
+
             if st.session_state.LC_selection=="manual Land Cover":
-                LC_class = st.multiselect("select LC class", options=LC_names, key="LC_class", default=st.session_state.LC_class_index)
+                LC_class = st.multiselect("select LC class", options=LC_names, key="LC_class", default=st.session_state.LC_class_names)
                 
                 st.session_state.LC["LC_class"] = [values[LC_names.index(name)] for name in LC_class]
                 if 2020-st.session_state.baseyear < 5:
@@ -500,10 +525,9 @@ with col1.container( border=True, key="image-container", height=st.session_state
             
             if st.form_submit_button("Submit"):
                 setattr(st.session_state, "LC_class_index",  st.session_state.LC["LC_class"])
-
+                setattr(st.session_state,"LC_class_names",  LC_class)
                 with st.spinner("Wait for it..."):
                     timeseries = st.session_state.LC["timeseries"]
-
                     if st.session_state.LC_selection=="manual Land Cover" or st.session_state.LC_selection=="automatic Land Cover":
                         data = {
                             "pipeline@197": st.session_state.poly_directory,

@@ -13,7 +13,6 @@ from streamlit_folium import st_folium# A dummy Sentinel 2 COG I had laying arou
 import plotly.express as px
 from typing import Union
 from PIL import Image
-from fpdf import FPDF
 import io
 import uuid
 import os
@@ -446,81 +445,3 @@ if input is not None or st.session_state.polyinfo is not None:
         mime="text/csv",
         icon=":material/download:",
     )
-    if st.button("Generate PDF Report"):
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-
-        # Add title
-        pdf.set_font("Arial", style="B", size=16)
-        pdf.cell(200, 10, txt="Habitat Change Report", ln=True, align="C")
-        pdf.ln(10)
-
-        # Add map
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Map Overview", ln=True, align="L")
-        pdf.ln(5)
- 
-        map=st.session_state.map
-        img_data=map._to_png(5)
-        img = Image.open(io.BytesIO(img_data))
-        img.save('map_image.png')
-        pdf.image("map_image.png", x=10, y=None, w=190)
-        pdf.ln(10)
-
-    # Add data table
-        pdf.cell(200, 10, txt="Population Properties Table", ln=True, align="L")
-        pdf.ln(5)
-
-        # Create a Plotly table
-        table_data = st.session_state.properties
-        fig_table = go.Figure(data=[go.Table(
-            header=dict(values=list(table_data.columns),
-                        fill_color='paleturquoise',
-                        align='left'),
-            cells=dict(values=[table_data[col] for col in table_data.columns],
-                    fill_color='lavender',
-                    align='left'))
-        ])
-
-        # Save the table as an image
-        fig_table.write_image("table_plot.png")
-
-        # Add the table image to the PDF
-        pdf.image("table_plot.png", x=10, y=None, w=190)
-        pdf.ln(10)
-
-        # Add NE plot
-        pdf.ln(5)
-        ne_fig.write_image("ne_plot.png")
-        pdf.image("ne_plot.png", x=10, y=None, w=190)
-        pdf.ln(10)
-
-        # Add relative habitat change plot
-        pdf.ln(5)
-        rel_change_fig.write_image("rel_change_plot.png")
-        pdf.image("rel_change_plot.png", x=10, y=None, w=190)
-        pdf.ln(10)
-
-        # Add area trends plot
-        pdf.ln(5)
-        area_fig.write_image("area_plot.png")
-        pdf.image("area_plot.png", x=10, y=None, w=190)
-        pdf.ln(10)
-
-        # Add indicators
-        pdf.cell(200, 10, txt="Indicators", ln=True, align="L")
-        pdf.ln(5)
-        pdf.cell(0, 10, txt=f"NE>500: {ratio_ne_greater_500:.2f}", ln=True)
-        pdf.cell(0, 10, txt=f"PM: {ratio_ne_greater_50:.2f}", ln=True)
-
-        # Save and download PDF
-        pdf_output = io.BytesIO()
-        pdf_output.write(pdf.output(dest='S').encode('latin1'))
-        st.download_button(
-            label="Download PDF Report",
-            data=pdf_output.getvalue(),
-            file_name="Habitat_Change_Report.pdf",
-            mime="application/pdf",
-        )
