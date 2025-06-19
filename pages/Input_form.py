@@ -160,15 +160,21 @@ values = [
 
 st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("""
-        <style>
-               .block-container {
-                    padding-top: 3rem;
-                    padding-bottom: 0rem;
-                    padding-left: 5rem;
-                    padding-right: 5rem;
-                }
-        </style>
-        """, unsafe_allow_html=True)
+    <style>
+           .block-container {
+            padding-top: 3rem;
+            padding-bottom: 0rem;
+            padding-left: 5rem;
+            padding-right: 5rem;
+        }
+           /* Fix whitespace under Folium map */
+           iframe[title="streamlit_folium.st_folium"] {
+            height: 500px !important;
+            max-height: 500px !important;
+            min-height: 500px !important;
+           }
+    </style>
+    """, unsafe_allow_html=True)
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.height = st.slider(

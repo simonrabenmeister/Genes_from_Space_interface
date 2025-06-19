@@ -220,24 +220,77 @@ if input is not None or st.session_state.polyinfo is not None:
             st.image("images/LC_types.png")
         render_map_fragment()
 
+
+
+
+
+## Create relative change plot
+    rel_change = pd.DataFrame(rel_habitat_change_table)
+
+    rel_change = rel_change.melt(id_vars="name", var_name="year", value_name="habitat_area")
+    rel_change["year"] = rel_change["year"].str.replace("y", "").astype(int)
+
+    # Plot using Plotly
+    rel_change_fig = px.line(
+        rel_change,
+        x="year",
+        y="habitat_area",
+        color="name",
+        markers=True,
+        title="Habitat Area Change Over Time",
+        labels={"habitat_area": "Habitat Area", "year": "Year", "name": "Population"},
+        color_discrete_map={
+            feature["properties"]["name"]: feature["properties"]["color"]
+            for feature in st.session_state.pop_polygons["features"]
+        }
+    )
+
+## Create area plot
+    area_df = pd.DataFrame(area_table)
+    area_df = area_df.melt(id_vars=area_df.columns[0], var_name="year", value_name="area")
+    area_df["year"] = area_df["year"].str.replace("y", "").astype(int)
+
+    area_fig = px.line(
+        area_df,
+        x="year",
+        y="area",
+        color=area_df.columns[0],
+        markers=True,
+        title="Area Trends Over Time",
+        labels={"area": "Area", "year": "Year", area_df.columns[0]: "Category"},
+                color_discrete_map={
+            feature["properties"]["name"]: feature["properties"]["color"]
+            for feature in st.session_state.pop_polygons["features"]
+        }
+    )
+
+
+
+    col1, col2= st.columns(2)
+    with col1:
+        relareaplot = st.plotly_chart(rel_change_fig, use_container_width=True, on_select="rerun")
+    with col2:
+        areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
+
     ##Input form for population density and Ne:Nc
     if st.session_state.out is not None:
         with st.form(key='polygon', enter_to_submit=False):
 
-            default_dens = st.number_input(
+            st.session_state.default_dens = st.number_input(
                 "Default density", 
                 min_value=0.0, 
                 step=0.01, 
+                value=st.session_state.default_dens,
+                key="pop_density",
 
-                key="pop_density"
             )
 
-            default_nenc = st.number_input(
+            st.session_state.default_nenc = st.number_input(
                 "Default Ne:Nc", 
                 min_value=0.0, 
                 max_value=1.0, 
                 step=0.01, 
-
+                value=st.session_state.default_nenc,
                 key="nenc"
             )
             with st.expander(rtext("3_ex_ti"), expanded=False):
@@ -257,128 +310,86 @@ if input is not None or st.session_state.polyinfo is not None:
             properties["effective_size"] = [0] * len(properties)
 
             if st.form_submit_button("Submit" ):
-                properties = properties.assign(Population_Density=default_dens)
-                properties = properties.assign(nenc=default_nenc)
-                properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(default_dens) ))
-                properties = properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(default_dens) * np.array(default_nenc))
+
+                properties = properties.assign(Population_Density=st.session_state.default_dens)
+                properties = properties.assign(nenc=st.session_state.default_nenc)
+                properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens) ))
+                properties = properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(st.session_state.default_dens) * np.array(st.session_state.default_nenc))
                 st.session_state.properties = properties
+                setattr(st.session_state, 'default_dens', st.session_state.pop_density)
+                setattr(st.session_state, 'default_nenc', st.session_state.nenc)
 
-
-    
-    if st.session_state.properties is not None:
-    ## Create relative change plot
-        rel_change = pd.DataFrame(rel_habitat_change_table)
-
-        rel_change = rel_change.melt(id_vars="name", var_name="year", value_name="habitat_area")
-        rel_change["year"] = rel_change["year"].str.replace("y", "").astype(int)
-
-        # Plot using Plotly
-        rel_change_fig = px.line(
-            rel_change,
-            x="year",
-            y="habitat_area",
-            color="name",
-            markers=True,
-            title="Habitat Area Change Over Time",
-            labels={"habitat_area": "Habitat Area", "year": "Year", "name": "Population"},
-            color_discrete_map={
-                feature["properties"]["name"]: feature["properties"]["color"]
-                for feature in st.session_state.pop_polygons["features"]
-            }
-        )
-
-    ## Create area plot
-        area_df = pd.DataFrame(area_table)
-        area_df = area_df.melt(id_vars=area_df.columns[0], var_name="year", value_name="area")
-        area_df["year"] = area_df["year"].str.replace("y", "").astype(int)
-
-        area_fig = px.line(
-            area_df,
-            x="year",
-            y="area",
-            color=area_df.columns[0],
-            markers=True,
-            title="Area Trends Over Time",
-            labels={"area": "Area", "year": "Year", area_df.columns[0]: "Category"},
-                    color_discrete_map={
-                feature["properties"]["name"]: feature["properties"]["color"]
-                for feature in st.session_state.pop_polygons["features"]
-            }
-        )
-
-    ## Create NE plot
-        NE= area_table.copy()
-        for i in range(0, len(NE)):
-            ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
-            NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
-
-        st.session_state.NE = NE
-
-        if "NE" in st.session_state:
-
-            NE = st.session_state.NE
-            ne_df_long = NE.melt(id_vars=NE.columns[0], var_name="year", value_name="NE")
-            ne_df_long["year"] = ne_df_long["year"].str.replace("y", "").astype(int)
-
-            # Plot using Plotly
-            ne_fig = px.line(
-                ne_df_long,
-                x="year",
-                y="NE",
-                color=NE.columns[0],
-                markers=True,
-                title="Effective Population Size (NE) Over Time",
-                labels={"NE": "Effective Population Size (NE)", "year": "Year", NE.columns[0]: "Category"},
-                color_discrete_map={
-                    feature["properties"]["name"]: feature["properties"]["color"]
-                    for feature in st.session_state.pop_polygons["features"]
-                }
-            )
-
-            # Add a black, striped horizontal line at popsize=500
-            ne_fig.add_hline(
-                y=500,
-                line_dash="dash",
-                line_color="black",
-                annotation_text="NE>500",
-                annotation_position="top left"
-            )
 
 
 
 
         subcol1, subcol2 = st.columns(2)
-        with subcol1:
-            st.markdown("### Population Properties")
-            st.markdown("The table bellow shows the properties of the populations. You can edit the Population Density and Population size values. The effective population size is calculated based on these values and the area of the polygons.")
+        if st.session_state.properties is not None:
+            NE= area_table.copy()
+            for i in range(0, len(NE)):
+                ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
+                NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
 
-    ##Make the dataframe adaptable
-            def adapt_df(new_df: Union[pd.DataFrame, None] = None):
-                if new_df is not None:
-                    if new_df.equals(st.session_state.properties):
-                        return
-                    old_df = st.session_state.properties
-                    st.session_state.properties = new_df
+            st.session_state.NE = NE
 
-                df = st.session_state.properties
-                for i, row in df.iterrows():
-                    calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                    if not np.isclose(old_df.at[i, "Population_Density"], row["Population_Density"], equal_nan=True):
-                        df.at[i, "pop_size"] = calculated_pop_size
-                            
-                for i, row in df.iterrows():
-                    calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                    if not np.isclose(row["pop_size"], calculated_pop_size):
-                        df.at[i, "Population_Density"] = None
-                    else:
-                        df.at[i, "pop_size"] = calculated_pop_size
+            if "NE" in st.session_state:
 
-                    df.at[i, "effective_size"] = df.at[i, "pop_size"] * area_table.iloc[int(i), -1] / area_table.iloc[int(i), 1] * row["nenc"]
-                st.session_state.properties = df
-                st.rerun()
+                NE = st.session_state.NE
+                ne_df_long = NE.melt(id_vars=NE.columns[0], var_name="year", value_name="NE")
+                ne_df_long["year"] = ne_df_long["year"].str.replace("y", "").astype(int)
 
-            with st.container(height=330, border=False):#Create container for formatting reasons
-                st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+                # Plot using Plotly
+                ne_fig = px.line(
+                    ne_df_long,
+                    x="year",
+                    y="NE",
+                    color=NE.columns[0],
+                    markers=True,
+                    title="Effective Population Size (NE) Over Time",
+                    labels={"NE": "Effective Population Size (NE)", "year": "Year", NE.columns[0]: "Category"},
+                    color_discrete_map={
+                        feature["properties"]["name"]: feature["properties"]["color"]
+                        for feature in st.session_state.pop_polygons["features"]
+                    }
+                )
+
+                # Add a black, striped horizontal line at popsize=500
+                ne_fig.add_hline(
+                    y=500,
+                    line_dash="dash",
+                    line_color="black",
+                    annotation_text="NE>500",
+                    annotation_position="top left"
+                )
+            with subcol1:
+                st.markdown("### Population Properties")
+                st.markdown("The table bellow shows the properties of the populations. You can edit the Population Density and Population size values. The effective population size is calculated based on these values and the area of the polygons.")
+
+        ##Make the dataframe adaptable
+                def adapt_df(new_df: Union[pd.DataFrame, None] = None):
+                    if new_df is not None:
+                        if new_df.equals(st.session_state.properties):
+                            return
+                        old_df = st.session_state.properties
+                        st.session_state.properties = new_df
+
+                    df = st.session_state.properties
+                    for i, row in df.iterrows():
+                        calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
+                        if not np.isclose(old_df.at[i, "Population_Density"], row["Population_Density"], equal_nan=True):
+                            df.at[i, "pop_size"] = calculated_pop_size
+                                
+                    for i, row in df.iterrows():
+                        calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
+                        if not np.isclose(row["pop_size"], calculated_pop_size):
+                            df.at[i, "Population_Density"] = None
+                        else:
+                            df.at[i, "pop_size"] = calculated_pop_size
+
+                        df.at[i, "effective_size"] = df.at[i, "pop_size"] * area_table.iloc[int(i), -1] / area_table.iloc[int(i), 1] * row["nenc"]
+                    st.session_state.properties = df
+                    st.rerun()
+
                 if st.session_state.properties is not None:
                     editable_df = st.data_editor(
                         st.session_state.properties,
@@ -390,58 +401,55 @@ if input is not None or st.session_state.polyinfo is not None:
                         },
                         hide_index=True,
                     )
-                properties= st.session_state.properties
-                for i, poly in enumerate(st.session_state.pop_polygons["features"]):
-                    poly["properties"]["Population_Density"] = float(properties["Population_Density"][i])
-                    poly["properties"]["nenc"] = float(properties["nenc"][i])
-                    poly["properties"]["pop_size"] = int(properties["pop_size"][i])
-                    poly["properties"]["effective_size"] = int(properties["effective_size"][i])
+                    properties= st.session_state.properties
+                    for i, poly in enumerate(st.session_state.pop_polygons["features"]):
+                        poly["properties"]["Population_Density"] = float(properties["Population_Density"][i])
+                        poly["properties"]["nenc"] = float(properties["nenc"][i])
+                        poly["properties"]["pop_size"] = int(properties["pop_size"][i])
+                        poly["properties"]["effective_size"] = int(properties["effective_size"][i])
 
-                adapt_df(editable_df)
+                    adapt_df(editable_df)
+                    
                 
-                # Calculate the ratio of populations with effective size > 500
-                ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
-                ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
+            with subcol2:
+                ne_plot=st.plotly_chart(ne_fig, use_container_width=True)
+    # Calculate the ratio of populations with effective size > 500
+            ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
+            ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
-                # Calculate the ratio of effective population sizes > 50
-                ne_greater_50 = (st.session_state.properties["effective_size"] > 50).sum()
-                ratio_ne_greater_50 = ne_greater_50 / len(st.session_state.properties)
-                st.markdown("### Effective Population Size (NE) Statistics")
-                st.markdown(
-                    "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
-                )
-                st.markdown(
-                    "**PM:** {:.2f}".format(ratio_ne_greater_50)
-                )
-    # Display the plot in Streamlit
-            ne_plot=st.plotly_chart(ne_fig, use_container_width=True)
-
-        with subcol2:
-            relareaplot = st.plotly_chart(rel_change_fig, use_container_width=True, on_select="rerun")
-            areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
+            # Calculate the ratio of effective population sizes > 50
+            ne_greater_50 = (st.session_state.properties["effective_size"] > 50).sum()
+            ratio_ne_greater_50 = ne_greater_50 / len(st.session_state.properties)
+            st.markdown("### Effective Population Size (NE) Statistics")
+            st.markdown(
+                "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
+            )
+            st.markdown(
+                "**PM:** {:.2f}".format(ratio_ne_greater_50)
+            )
 
 
-        geojson_data = json.dumps({
-            "pop_polygons": st.session_state.pop_polygons,
-            "NE": NE.to_dict(),
-            "area_table": area_table.to_dict(),
-            "rel_habitat_change_table": rel_habitat_change_table.to_dict(),
-            "editable_df": editable_df.to_dict(),
-            "NC": NC,
-            "GAIN": GAIN,
-            "LOSS": LOSS,
-            "properties": st.session_state.properties.to_dict(),
-            "LC_class_names": st.session_state.LC_classnames,
-            "run_id": st.session_state.run_id 
+            geojson_data = json.dumps({
+                "pop_polygons": st.session_state.pop_polygons,
+                "NE": NE.to_dict(),
+                "area_table": area_table.to_dict(),
+                "rel_habitat_change_table": rel_habitat_change_table.to_dict(),
+                "editable_df": editable_df.to_dict(),
+                "NC": NC,
+                "GAIN": GAIN,
+                "LOSS": LOSS,
+                "properties": st.session_state.properties.to_dict(),
+                "LC_class_names": st.session_state.LC_classnames,
+                "run_id": st.session_state.run_id 
 
 
-        })
-        st.markdown("#### Download The Run as a GeoJSON file")
-        st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
-        st.download_button(
-        label="Download GeoJSON",
-        data=geojson_data,
-        file_name="data.geojson",
-        mime="text/csv",
-        icon=":material/download:",
-    )
+            })
+            st.markdown("#### Download The Run as a GeoJSON file")
+            st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
+            st.download_button(
+            label="Download GeoJSON",
+            data=geojson_data,
+            file_name="data.geojson",
+            mime="text/csv",
+            icon=":material/download:",
+        )
