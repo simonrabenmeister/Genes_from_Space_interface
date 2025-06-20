@@ -679,6 +679,9 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
 - **polygon_example.geojson**: This is an example GeoJSON file to demonstrate the required formatting for polygon data that can be uploaded in the Input_form.py file.
 - **text.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
 - **/images**: This folder contains all the images displayed in the diffrent Interface pages.
+## Additional Files
+- **conda_environment.yml**: This file contains the specifications for the conda environment used to run the Streamlit application. It ensures that all necessary dependencies and packages are installed for the tool to function correctly.
+- **directories.txt**: This file lists the directory structure of the project, providing an overview of the organization of files and folders within the repository.
 
 ## Installation
 1. Clone the repository:
@@ -689,12 +692,18 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
     ```bash
     cd Genes_from_Space_interface/Interface_v2
     ```
-3. Install python packages:
+3. Set up the conda environment:
+    Navigate to the directory containing the YAML file in your terminal or command prompt. Then, use the following command to create the environment:
     ```bash
-    pip install streamlit
+    conda env create -f conda_environment.yml
     ```
-    further packages might be required
+    Once the environment is created, you can activate the environment using the following command:
+    ```bash
+    conda activate genes_from_space
+    ```
+    For more information on creating or setting up a conda environment: https://docs.conda.io/projects/conda/en/stable/user-guide/getting-started.html
 4. Start the application:
+    Once you set up the conda environment, you can run the streamlit app within the environment with the following command
     ```bash
     streamlit run Hello.py
     ```

@@ -112,8 +112,8 @@ if "species" not in st.session_state:
 if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
 
-if "run_dir" not in st.session_state:
-    st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
+st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
+
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
@@ -195,7 +195,6 @@ col1, col2= st.columns(2)
 
 
 with col1.container( border=True, key="image-container", height=st.session_state.height):
-
     st.title("Genes from Space Tool")
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
@@ -442,8 +441,8 @@ with col1.container( border=True, key="image-container", height=st.session_state
             st.markdown(rtext("2.2_te"))
             st.session_state.index_poly=0
             with st.form(key='parameters', enter_to_submit=False):
-                st.session_state.buffer=st.number_input("Buffer", value=st.session_state.buffer, key="buffer_input")
-                st.session_state.distance=st.number_input("Distance", value=st.session_state.distance, key="distance_input")
+                st.number_input("Buffer", value=st.session_state.buffer, key="buffer_input")
+                st.number_input("Distance", value=st.session_state.distance, key="distance_input")
                 with st.expander(rtext("2.2.1_ti"), expanded=False):
                     st.markdown(rtext("2.2.1_te"))
                 if st.form_submit_button("Submit"):
@@ -506,6 +505,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
             
             if st.form_submit_button("Submit"):
+                
                 setattr(st.session_state, "LC_class_index",  st.session_state.LC["LC_class"])
                 if st.session_state.LC_selection=="manual Land Cover":
                     setattr(st.session_state,"LC_class_names",  LC_class)
@@ -548,6 +548,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                             st.session_state.LC_classnames = [LC_names[values.index(value)] for value in LC_class]
                         area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
+                        
     if st.session_state.area_table is not None:
         rel_habitat_change_table = st.session_state.area_table.copy()
         for i in range(1, st.session_state.area_table.shape[1]):  # Start from the second column (index 1)
@@ -559,10 +560,13 @@ with col1.container( border=True, key="image-container", height=st.session_state
         
         if st.button("See results"):
             st.session_state.output_stage = "run"
-        
+            st.session_state.default_dens=None
+            st.session_state.default_nenc=None
+            st.session_state.properties=None
             st.switch_page("pages/Output_display.py")
 with col2:
     if st.session_state.stage=="bbox_draw":
+        
         
         mapbbox()
     if st.session_state.stage=="Manipulate points":

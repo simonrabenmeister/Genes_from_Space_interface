@@ -36,9 +36,9 @@ if "properties" not in st.session_state:
     st.session_state.properties = None
 if "upload" not in st.session_state:
     st.session_state.upload = False
-if "rel_habitat_change_table" not in st.session_state:
+if "rel_habitat_change_table_output" not in st.session_state:
     st.session_state.rel_habitat_change_table = None
-if "area_table" not in st.session_state:
+if "area_table_output" not in st.session_state:
     st.session_state.area_table = None
 if "pop_polygons" not in st.session_state:
     st.session_state.pop_polygons = None
@@ -54,8 +54,8 @@ if "LOSS" not in st.session_state:
     st.session_state.LOSS = None
 if "polyinfo" not in st.session_state:
     st.session_state.polyinfo = None
-if "LC_classnames" not in st.session_state:
-    st.session_state.LC_classnames = None
+if "LC_classnames_output" not in st.session_state:
+    st.session_state.LC_classnames_output = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens=None
 if "default_nenc" not in st.session_state:
@@ -64,13 +64,29 @@ st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("# Output Page")
 st.sidebar.header("Habitat")
 
+
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.height = st.slider(
             "Page Height",0, 2000, st.session_state.height
         )
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
-
+st.markdown("""
+    <style>
+           .block-container {
+            padding-top: 3rem;
+            padding-bottom: 0rem;
+            padding-left: 5rem;
+            padding-right: 5rem;
+        }
+           /* Fix whitespace under Folium map */
+           iframe[title="streamlit_folium.st_folium"] {
+            height: 500px !important;
+            max-height: 500px !important;
+            min-height: 500px !important;
+           }
+    </style>
+    """, unsafe_allow_html=True)
 
 texts = pd.read_csv("texts.csv").set_index("id")
 
@@ -89,36 +105,48 @@ def open_tif(tif):
 
 
 ##Load Runs
-input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True, "polyinfo": {"buffer": None,"distance": None,"polygons": None}}))
-
+input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True, "output_stage":"upload", "default_dens":None,"default_nenc":None,"properties":None }))
 if st.session_state.upload and input is not None:
     # Load the GeoJSON file
     geojson_data = json.load(input)
     st.session_state.pop_polygons = geojson_data["pop_polygons"]
-    st.session_state.NE= pd.DataFrame(geojson_data["NE"])
-    st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
-    st.session_state.rel_habitat_change_table  = pd.DataFrame(geojson_data["rel_habitat_change_table"])
-    st.session_state.editable_df = pd.DataFrame(geojson_data["editable_df"])
-    st.session_state.NC = geojson_data["NC"]
-    st.session_state.GAIN = geojson_data["GAIN"]
-    st.session_state.LOSS = geojson_data["LOSS"]
-    st.session_state.properties = pd.DataFrame(geojson_data["properties"])
+    st.session_state.NE_output= pd.DataFrame(geojson_data["NE"])
+    st.session_state.area_table_output = pd.DataFrame(geojson_data["area_table"])
+    st.session_state.rel_habitat_change_table_output  = pd.DataFrame(geojson_data["rel_habitat_change_table"])
+    st.session_state.editable_df_output = pd.DataFrame(geojson_data["editable_df"])
+    st.session_state.NC_output = geojson_data["NC"]
+    st.session_state.GAIN_output = geojson_data["GAIN"]
+    st.session_state.LOSS_output = geojson_data["LOSS"]
+    st.session_state.properties_output = pd.DataFrame(geojson_data["properties"])
     st.session_state.upload = False
-    st.session_state.LC_classnames =geojson_data["LC_class_names"]
-    st.session_state.run_id = geojson_data["run_id"]
-
+    st.session_state.LC_classnames_output =geojson_data["LC_class_names"]
+    st.session_state.run_id_output = geojson_data["run_id"]
+    st.session_state.default_dens= geojson_data["default_dens"]
+    st.session_state.default_nenc=geojson_data["default_nenc"]
 if st.session_state.output_stage == "run":
     st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
+    st.session_state.NE_output= None
+    st.session_state.area_table_output = st.session_state.area_table
+    st.session_state.rel_habitat_change_table_output = st.session_state.rel_habitat_change_table
+    st.session_state.editable_df_output = None
+    st.session_state.NC_output = st.session_state.NC
+    st.session_state.GAIN_output = st.session_state.GAIN
+    st.session_state.LOSS_output = st.session_state.LOSS
+    st.session_state.properties_output = None
+    st.session_state.LC_classnames_output = st.session_state.LC_classnames
+    st.session_state.run_id_output = st.session_state.run_id
+    st.session_state.default_dens = None
+    st.session_state.default_nenc = None
 
-rel_habitat_change_table=st.session_state.rel_habitat_change_table
-area_table=st.session_state.area_table
-NE=st.session_state.NE
-editable_df=st.session_state.editable_df
-NC=st.session_state.NC
-GAIN=st.session_state.GAIN
-LOSS=st.session_state.LOSS
+rel_habitat_change_table=st.session_state.rel_habitat_change_table_output
+area_table=st.session_state.area_table_output
+NE=st.session_state.NE_output
+editable_df=st.session_state.editable_df_output
+NC=st.session_state.NC_output
+GAIN=st.session_state.GAIN_output
+LOSS=st.session_state.LOSS_output
 properties=st.session_state.properties
-class_names=st.session_state.LC_classnames
+class_names=st.session_state.LC_classnames_output
 
 if input is not None or st.session_state.polyinfo is not None:
     ##create LC maps
@@ -168,7 +196,7 @@ if input is not None or st.session_state.polyinfo is not None:
         # Save NC, GAIN, and LOSS arrays as images
 
 
-        run_dir = os.path.join("temp_tiles", st.session_state.run_id)
+        run_dir = os.path.join("temp_tiles", st.session_state.run_id_output)
         os.makedirs(run_dir, exist_ok=True)
         # Save the images in the run-specific directory
         Image.fromarray(NCcolor).save(os.path.join(run_dir, "NC.png"))
@@ -448,9 +476,9 @@ if input is not None or st.session_state.polyinfo is not None:
                 "LOSS": LOSS,
                 "properties": st.session_state.properties.to_dict(),
                 "LC_class_names": st.session_state.LC_classnames,
-                "run_id": st.session_state.run_id 
-
-
+                "run_id": st.session_state.run_id_output,
+                "default_dens": st.session_state.default_dens,
+                "default_nenc": st.session_state.default_nenc
             })
             st.markdown("#### Download The Run as a GeoJSON file")
             st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
