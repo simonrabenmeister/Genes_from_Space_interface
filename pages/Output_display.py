@@ -56,6 +56,10 @@ if "polyinfo" not in st.session_state:
     st.session_state.polyinfo = None
 if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
+if "default_dens" not in st.session_state:
+    st.session_state.default_dens=None
+if "default_nenc" not in st.session_state:
+    st.session_state.default_nenc=None
 st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("# Output Page")
 st.sidebar.header("Habitat")
@@ -326,12 +330,16 @@ if input is not None or st.session_state.polyinfo is not None:
         subcol1, subcol2 = st.columns(2)
         if st.session_state.properties is not None:
             NE= area_table.copy()
+
             for i in range(0, len(NE)):
                 ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
                 NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
 
+            for i in range(0, len(NE)):
+                for j in range(2, NE.shape[1]):
+                    if NE.iloc[i, j-1] < NE.iloc[i, j]:
+                        NE.iloc[i, j] = NE.iloc[i, j-1]
             st.session_state.NE = NE
-
             if "NE" in st.session_state:
 
                 NE = st.session_state.NE
