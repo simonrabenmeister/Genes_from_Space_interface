@@ -17,7 +17,9 @@ from functions import LC_area
 from functions import TC_area
 import uuid
 import os
+from streamlit_js_eval import streamlit_js_eval
 
+st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 
 with open("directories.txt", "r") as file:
     directories = file.readlines()
@@ -35,10 +37,8 @@ if "bbox" not in st.session_state:
     st.session_state.bbox = None
 if "stage" not in st.session_state:
     st.session_state.stage = "start"           
-if "height" not in st.session_state:
-    st.session_state.height = 1000
 if "center" not in st.session_state:
-    st.session_state.center = {"lat": 45.0, "lng": 5.0}  # Default center coordinates
+    st.session_state.center = {"lat": 0.0, "lng": 0.0}  # Default center coordinates
 if "zoom" not in st.session_state:
     st.session_state.zoom = 5  # Default zoom level
 if "country" not in st.session_state:
@@ -113,7 +113,7 @@ if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
 
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
-
+st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
@@ -158,7 +158,6 @@ values = [
 ]
 
 
-st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("""
     <style>
            .block-container {
@@ -175,27 +174,19 @@ st.markdown("""
            }
     </style>
     """, unsafe_allow_html=True)
+    
+st.markdown("# Genes from Space Tool")
 with st.sidebar:
     with st.expander("Settings", expanded=False):
-        st.session_state.height = st.slider(
-            "Page Height",0, 2000, st.session_state.height
-        )
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
-
-
-
 
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
-
-
-
-
 col1, col2= st.columns(2)
 
 
 with col1.container( border=True, key="image-container", height=st.session_state.height):
-    st.title("Genes from Space Tool")
+
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
 
@@ -362,13 +353,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
         if region=="Map selection":
             st.markdown(rtext("1.3.2_ti"))
             st.markdown(rtext("1.3.2_te"))
-            bbox_input = st.text_input("Bounding Box",placeholder="[5.831977, 45.721522, 10.763195, 47.901613]", value=st.session_state.GBIF_data["bbox"])
             st.session_state.countries = []
-            if bbox_input is not None:
-                try:
-                    st.session_state.GBIF_data["bbox"] = list(map(float, bbox_input.strip("[]").split(",")))
-                except ValueError:
-                    st.error("Invalid bounding box format. Please enter in the format: [min_lon, min_lat, max_lon, max_lat]")
         if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
             if st.button("Get observations from GBIF"):
                 
@@ -404,6 +389,14 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.session_state.obs_edit = obs
                     st.session_state.stage = "Manipulate points"
     if st.session_state.obs_edit is not None and st.session_state.baseyear is not None:
+        # Calculate the center of all point observations in total
+        lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
+        lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
+        center_lat = np.mean(lats)
+        center_lng = np.mean(lngs)
+
+        # Update session state with the center coordinates
+        st.session_state.center = {"lat": center_lat, "lng": center_lng}
         st.markdown(rtext("1.3.3_ti"))
         st.markdown(rtext("1.3.3_te"))
         if st.button("save points"):
@@ -505,6 +498,7 @@ with col1.container( border=True, key="image-container", height=st.session_state
                     st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
             
             if st.form_submit_button("Submit"):
+                st.session_state.run_id = str(uuid.uuid4())
                 
                 setattr(st.session_state, "LC_class_index",  st.session_state.LC["LC_class"])
                 if st.session_state.LC_selection=="manual Land Cover":

@@ -14,7 +14,7 @@ from shapely.ops import unary_union
 import seaborn as sns
 import glasbey
 import geopandas as gpd
-
+import os
 
 with open("directories.txt", "r") as file:
     directories = file.readlines()
@@ -154,7 +154,7 @@ def polygon_clustering():
 
         st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
     if st.session_state.poly_creation == "Automated calculation of population boundaries":
-        if st.session_state.buffer is not None:
+        if st.session_state.buffer is not None and st.session_state.distance:
             st.session_state.polyinfo["polygons"] = None
 
             # Define the buffer radius in kilometers
@@ -249,12 +249,12 @@ def polygon_clustering():
             ).add_to(fg)
             # Add the Draw tool to the map
         draw = Draw(export=False, draw_options={
-            'polyline': True,
+            'polyline': False,
             'polygon': True,
-            'circle': True,
+            'circle': False,
             'rectangle': True,
-            'marker': True,
-            'circlemarker': True
+            'marker': False,
+            'circlemarker': False
         }, edit_options={
             'edit': True,
             'remove': True
@@ -265,55 +265,55 @@ def polygon_clustering():
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
         st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)
 
-    obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
-    geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
-    new_df = geo_df.set_crs(epsg=4326)
-    new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
+        obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
+        geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
+        new_df = geo_df.set_crs(epsg=4326)
+        new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
 
-    if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None:
+        if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None and st.session_state.buffer is not None :
 
-        size=st.session_state.buffer*1000
-        if st.button("Group Polygons"):
+            size=st.session_state.buffer*1000
+            if st.button("Group Polygons"):
 
-            circles = new_df['geometry'].buffer(size)
-            obs['circles'] = circles.to_crs(epsg=4326)
-            
-            # Group the circles into clusters depending on drawn polygons
-            clusters = pd.DataFrame()
-            for i in range(0, len(st.session_state.output["all_drawings"])):
-                polygon_coords = st.session_state.output["all_drawings"][i]["geometry"]["coordinates"][0]
-                polygon = Polygon(polygon_coords)
-                obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimallongitude"], row["decimallatitude"])), axis=1)
-                if obs[f"Pop{i+1}"].any():  # Skip if the polygon does not contain any observations
-                    polys = obs[obs[f"Pop{i+1}"]]['circles']
-                    clusters = pd.concat([clusters, gpd.GeoDataFrame(geometry=[unary_union(polys)])], ignore_index=True)
+                circles = new_df['geometry'].buffer(size)
+                obs['circles'] = circles.to_crs(epsg=4326)
+                
+                # Group the circles into clusters depending on drawn polygons
+                clusters = pd.DataFrame()
+                for i in range(0, len(st.session_state.output["all_drawings"])):
+                    polygon_coords = st.session_state.output["all_drawings"][i]["geometry"]["coordinates"][0]
+                    polygon = Polygon(polygon_coords)
+                    obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimallongitude"], row["decimallatitude"])), axis=1)
+                    if obs[f"Pop{i+1}"].any():  # Skip if the polygon does not contain any observations
+                        polys = obs[obs[f"Pop{i+1}"]]['circles']
+                        clusters = pd.concat([clusters, gpd.GeoDataFrame(geometry=[unary_union(polys)])], ignore_index=True)
 
-            for i, row1 in clusters.iterrows():
-                for j, row2 in clusters.iterrows():
-                    if i >= j:
-                        continue
-                    if clusters.iloc[i]["geometry"].intersects(clusters.iloc[j]["geometry"]):
-                        intersection = clusters.iloc[i]["geometry"].intersection(clusters.iloc[j]["geometry"])
-                        if not intersection.is_empty:
-                            # Assign the overlap to the population with the lower number
-                            if int(i) < int(j):
-                                clusters.iloc[i]["geometry"] = clusters.iloc[i]["geometry"].union(intersection)
-                                clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].difference(intersection)
-                            else:
-                                clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].union(intersection)
-                                clusters.iloc[i]["geometry"]= clusters.iloc[i]["geometry"].difference(intersection)
-            # Create a color palette for the clusters
-                colors = glasbey.create_palette(palette_size=len(clusters), colorblind_safe=True, cvd_severity=100)
-                sns.palplot(colors)
-            # Create features to plot
-            features = []
-            for i, poly in clusters.iterrows():
-                color = colors[i % len(colors)]
-                poly
-                feature = geojson.Feature(geometry=poly["geometry"], properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
-                features.append(feature)
-            st.session_state.original_polygons = geojson.FeatureCollection(features)
-            st.rerun(scope="fragment")
+                for i, row1 in clusters.iterrows():
+                    for j, row2 in clusters.iterrows():
+                        if i >= j:
+                            continue
+                        if clusters.iloc[i]["geometry"].intersects(clusters.iloc[j]["geometry"]):
+                            intersection = clusters.iloc[i]["geometry"].intersection(clusters.iloc[j]["geometry"])
+                            if not intersection.is_empty:
+                                # Assign the overlap to the population with the lower number
+                                if int(i) < int(j):
+                                    clusters.iloc[i]["geometry"] = clusters.iloc[i]["geometry"].union(intersection)
+                                    clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].difference(intersection)
+                                else:
+                                    clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].union(intersection)
+                                    clusters.iloc[i]["geometry"]= clusters.iloc[i]["geometry"].difference(intersection)
+                # Create a color palette for the clusters
+                    colors = glasbey.create_palette(palette_size=len(clusters), colorblind_safe=True, cvd_severity=100)
+                    sns.palplot(colors)
+                # Create features to plot
+                features = []
+                for i, poly in clusters.iterrows():
+                    color = colors[i % len(colors)]
+                    poly
+                    feature = geojson.Feature(geometry=poly["geometry"], properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
+                    features.append(feature)
+                st.session_state.original_polygons = geojson.FeatureCollection(features)
+                st.rerun(scope="fragment")
     
     if st.session_state.original_polygons is not None:
 
@@ -327,10 +327,11 @@ def polygon_clustering():
                 st.session_state.center=st.session_state.output["center"]
                 st.session_state.stage = "LC"
                 st.session_state.biab_dir
-                with open(f"{st.session_state.biab_dir}/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+                os.makedirs(os.path.dirname(f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.poly_directory}"), exist_ok=True)
+                with open(f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.poly_directory}", "w") as f:
                     geojson.dump(st.session_state.polyinfo["polygons"], f)
                 st.success("Polygons saved successfully.")
-                st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
                 del st.session_state.original_polygons
                 st.rerun()
 
@@ -395,10 +396,12 @@ def convert_df():
         st.session_state.edited_df=edited_df
         
     if st.button("Confirm:"):
-        with open(f"{st.session_state.biab_dir}/userdata/interface_polygons/updated_polygons.geojson", "w") as f:
+        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+        os.makedirs(os.path.dirname(st.session_state.poly_directory), exist_ok=True)
+        with open(st.session_state.poly_directory, "w") as f:
             geojson.dump(st.session_state.polygons, f)
         st.success("Polygons saved successfully.")
-        st.session_state.poly_directory = "/userdata/interface_polygons/updated_polygons.geojson"
+        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
         st.rerun()
 @st.fragment
 def mapbbox():

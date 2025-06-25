@@ -17,6 +17,7 @@ import io
 import uuid
 import os
 import plotly.graph_objects as go
+from streamlit_js_eval import streamlit_js_eval
 
 if "output_stage" not in st.session_state:
     st.session_state.output_stage = "upload"
@@ -28,8 +29,7 @@ if "relareaplot" not in st.session_state:
     st.session_state.relareaplot = None
 if "areaplot" not in st.session_state:
     st.session_state.areaplot = None
-if "height" not in st.session_state:
-    st.session_state.height=1000
+
 if "geojson_data" not in st.session_state:
     st.session_state.geojson_data = None
 if "properties" not in st.session_state:
@@ -37,21 +37,21 @@ if "properties" not in st.session_state:
 if "upload" not in st.session_state:
     st.session_state.upload = False
 if "rel_habitat_change_table_output" not in st.session_state:
-    st.session_state.rel_habitat_change_table = None
+    st.session_state.rel_habitat_change_table_output = None
 if "area_table_output" not in st.session_state:
-    st.session_state.area_table = None
+    st.session_state.area_table_output = None
 if "pop_polygons" not in st.session_state:
     st.session_state.pop_polygons = None
-if "NE" not in st.session_state:
-    st.session_state.NE = None
-if "editable_df" not in st.session_state:
-    st.session_state.editable_df = None
-if "NC" not in st.session_state:
-    st.session_state.NC = None
-if "GAIN" not in st.session_state:
-    st.session_state.GAIN = None
-if "LOSS" not in st.session_state:
-    st.session_state.LOSS = None
+if "NE_output" not in st.session_state:
+    st.session_state.NE_output = None
+if "editable_df_output" not in st.session_state:
+    st.session_state.editable_df_output = None
+if "NC_output" not in st.session_state:
+    st.session_state.NC_output = None
+if "GAIN_output" not in st.session_state:
+    st.session_state.GAIN_output = None
+if "LOSS_output" not in st.session_state:
+    st.session_state.LOSS_output = None
 if "polyinfo" not in st.session_state:
     st.session_state.polyinfo = None
 if "LC_classnames_output" not in st.session_state:
@@ -63,13 +63,10 @@ if "default_nenc" not in st.session_state:
 st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("# Output Page")
 st.sidebar.header("Habitat")
-
+st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
 
 with st.sidebar:
     with st.expander("Settings", expanded=False):
-        st.session_state.height = st.slider(
-            "Page Height",0, 2000, st.session_state.height
-        )
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
 st.markdown("""
     <style>
@@ -106,6 +103,7 @@ def open_tif(tif):
 
 ##Load Runs
 input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True, "output_stage":"upload", "default_dens":None,"default_nenc":None,"properties":None }))
+
 if st.session_state.upload and input is not None:
     # Load the GeoJSON file
     geojson_data = json.load(input)
@@ -148,7 +146,7 @@ LOSS=st.session_state.LOSS_output
 properties=st.session_state.properties
 class_names=st.session_state.LC_classnames_output
 
-if input is not None or st.session_state.polyinfo is not None:
+if input is not None or st.session_state.pop_polygons is not None:
     ##create LC maps
     if NC is not None:
         NCarray, NCbbox = open_tif(NC)
@@ -258,7 +256,6 @@ if input is not None or st.session_state.polyinfo is not None:
 
 ## Create relative change plot
     rel_change = pd.DataFrame(rel_habitat_change_table)
-
     rel_change = rel_change.melt(id_vars="name", var_name="year", value_name="habitat_area")
     rel_change["year"] = rel_change["year"].str.replace("y", "").astype(int)
 
@@ -340,7 +337,6 @@ if input is not None or st.session_state.polyinfo is not None:
             properties["nenc"] = [0] * len(properties)
             properties["pop_size"] = [0] * len(properties)
             properties["effective_size"] = [0] * len(properties)
-
             if st.form_submit_button("Submit" ):
 
                 properties = properties.assign(Population_Density=st.session_state.default_dens)
@@ -475,7 +471,7 @@ if input is not None or st.session_state.polyinfo is not None:
                 "GAIN": GAIN,
                 "LOSS": LOSS,
                 "properties": st.session_state.properties.to_dict(),
-                "LC_class_names": st.session_state.LC_classnames,
+                "LC_class_names": st.session_state.LC_classnames_output,
                 "run_id": st.session_state.run_id_output,
                 "default_dens": st.session_state.default_dens,
                 "default_nenc": st.session_state.default_nenc

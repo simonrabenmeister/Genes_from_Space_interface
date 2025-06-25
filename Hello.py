@@ -1,20 +1,17 @@
 import streamlit as st
 import pandas as pd
-
+from streamlit_js_eval import streamlit_js_eval
 st.set_page_config(
     page_title="GFS-tool",
     page_icon="🌍",
     layout="wide"
 )
 
-if "height" not in st.session_state:
-    st.session_state.height = 1000
+st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
 st.write("# Welcome to Genes from Space! 🌍")
 with st.sidebar:
     with st.expander("Settings", expanded=False):
-        st.session_state.height = st.slider(
-            "Page Height",0, 2000, st.session_state.height
-        )
+
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
 
 texts = pd.read_csv("texts.csv").set_index("id")
