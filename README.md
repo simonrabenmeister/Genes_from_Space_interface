@@ -703,7 +703,7 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
     ```
     For more information on creating or setting up a conda environment: https://docs.conda.io/projects/conda/en/stable/user-guide/getting-started.html
 4. Start the application:
-    Once you set up the conda environment, you can run the streamlit app within the environment with the following command
+    Once you set up the conda environment, you can navigate into the Genes_from_Space_interface directory in your terminal run the streamlit app within the environment with the following command
     ```bash
     streamlit run Hello.py
     ```
