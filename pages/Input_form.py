@@ -40,7 +40,7 @@ if "stage" not in st.session_state:
 if "center" not in st.session_state:
     st.session_state.center = {"lat": 0.0, "lng": 0.0}  # Default center coordinates
 if "zoom" not in st.session_state:
-    st.session_state.zoom = 5  # Default zoom level
+    st.session_state.zoom = 3  # Default zoom level
 if "country" not in st.session_state:
     st.session_state.country = None
 if "index" not in st.session_state:
@@ -113,6 +113,7 @@ if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
 
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
+
 st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
@@ -185,209 +186,213 @@ def rtext(id):
 col1, col2= st.columns(2)
 
 
-with col1.container( border=True, key="image-container", height=st.session_state.height):
+with col1.container( border=False, key="image-container", height=st.session_state.height):
 
-    st.markdown(rtext("1_1_ti"))
-    st.markdown(rtext("1_1_te"))
-
-    name_to_species = st.text_input(rtext('1_1_in'), placeholder="Example: Quercus sartorii",value=st.session_state["species"],  disabled=st.session_state["species"]!=None)
+    st.markdown(rtext("1_ti"))
+    st.markdown(rtext("1_te"))
 
 
-    if name_to_species:
-        
-        if st.session_state["species"]==None: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 
 
-            # Make the API call
 
-            response = requests.get(f"https://api.gbif.org/v1/species/match", params={"name": name_to_species})
-            response = response.json()
+    selection=["Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"]
 
-            # Check if the request was successful
+    st.session_state["data_source"] = st.selectbox(
+        "Select a tool", selection, 
+        index=st.session_state["data_source_index"],  
+        placeholder="Select Point source", 
+        key="data_source_key",
+        on_change=lambda: (
+        setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key)),
+        setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
+        setattr(st.session_state, 'obs', None),
+        setattr(st.session_state, 'obs_edit', None),
+        setattr(st.session_state, 'buffer', None),
+        setattr(st.session_state, 'distance', None),
+        setattr(st.session_state, 'LC_selection', None),
+        setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
+        setattr(st.session_state, 'LC_index', None),
+        setattr(st.session_state, 'area_table', None),
+        setattr(st.session_state, 'stage', "upload"),
+        setattr(st.session_state, 'LC_class_index', None),
+        setattr(st.session_state, "index_poly", None)
+        )
+    )
+    with st.expander(rtext("1_exp_ti"), expanded=False):
+        st.markdown(rtext("1_exp"))
+    if st.session_state["data_source"] is not None:
+        st.markdown(rtext("1_1_ti"))
+        st.markdown(rtext("1_1_te"))
+        name_to_species = st.text_input(rtext('1_1_in'), placeholder="Example: Quercus sartorii",value=st.session_state["species"],  disabled=st.session_state["species"]!=None)
+        if name_to_species:
+            
+            if st.session_state["species"]==None: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 
 
-            if response["matchType"] != "NONE":
-            # Parse the JSON response
+                # Make the API call
 
-                st.write(rtext('1_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_1_in_te2'))
-                if st.button(rtext('1_1_in_bu1')):
-                    st.session_state["species"] = response["scientificName"]
-                    st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+                response = requests.get(f"https://api.gbif.org/v1/species/match", params={"name": name_to_species})
+                response = response.json()
 
-            else:
+                # Check if the request was successful
 
-                st.write(rtext('1_1_in_te3'))
-                if st.button(rtext('1_1_in_bu2')):
-                    st.session_state["species"] = name_to_species                
-                    st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+                if response["matchType"] != "NONE":
+                # Parse the JSON response
 
-    if st.session_state["species"] is not None:
+                    st.write(rtext('1_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_1_in_te2'))
+                    if st.button(rtext('1_1_in_bu1')):
+                        st.session_state["species"] = response["scientificName"]
+                        st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
+                else:
+
+                    st.write(rtext('1_1_in_te3'))
+                    if st.button(rtext('1_1_in_bu2')):
+                        st.session_state["species"] = name_to_species                
+                        st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
+
         
         st.number_input("Baseline Year", step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
         with st.expander(rtext("1_2_exp"), expanded=False):
             st.markdown(rtext("1_2_te"))
-    if st.session_state["baseyear"] is not None:             
-        st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
-        st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
-        selection=["Upload your own point observations", "Source points from GBIF", "Upload your own Polygons"]
+        if st.session_state["baseyear"] is not None:             
+            st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
+            st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
+    if st.session_state.baseyear is not None and st.session_state["species"] is not None:
+        if st.session_state["data_source"]=="Upload your own Polygons":
 
-        st.markdown(rtext('1_ti'))
-        st.markdown(rtext("1_te"))
+            st.markdown(rtext("1.1_ti"))
+            st.markdown(rtext("1.1_te"))
+        #Upload your own Polygon file
+            poly_link= st.file_uploader("Uplad your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", on_change=lambda: st.session_state.update({"stage": "polygon_clustering"}))
+            if poly_link is not None:
+                try:
+                    st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
 
-        st.session_state["data_source"] = st.selectbox(
-            "Select a tool", selection, 
-            index=st.session_state["data_source_index"],  
-            placeholder="Select Point source", 
-            key="data_source_key",
-            on_change=lambda: (
-            setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key)),
-            setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
-            setattr(st.session_state, 'obs', None),
-            setattr(st.session_state, 'obs_edit', None),
-            setattr(st.session_state, 'buffer', None),
-            setattr(st.session_state, 'distance', None),
-            setattr(st.session_state, 'LC_selection', None),
-            setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
-            setattr(st.session_state, 'LC_index', None),
-            setattr(st.session_state, 'area_table', None),
-            setattr(st.session_state, 'stage', "upload"),
-            setattr(st.session_state, 'LC_class_index', None),
-            setattr(st.session_state, "index_poly", None)
+
+                except Exception as e:
+                    st.error(f"Error reading the GeoJSON file: {e}")
+                # Calculate the center of the polygon
+                coordinates = st.session_state.polyinfo["polygons"]["features"][0]["geometry"]["coordinates"][0]
+                flattened_coordinates = [point for sublist in coordinates for point in sublist]
+                lats = [point[1] for point in flattened_coordinates]
+                lngs = [point[0] for point in flattened_coordinates]
+                center_lat = sum(lats) / len(lats)
+                center_lng = sum(lngs) / len(lngs)
+
+                # Update session state with the center coordinates
+                st.session_state.center = {"lat": center_lat, "lng": center_lng}
+        #Download example file
+            st.download_button(
+                label="Download Example file",
+                data=open("polygon_example.geojson", "rb").read(),
+                file_name="polygon_example.geojson",
+                mime="application/geo+json",
             )
-        )
-    if st.session_state["data_source"]=="Upload your own Polygons":
 
-        st.markdown(rtext("1.1_ti"))
-        st.markdown(rtext("1.1_te"))
-    #Upload your own Polygon file
-        poly_link= st.file_uploader("Uplad your own Polygons", type=["geojson"], label_visibility="collapsed", key="point_source", on_change=lambda: st.session_state.update({"stage": "polygon_clustering"}))
-        if poly_link is not None:
-            try:
-                st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
+            if st.session_state.polyinfo["polygons"] is not None:
+                run=os.path.join(st.session_state.run_dir, "updated_polygons.geojson")
+                os.makedirs(os.path.dirname(run), exist_ok=True)  # Ensure the directory exists
+                with open(run, "w") as f:
+                    geojson.dump(st.session_state.polyinfo["polygons"], f)
+                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+                st.session_state.stage = "LC"
 
+        if st.session_state["data_source"]=="Upload your own point observations":
 
-            except Exception as e:
-                st.error(f"Error reading the GeoJSON file: {e}")
-            # Calculate the center of the polygon
-            coordinates = st.session_state.polyinfo["polygons"]["features"][0]["geometry"]["coordinates"][0]
-            flattened_coordinates = [point for sublist in coordinates for point in sublist]
-            lats = [point[1] for point in flattened_coordinates]
-            lngs = [point[0] for point in flattened_coordinates]
-            center_lat = sum(lats) / len(lats)
-            center_lng = sum(lngs) / len(lngs)
+            st.markdown(rtext("1.2_ti"))
+            st.markdown(rtext("1.2_te"))
+        #Upload your own point file
+            obs_link = st.file_uploader("Upload your own point observations", type=["csv"], label_visibility="collapsed", key="point_source", 
+                                        on_change=lambda: st.session_state.update({"stage": "Manipulate points"}))
+            if obs_link is not None and st.session_state.obs_edit is None:
+                try:
+                    st.session_state.obs_edit = pd.read_csv(obs_link, sep="\t")
+                    # Check if the required columns are present
+                    required_columns = ["decimallongitude", "decimallatitude"]
+                    if not all(col in st.session_state.obs_edit.columns for col in required_columns):
+                        st.error(f"The uploaded file must contain the following columns: {', '.join(required_columns)}")
 
-            # Update session state with the center coordinates
-            st.session_state.center = {"lat": center_lat, "lng": center_lng}
-    #Download example file
-        st.download_button(
-            label="Download Example file",
-            data=open("polygon_example.geojson", "rb").read(),
-            file_name="polygon_example.geojson",
-            mime="application/geo+json",
-        )
+                except Exception as e:
+                    st.error(f"Error reading the CSV file: {e}")
+            if st.session_state.obs_edit is not None:
+                # Calculate the center of all point observations in total
+                lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
+                lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
+                center_lat = np.mean(lats)
+                center_lng = np.mean(lngs)
 
-        if st.session_state.polyinfo["polygons"] is not None:
-            run=os.path.join(st.session_state.run_dir, "updated_polygons.geojson")
-            os.makedirs(os.path.dirname(run), exist_ok=True)  # Ensure the directory exists
-            with open(run, "w") as f:
-                geojson.dump(st.session_state.polyinfo["polygons"], f)
-            st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-            st.session_state.stage = "LC"
-
-    if st.session_state["data_source"]=="Upload your own point observations":
-
-        st.markdown(rtext("1.2_ti"))
-        st.markdown(rtext("1.2_te"))
-    #Upload your own point file
-        obs_link = st.file_uploader("Upload your own point observations", type=["csv"], label_visibility="collapsed", key="point_source", 
-                                    on_change=lambda: st.session_state.update({"stage": "Manipulate points"}))
-        if obs_link is not None and st.session_state.obs_edit is None:
-            try:
-                st.session_state.obs_edit = pd.read_csv(obs_link, sep="\t")
-                # Check if the required columns are present
-                required_columns = ["decimallongitude", "decimallatitude"]
-                if not all(col in st.session_state.obs_edit.columns for col in required_columns):
-                    st.error(f"The uploaded file must contain the following columns: {', '.join(required_columns)}")
-
-            except Exception as e:
-                st.error(f"Error reading the CSV file: {e}")
-        if st.session_state.obs_edit is not None:
-            # Calculate the center of all point observations in total
-            lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
-            lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
-            center_lat = np.mean(lats)
-            center_lng = np.mean(lngs)
-
-            # Update session state with the center coordinates
-            st.session_state.center = {"lat": center_lat, "lng": center_lng}
-            
-
-    #Download example file
-        st.download_button(
-            label="Download Example file",
-            data=open("points_example.csv", "rb").read(),
-            file_name="points_example.csv",
-            mime="text/csv"
-        )
-
-    if st.session_state["data_source"]=="Source points from GBIF":
-
-
-        st.markdown(rtext("1.3_ti"))
-        st.markdown(rtext("1.3_te"))
-
-        region_list=["Map selection", "Country"]
-        region = st.selectbox(
-            "Region Selection",
-            region_list,
-            index=st.session_state["region_index"],
-            placeholder="Select Region",
-            key="region_selection",
-            on_change=lambda: (
-            setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection)),
-            setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == "Country" else "bbox_draw"),
-            )
-        )
-        
-        if region== "Country": 
-            st.session_state.GBIF_data["bbox"] = None
-            countries = st.multiselect("Select countries", country_names, default=st.session_state.countries,key="country_selection", on_change=lambda: setattr(st.session_state, 'countries', st.session_state.country_selection))
-        if region=="Map selection":
-            st.markdown(rtext("1.3.2_ti"))
-            st.markdown(rtext("1.3.2_te"))
-            st.session_state.countries = []
-        if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
-            if st.button("Get observations from GBIF"):
+                # Update session state with the center coordinates
+                st.session_state.center = {"lat": center_lat, "lng": center_lng}
                 
-                st.session_state.polyinfo = {
-                        "buffer": None,
-                        "distance": None,
-                        "polygons": None
-                    }
-                st.session_state.LC = {
-                        "LC_type": None,
-                        "LC_class": None,
-                        "index": None
-                    }  
 
-                st.session_state.obs = None
-                with st.spinner("Wait for it..."):
-                    data = {
-                        "pipeline@52": st.session_state.species,
-                        "pipeline@60": st.session_state.countries, 
-                        "pipeline@54": [st.session_state.GBIF_data["start_y"]],
-                        "pipeline@55": [st.session_state.GBIF_data["end_y"]],
-                        "pipeline@56": [0.1],  # Example value for coordinate precision
-                        "pipeline@57": [0.1],  # Example value for coordinate uncertainty
-                        "pipeline@58": st.session_state.GBIF_data["bbox"]
-                    }
-                    if data["pipeline@58"] is None:
-                        data["pipeline@58"] = []
-                    GBIF_response = GBIF(data)
-                    output_GBIF = get_output(GBIF_response.text)
-                    GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
-                    obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
-                    obs = pd.read_csv(obs_file, sep='\t')
-                    st.session_state.obs_edit = obs
-                    st.session_state.stage = "Manipulate points"
+        #Download example file
+            st.download_button(
+                label="Download Example file",
+                data=open("points_example.csv", "rb").read(),
+                file_name="points_example.csv",
+                mime="text/csv"
+            )
+
+        if st.session_state["data_source"]=="Source points from GBIF":
+
+
+            st.markdown(rtext("1.3_ti"))
+
+
+            region_list=["Map selection", "Country"]
+            region = st.selectbox(
+                "Region Selection",
+                region_list,
+                index=st.session_state["region_index"],
+                placeholder="Select Region",
+                key="region_selection",
+                on_change=lambda: (
+                setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection)),
+                setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == "Country" else "bbox_draw"),
+                )
+            )
+            with st.expander(rtext("1.3_exp"), expanded=False):
+                st.markdown(rtext("1.3_te"))
+            if region== "Country": 
+                st.session_state.GBIF_data["bbox"] = None
+                countries = st.multiselect("Select countries", country_names, default=st.session_state.countries,key="country_selection", on_change=lambda: setattr(st.session_state, 'countries', st.session_state.country_selection))
+            if region=="Map selection":
+                st.markdown(rtext("1.3.2_ti"))
+                st.markdown(rtext("1.3.2_te"))
+                st.session_state.countries = []
+            if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
+                if st.button("Get observations from GBIF"):
+                    
+                    st.session_state.polyinfo = {
+                            "buffer": None,
+                            "distance": None,
+                            "polygons": None
+                        }
+                    st.session_state.LC = {
+                            "LC_type": None,
+                            "LC_class": None,
+                            "index": None
+                        }  
+
+                    st.session_state.obs = None
+                    with st.spinner("Wait for it..."):
+                        data = {
+                            "pipeline@52": st.session_state.species,
+                            "pipeline@60": st.session_state.countries, 
+                            "pipeline@54": [st.session_state.GBIF_data["start_y"]],
+                            "pipeline@55": [st.session_state.GBIF_data["end_y"]],
+                            "pipeline@56": [0.1],  # Example value for coordinate precision
+                            "pipeline@57": [0.1],  # Example value for coordinate uncertainty
+                            "pipeline@58": st.session_state.GBIF_data["bbox"]
+                        }
+                        if data["pipeline@58"] is None:
+                            data["pipeline@58"] = []
+                        GBIF_response = GBIF(data)
+                        output_GBIF = get_output(GBIF_response.text)
+                        GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
+                        obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
+                        obs = pd.read_csv(obs_file, sep='\t')
+                        st.session_state.obs_edit = obs
+                        st.session_state.stage = "Manipulate points"
     if st.session_state.obs_edit is not None and st.session_state.baseyear is not None:
         # Calculate the center of all point observations in total
         lats = st.session_state.obs_edit["decimallatitude"].to_numpy()

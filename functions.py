@@ -263,7 +263,7 @@ def polygon_clustering():
         fg2 = folium.FeatureGroup(name="Markers")
         if st.session_state.original_polygons is not None:
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
-        st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)
+        st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True, height=st.session_state.height)
 
         obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
         geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
