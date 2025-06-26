@@ -707,15 +707,16 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
     ```bash
     streamlit run Hello.py
     ```
-# Bon in a Box Pipelines in bon-in-a-box-pipelines/pipelines/GenesFromSpace
-## /Tool
+# Bon in a Box Pipelines
+This section documents all Subfolders of the folder bon-in-a-box-pipelines/pipelines/GenesFromSpace of the Bon in a Box Tool (https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/genes-from-space--update)
+## Tool
 - This Folder contains all Pipelines which execute the complete Genes from Space Workflow. The title of each Pipeline describes the Landcover used, source of Point observations (GBIF or userdata) and method of area selection. These are used by the Interface_V1 and thus all the runs conducted during the Genes from Space Workshop(Feb 2025).
 Example: Forest_cover_v_GBIF_bbox.json
 - For the _obs.json Pipeline there is a obs_server.json version which requires the observation data Input to be a string with the format: [('ID', 'Value'), (1, 'a'), (2, 'b'), (3, 'c')], transforms it into a tsv for further use. This version is used by the Interface on the server, since users cant upload data to the user folder.
 The normal _obs.json version the observation data input is a directory to a file in the user data folder. This script should be used if Users run Biab on their own machine and can upload files into the userdata folder.
-## /ToolComponents
+## ToolComponents
 - This Folder contains sub pipelines which are used within the main /Tool Pipelines.
-## /ToolComponents/Interface
+## ToolComponents/Interface
 -This Folder contains Pipelines which are used by the Interface_V2
 -The Pipelines are mostly single scripts contained in a Pipeline framework, since (to the knowlege of the developers) API calls are only possible with pipelines. So for the Tool to be able to run specific parts of the bigger Genes from Space Workflow, each step has to be a pipeline.
 
