@@ -1,0 +1,17 @@
+name: habitat_env
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - geojson
+  - numpy
+  - fpdf
+  - matplotlib
+  - pillow
+  - plotly
+  - requests
+  - rasterio
+  - pandas
+  - folium
+  - streamlit
+prefix: /home/ubuntu/miniconda3/envs/habitat_env

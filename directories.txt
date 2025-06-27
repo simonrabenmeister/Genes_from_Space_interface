@@ -1,2 +1,3 @@
-/home/ubuntu/bon-in-a-box-pipelines
+/home/ubuntu/BIAB/bon-in-a-box-pipelines
 /home/ubuntu/Genes_from_Space_interface
+https://run.gfstool.com/

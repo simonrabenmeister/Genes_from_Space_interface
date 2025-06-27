@@ -16,8 +16,6 @@ import glasbey
 import geopandas as gpd
 import os
 
-with open("directories.txt", "r") as file:
-    directories = file.readlines()
 texts = pd.read_csv("texts.csv").set_index("id")
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
@@ -31,7 +29,7 @@ def get_output(response_code):
         history = None  # Initialize history variable
         for attempt in range(max_retries):
             try:
-                history = requests.get(f"http://localhost/api/history").json()
+                history = requests.get(f"{st.session_state.api_link}api/history").json()
                 break
             except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
@@ -43,17 +41,18 @@ def get_output(response_code):
         if status[0] != "running":
             break
     if status[0] == "completed":
-        output_bbiab= requests.get(f"http://localhost/api/{response_code}/outputs").json()
+        
+        output_bbiab= requests.get(f"{st.session_state.api_link}api/{response_code}/outputs").json()
         return output_bbiab
     
 def GBIF(data):
-    url = "http://localhost/pipeline/GenesFromSpace>ToolComponents>Interface>GBIF_API.json/run"
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>GBIF_API.json/run"
 
     headers = {"Content-Type": "application/json"}
     return requests.post(url, json=data, headers=headers)
 
 def LC_area(data):
-    url = "http://localhost/pipeline/GenesFromSpace>ToolComponents>Interface>LC_area.json/run"
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>LC_area.json/run"
 
     headers = {"Content-Type": "application/json"}
 
@@ -61,7 +60,7 @@ def LC_area(data):
 
 
 def TC_area(data):
-    url = "http://localhost/pipeline/GenesFromSpace>ToolComponents>Interface>TC_area.json/run"
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>TC_area.json/run"
 
 
     headers = {"Content-Type": "application/json"}
@@ -230,9 +229,9 @@ def polygon_clustering():
                     fill_color='lightblue'
                 ).add_to(fg)
             fg2= folium.FeatureGroup(name="Markers")
-            fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
+            fg2.add_child(folium.GeoJson(st.session_state.original_polygons,  popup=folium.GeoJsonPopup(fields=["name"])))
             st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)       
-            
+
 
     if st.session_state.poly_creation == "Draw population boundaries manually":
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
@@ -313,6 +312,7 @@ def polygon_clustering():
                     feature = geojson.Feature(geometry=poly["geometry"], properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
                     features.append(feature)
                 st.session_state.original_polygons = geojson.FeatureCollection(features)
+                
                 st.rerun(scope="fragment")
     
     if st.session_state.original_polygons is not None:

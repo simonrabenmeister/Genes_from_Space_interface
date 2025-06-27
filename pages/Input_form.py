@@ -24,7 +24,7 @@ st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 with open("directories.txt", "r") as file:
     directories = file.readlines()
 st.session_state.biab_dir = directories[0].strip()
-
+st.session_state.api_link= directories[2].strip()
 if "LC_class_names" not in st.session_state:
     st.session_state.LC_class_names=None
 if "countries" not in st.session_state:
@@ -388,6 +388,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         if data["pipeline@58"] is None:
                             data["pipeline@58"] = []
                         GBIF_response = GBIF(data)
+
                         output_GBIF = get_output(GBIF_response.text)
                         GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
                         obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
