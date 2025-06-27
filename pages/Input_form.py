@@ -113,8 +113,9 @@ if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
 
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
-
-st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
+height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
+if height_source is not None:
+    st.session_state.height=int(height_source*0.7)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc

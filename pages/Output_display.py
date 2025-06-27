@@ -63,8 +63,9 @@ if "default_nenc" not in st.session_state:
 st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("# Output Page")
 st.sidebar.header("Habitat")
-st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
-
+height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
+if height_source is not None:
+    st.session_state.height=int(height_source*0.7)
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)

@@ -7,7 +7,9 @@ st.set_page_config(
     layout="wide"
 )
 
-st.session_state.height=int(streamlit_js_eval(js_expressions='screen.height', key = 'SCR')*0.7)
+height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
+if height_source is not None:
+    st.session_state.height=int(height_source*0.7)
 st.write("# Welcome to Genes from Space! 🌍")
 with st.sidebar:
     with st.expander("Settings", expanded=False):
