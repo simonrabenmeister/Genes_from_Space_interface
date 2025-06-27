@@ -685,16 +685,18 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
     ```bash
     git clone https://github.com/simonrabenmeister/Genes_from_Space_interface
     ```
-2. Navigate to the project directory:
-    ```bash
-    cd Genes_from_Space_interface/Interface_v2
-    ```
-3. Install python packages:
-    ```bash
-    pip install streamlit
-    ```
-    further packages might be required
-4. Start the application:
+2. Create Conda Environment:
+   To make sure all required packages and their correct versions are loaded, it is best to create a conda environment in which the streamlit app runs. The environment.yml file has all the needed information to create such an environment.
+
+   Navigate to the Genes_from_Space_interface directory and run 
+   ```bash
+   conda env create -f environment.yml
+   ```
+3. Activate the conda environment:
+   ```bash
+   conda activate gfs_env
+   ```
+5. Start the application:
     ```bash
     streamlit run Hello.py
     ```
