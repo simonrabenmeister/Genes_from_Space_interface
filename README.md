@@ -681,8 +681,11 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
 - **/images**: This folder contains all the images displayed in the diffrent Interface pages.
 ## Additional Files
 - **conda_environment.yml**: This file contains the specifications for the conda environment used to run the Streamlit application. It ensures that all necessary dependencies and packages are installed for the tool to function correctly.
-- **directories.txt**: This file lists the directory structure of the project, providing an overview of the organization of files and folders within the repository.
+- **directories.txt**: This file lists the directory structure of the project, providing an overview of the organization of files and folders within the repository. 
 
+## Diagram
+This diagram shows how the code behind the Interface is structured, how the user interacts with it and how it is linked with bon in a box:
+![Genes from Space Interface Diagram](Genes_from_Space_interface/Interface_diagram.png)
 ## Installation
 1. Clone the repository:
     ```bash

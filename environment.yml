@@ -1,4 +1,4 @@
-name: habitat_env
+name: gfs_env
 channels:
   - defaults
 dependencies:
