@@ -685,7 +685,7 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
 
 ## Diagram
 This diagram shows how the code behind the Interface is structured, how the user interacts with it and how it is linked with bon in a box:
-![Genes from Space Interface Diagram](Genes_from_Space_interface/Interface_diagram.png)
+![Genes from Space Interface Diagram](Interface_diagram.png)
 ## Installation
 1. Clone the repository:
     ```bash
