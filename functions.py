@@ -273,7 +273,7 @@ def polygon_clustering():
         if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None and st.session_state.buffer is not None :
 
             size=st.session_state.buffer*1000
-            if st.button("Group Polygons"):
+            if st.button("Group observations by polygon"):
 
                 circles = new_df['geometry'].buffer(size)
                 obs['circles'] = circles.to_crs(epsg=4326)
@@ -328,8 +328,8 @@ def polygon_clustering():
                 st.session_state.stage = "LC"
                 st.session_state.biab_dir
                 st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                os.makedirs(os.path.dirname(f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.poly_directory}"), exist_ok=True)
-                with open(f"/home/ubuntu/bon-in-a-box-pipelines{st.session_state.poly_directory}", "w") as f:
+                os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
+                with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
                     geojson.dump(st.session_state.polyinfo["polygons"], f)
                 st.success("Polygons saved successfully.")
                 del st.session_state.original_polygons
