@@ -37,9 +37,9 @@ if "properties" not in st.session_state:
 if "upload" not in st.session_state:
     st.session_state.upload = False
 if "rel_habitat_change_table_output" not in st.session_state:
-    st.session_state.rel_habitat_change_table = None
+    st.session_state.rel_habitat_change_table_output = None
 if "area_table_output" not in st.session_state:
-    st.session_state.area_table = None
+   st.session_state.area_table_output = None
 if "pop_polygons" not in st.session_state:
     st.session_state.pop_polygons = None
 if "NE" not in st.session_state:
@@ -103,9 +103,10 @@ def open_tif(tif):
     return array, bbox
 
 
-
 ##Load Runs
 input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True, "output_stage":"upload", "default_dens":None,"default_nenc":None,"properties":None }))
+
+
 if st.session_state.upload and input is not None:
     # Load the GeoJSON file
     geojson_data = json.load(input)
@@ -123,6 +124,17 @@ if st.session_state.upload and input is not None:
     st.session_state.run_id_output = geojson_data["run_id"]
     st.session_state.default_dens= geojson_data["default_dens"]
     st.session_state.default_nenc=geojson_data["default_nenc"]
+
+    rel_habitat_change_table=st.session_state.rel_habitat_change_table_output
+    area_table=st.session_state.area_table_output
+    NE=st.session_state.NE_output
+    editable_df=st.session_state.editable_df_output
+    NC=st.session_state.NC_output
+    GAIN=st.session_state.GAIN_output
+    LOSS=st.session_state.LOSS_output
+    properties=st.session_state.properties
+    class_names=st.session_state.LC_classnames_output
+
 if st.session_state.output_stage == "run":
     st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
     st.session_state.NE_output= None
@@ -138,15 +150,15 @@ if st.session_state.output_stage == "run":
     st.session_state.default_dens = None
     st.session_state.default_nenc = None
 
-rel_habitat_change_table=st.session_state.rel_habitat_change_table_output
-area_table=st.session_state.area_table_output
-NE=st.session_state.NE_output
-editable_df=st.session_state.editable_df_output
-NC=st.session_state.NC_output
-GAIN=st.session_state.GAIN_output
-LOSS=st.session_state.LOSS_output
-properties=st.session_state.properties
-class_names=st.session_state.LC_classnames_output
+    rel_habitat_change_table=st.session_state.rel_habitat_change_table_output
+    area_table=st.session_state.area_table_output
+    NE=st.session_state.NE_output
+    editable_df=st.session_state.editable_df_output
+    NC=st.session_state.NC_output
+    GAIN=st.session_state.GAIN_output
+    LOSS=st.session_state.LOSS_output
+    properties=st.session_state.properties
+    class_names=st.session_state.LC_classnames_output
 
 if input is not None or st.session_state.polyinfo is not None:
     ##create LC maps
