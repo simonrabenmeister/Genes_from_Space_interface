@@ -19,7 +19,7 @@ import uuid
 import os
 from streamlit_js_eval import streamlit_js_eval
 
-st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
 
 with open("directories.txt", "r") as file:
     directories = file.readlines()
@@ -115,7 +115,7 @@ if "run_id" not in st.session_state:
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
-    st.session_state.height=int(height_source*0.7)
+    st.session_state.height=int(height_source*0.6)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
@@ -177,7 +177,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
     
-st.markdown("# Genes from Space Tool")
+st.image('images/logo.png')
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
@@ -375,7 +375,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         }  
 
                     st.session_state.obs = None
-                    with st.spinner("Wait for it..."):
+                    with st.spinner("Getting observation from GBIF... (this can take a few minutes)"):
                         data = {
                             "pipeline@52": st.session_state.species,
                             "pipeline@60": st.session_state.countries, 
@@ -406,7 +406,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.session_state.center = {"lat": center_lat, "lng": center_lng}
         st.markdown(rtext("1.3.3_ti"))
         st.markdown(rtext("1.3.3_te"))
-        if st.button("save points"):
+        if st.button("Confirm observation coordinates"):
             st.session_state.obs = st.session_state.obs_edit
             st.session_state.poly_creation = None
             st.session_state.LC = {
@@ -445,7 +445,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.number_input("Distance", value=st.session_state.distance, key="distance_input")
                 with st.expander(rtext("2.2.1_ti"), expanded=False):
                     st.markdown(rtext("2.2.1_te"))
-                if st.form_submit_button("Submit"):
+                if st.form_submit_button("Calculate population polygons"):
                     st.session_state.stage="polygon_clustering"
 
                     # Reset subsequent session states
@@ -504,13 +504,13 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 else:
                     st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
             
-            if st.form_submit_button("Submit"):
+            if st.form_submit_button("Get habitat data"):
                 st.session_state.run_id = str(uuid.uuid4())
                 
                 setattr(st.session_state, "LC_class_index",  st.session_state.LC["LC_class"])
                 if st.session_state.LC_selection=="manual Land Cover":
                     setattr(st.session_state,"LC_class_names",  LC_class)
-                with st.spinner("Wait for it..."):
+                with st.spinner("Processing habitat maps... (this can take a few minutes)"):
                     timeseries = st.session_state.LC["timeseries"]
                     if st.session_state.LC_selection=="manual Land Cover" or st.session_state.LC_selection=="automatic Land Cover":
                         data = {
@@ -565,6 +565,11 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.session_state.default_nenc=None
             st.session_state.properties=None
             st.switch_page("pages/Output_display.py")
+    
+    # add 2 empty lines for readability
+    st.markdown('')
+    st.markdown('')
+
 with col2:
     if st.session_state.stage=="bbox_draw":
         
@@ -582,3 +587,7 @@ with col2:
         fg.add_child(folium.GeoJson(st.session_state.polyinfo["polygons"], popup=folium.GeoJsonPopup(fields=["name"])))
         # Display the map
         st.session_state.output2 = st_folium(m, feature_group_to_add=fg, use_container_width=True)
+
+# add empty rows for readability
+    st.markdown('')
+    st.markdown('')

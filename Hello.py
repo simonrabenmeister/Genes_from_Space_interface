@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from streamlit_js_eval import streamlit_js_eval
 st.set_page_config(
-    page_title="GFS-tool",
+    page_title="Genes from Space",
     page_icon="🌍",
     layout="wide"
 )
@@ -10,7 +10,7 @@ st.set_page_config(
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
     st.session_state.height=int(height_source*0.7)
-st.write("# Welcome to Genes from Space! 🌍")
+st.image('images/logo.png')
 with st.sidebar:
     with st.expander("Settings", expanded=False):
 
@@ -31,7 +31,10 @@ with st.expander(rtext("h_exp1_ti")):
     st.markdown(rtext("h_exp1_te"))
 with st.expander(rtext("h_exp2_ti")):
     st.markdown(rtext("h_exp2_te"))
-    st.image("images/pipeline_description.png")
+    st.image("images/step1.png")
+    st.image("images/step2.png")
+
 with st.expander(rtext("h_exp3_ti")):
     st.markdown(rtext("h_exp3_te"))
 
+st.markdown(rtext("0_te2"))

@@ -107,7 +107,7 @@ def edit_points():
             st.session_state.index=None
 
         #Remove the point if the remove button is clicked
-        st.button("remove point", on_click=remove_point, args=(st.session_state.index,)) 
+        st.button("Click here to remove the selected observation", on_click=remove_point, args=(st.session_state.index,)) 
 
         st.session_state.obs=obs_edit
         if (
@@ -317,7 +317,7 @@ def polygon_clustering():
     
     if st.session_state.original_polygons is not None:
 
-        if st.button("Confirm and Proceed"):
+        if st.button("Confirm population polygons"):
             if st.session_state.original_polygons is not None:
                 st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
                 st.session_state.polyinfo["polygons"]
