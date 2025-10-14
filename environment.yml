@@ -1,11 +1,11 @@
 name: gfs_env
 channels:
+  - conda-forge
   - defaults
 dependencies:
   - python=3.9
   - geojson
   - numpy
-  - fpdf
   - matplotlib
   - pillow
   - plotly
@@ -14,4 +14,11 @@ dependencies:
   - pandas
   - folium
   - streamlit
+  - scipy
+  - shapely
+  - seaborn
+  - glasbey
+  - geopandas
+  - streamlit-folium
+  - streamlit-js-eval
 prefix: /home/ubuntu/miniconda3/envs/habitat_env

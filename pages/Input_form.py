@@ -480,7 +480,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             with st.expander(rtext("3.1_ti"), expanded=False):
                 st.markdown(rtext("3.1_te"))
         with st.form(key='areas', enter_to_submit=False):
-
+            
             if st.session_state.LC_selection=="manual Land Cover":
                 LC_class = st.multiselect("select LC class", options=LC_names, key="LC_class", default=st.session_state.LC_class_names)
                 
@@ -543,9 +543,13 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                             st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                         pop_area=f"/output/{area_output_code}/pop_habitat_area.tsv"
                         if st.session_state.LC_selection == "automatic Land Cover":
+                            
                             cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                             st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                             LC_class = json.load(open(f"{st.session_state.biab_dir}/output/{cover_output_code}/output.json"))["lc_classes"]
+                            
+                            if isinstance(LC_class, int):
+                                LC_class=[LC_class]
                             st.session_state.LC_classnames = [LC_names[values.index(value)] for value in LC_class]
                         area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
