@@ -32,8 +32,6 @@ if "height" not in st.session_state:
     st.session_state.height=1000
 if "geojson_data" not in st.session_state:
     st.session_state.geojson_data = None
-if "properties" not in st.session_state:
-    st.session_state.properties = None
 if "upload" not in st.session_state:
     st.session_state.upload = False
 if "rel_habitat_change_table_output" not in st.session_state:
@@ -266,7 +264,20 @@ if input is not None or st.session_state.polyinfo is not None:
 
 
 
+    #Create dataframe to be manipulated
+    if properties not in st.session_state:
+        properties = pd.DataFrame(
+            [
+                {"Name": poly["properties"]["name"]}
+                for poly in st.session_state.pop_polygons["features"]
+            ]
+        )
 
+        properties["Population_Density"] = [0] * len(properties)
+        properties["nenc"] = [0] * len(properties)
+        properties["pop_size"] = [0] * len(properties)
+        properties["effective_size"] = [0] * len(properties)
+        st.session_state.properties = properties
 
 ## Create relative change plot
     rel_change = pd.DataFrame(rel_habitat_change_table)
@@ -320,15 +331,6 @@ if input is not None or st.session_state.polyinfo is not None:
     if st.session_state.out is not None:
         with st.form(key='polygon', enter_to_submit=False):
 
-            st.session_state.default_dens = st.number_input(
-                "Default density", 
-                min_value=0.0, 
-                step=0.01, 
-                value=st.session_state.default_dens,
-                key="pop_density",
-
-            )
-
             st.session_state.default_nenc = st.number_input(
                 "Default Ne:Nc", 
                 min_value=0.0, 
@@ -340,27 +342,16 @@ if input is not None or st.session_state.polyinfo is not None:
             with st.expander(rtext("3_ex_ti"), expanded=False):
                 st.markdown(rtext("3_ex_te"))
 
-    #Create dataframe to be manipulated
-            properties = pd.DataFrame(
-                [
-                    {"Name": poly["properties"]["name"]}
-                    for poly in st.session_state.pop_polygons["features"]
-                ]
-            )
 
-            properties["Population_Density"] = [0] * len(properties)
-            properties["nenc"] = [0] * len(properties)
-            properties["pop_size"] = [0] * len(properties)
-            properties["effective_size"] = [0] * len(properties)
 
             if st.form_submit_button("Submit" ):
+                properties = st.session_state.properties
 
-                properties = properties.assign(Population_Density=st.session_state.default_dens)
+                properties = properties.assign(Population_Density=None)
                 properties = properties.assign(nenc=st.session_state.default_nenc)
-                properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens) ))
-                properties = properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(st.session_state.default_dens) * np.array(st.session_state.default_nenc))
+                properties = properties.assign(pop_size=None )
+                properties = properties.assign(effective_size=None)
                 st.session_state.properties = properties
-                setattr(st.session_state, 'default_dens', st.session_state.pop_density)
                 setattr(st.session_state, 'default_nenc', st.session_state.nenc)
 
 
@@ -368,47 +359,48 @@ if input is not None or st.session_state.polyinfo is not None:
 
 
         subcol1, subcol2 = st.columns(2)
-        if st.session_state.properties is not None:
-            NE= area_table.copy()
+        if st.session_state.default_nenc is not None:
+            if st.session_state.default_dens is not None:
+                NE= area_table.copy()
 
-            for i in range(0, len(NE)):
-                ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
-                NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
+                for i in range(0, len(NE)):
+                    ratio= st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1]* st.session_state.properties["nenc"][i]
+                    NE.iloc[i, 1:]=NE.iloc[i, 1:] * ratio
 
-            for i in range(0, len(NE)):
-                for j in range(2, NE.shape[1]):
-                    if NE.iloc[i, j-1] < NE.iloc[i, j]:
-                        NE.iloc[i, j] = NE.iloc[i, j-1]
-            st.session_state.NE = NE
-            if "NE" in st.session_state:
+                for i in range(0, len(NE)):
+                    for j in range(2, NE.shape[1]):
+                        if NE.iloc[i, j-1] < NE.iloc[i, j]:
+                            NE.iloc[i, j] = NE.iloc[i, j-1]
+                st.session_state.NE = NE
+                if "NE" in st.session_state:
 
-                NE = st.session_state.NE
-                ne_df_long = NE.melt(id_vars=NE.columns[0], var_name="year", value_name="NE")
-                ne_df_long["year"] = ne_df_long["year"].str.replace("y", "").astype(int)
+                    NE = st.session_state.NE
+                    ne_df_long = NE.melt(id_vars=NE.columns[0], var_name="year", value_name="NE")
+                    ne_df_long["year"] = ne_df_long["year"].str.replace("y", "").astype(int)
 
-                # Plot using Plotly
-                ne_fig = px.line(
-                    ne_df_long,
-                    x="year",
-                    y="NE",
-                    color=NE.columns[0],
-                    markers=True,
-                    title="Effective Population Size (NE) Over Time",
-                    labels={"NE": "Effective Population Size (NE)", "year": "Year", NE.columns[0]: "Population"},
-                    color_discrete_map={
-                        feature["properties"]["name"]: feature["properties"]["color"]
-                        for feature in st.session_state.pop_polygons["features"]
-                    }
-                )
+                    # Plot using Plotly
+                    ne_fig = px.line(
+                        ne_df_long,
+                        x="year",
+                        y="NE",
+                        color=NE.columns[0],
+                        markers=True,
+                        title="Effective Population Size (NE) Over Time",
+                        labels={"NE": "Effective Population Size (NE)", "year": "Year", NE.columns[0]: "Population"},
+                        color_discrete_map={
+                            feature["properties"]["name"]: feature["properties"]["color"]
+                            for feature in st.session_state.pop_polygons["features"]
+                        }
+                    )
 
-                # Add a black, striped horizontal line at popsize=500
-                ne_fig.add_hline(
-                    y=500,
-                    line_dash="dash",
-                    line_color="black",
-                    annotation_text="NE>500",
-                    annotation_position="top left"
-                )
+                    # Add a black, striped horizontal line at popsize=500
+                    ne_fig.add_hline(
+                        y=500,
+                        line_dash="dash",
+                        line_color="black",
+                        annotation_text="NE>500",
+                        annotation_position="top left"
+                    )
             with subcol1:
                 st.markdown("### Population Properties")
                 st.markdown("The table bellow shows the properties of the populations. You can edit the Population Density and Population size values. The effective population size is calculated based on these values and the area of the polygons.")
@@ -450,17 +442,23 @@ if input is not None or st.session_state.polyinfo is not None:
                         hide_index=True,
                     )
                     properties= st.session_state.properties
-                    for i, poly in enumerate(st.session_state.pop_polygons["features"]):
-                        poly["properties"]["Population_Density"] = float(properties["Population_Density"][i])
-                        poly["properties"]["nenc"] = float(properties["nenc"][i])
-                        poly["properties"]["pop_size"] = int(properties["pop_size"][i])
-                        poly["properties"]["effective_size"] = int(properties["effective_size"][i])
-
-                    adapt_df(editable_df)
-                    
+                for i, poly in enumerate(st.session_state.pop_polygons["features"]):
+                    poly["properties"]["Population_Density"] = float(properties["Population_Density"][i])
+                    poly["properties"]["nenc"] = float(properties["nenc"][i])
+                    poly["properties"]["pop_size"] = int(properties["pop_size"][i])
+                    poly["properties"]["effective_size"] = int(properties["effective_size"][i])
+                adapt_df(editable_df)
+                st.session_state.default_dens = st.number_input(
+                    "Default Population Density [individuals/km²]", 
+                    min_value=0.0, 
+                    step=1.0, 
+                    value=st.session_state.default_dens,
+                    key="dens", on_change=lambda: st.session_state.update({"default_dens": st.session_state.dens})
+                )  
                 
-            with subcol2:
-                ne_plot=st.plotly_chart(ne_fig, use_container_width=True)
+            # with subcol2:
+                # if st.session_state.default_dens is not None:
+                #     ne_plot=st.plotly_chart(ne_fig, use_container_width=True)
     # Calculate the ratio of populations with effective size > 500
             ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
             ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
@@ -479,7 +477,7 @@ if input is not None or st.session_state.polyinfo is not None:
 
             geojson_data = json.dumps({
                 "pop_polygons": st.session_state.pop_polygons,
-                "NE": NE.to_dict(),
+                # "NE": NE.to_dict(),
                 "area_table": area_table.to_dict(),
                 "rel_habitat_change_table": rel_habitat_change_table.to_dict(),
                 "editable_df": editable_df.to_dict(),
