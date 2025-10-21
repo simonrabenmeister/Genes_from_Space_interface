@@ -20,6 +20,7 @@ import os
 from streamlit_js_eval import streamlit_js_eval
 
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
+# Remove whitespace from the top of the page and sidebar
 
 with open("directories.txt", "r") as file:
     directories = file.readlines()
@@ -115,7 +116,7 @@ if "run_id" not in st.session_state:
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
-    st.session_state.height=int(height_source*0.6)
+    st.session_state.height=int(height_source*0.5)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
@@ -441,8 +442,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("2.2_te"))
             st.session_state.index_poly=0
             with st.form(key='parameters', enter_to_submit=False):
-                st.number_input("Buffer", value=st.session_state.buffer, key="buffer_input")
-                st.number_input("Distance", value=st.session_state.distance, key="distance_input")
+                st.number_input("Buffer in Km", value=st.session_state.buffer, key="buffer_input")
+                st.number_input("Distance in Km", value=st.session_state.distance, key="distance_input")
                 with st.expander(rtext("2.2.1_ti"), expanded=False):
                     st.markdown(rtext("2.2.1_te"))
                 if st.form_submit_button("Calculate population polygons"):
@@ -461,7 +462,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.poly_creation=="Draw population boundaries manually":
             st.session_state.index_poly=1
             st.markdown(rtext("2.1_te"))
-            st.session_state.buffer=st.number_input("Buffer", value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
+            st.session_state.buffer=st.number_input("Buffer in Km", value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
     if st.session_state.stage=="LC":
         if st.session_state.polyinfo["polygons"] is not None:
             st.markdown(rtext("3_ti"))

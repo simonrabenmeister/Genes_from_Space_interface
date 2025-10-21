@@ -9,7 +9,7 @@ st.set_page_config(
 
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
-    st.session_state.height=int(height_source*0.7)
+    st.session_state.height=int(height_source*0.3)
 st.image('images/logo.png')
 with st.sidebar:
     with st.expander("Settings", expanded=False):

@@ -63,6 +63,7 @@ st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
 st.markdown("# Output Page")
 st.sidebar.header("Habitat")
 
+
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.height = st.slider(
@@ -271,6 +272,26 @@ if input is not None or st.session_state.polyinfo is not None:
             areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
     ##Input form for population density and Ne:Nc
     if st.session_state.out is not None:
+        if st.session_state.properties is None:
+            properties = pd.DataFrame(
+                [
+                    {"Name": poly["properties"]["name"]}
+                    for poly in st.session_state.pop_polygons["features"]
+                ]
+            )
+
+            properties["Population_Density"] = [0] * len(properties)
+            properties["nenc"] = [0] * len(properties)
+            properties["pop_size"] = [0] * len(properties)
+            properties["effective_size"] = [0] * len(properties)
+            properties = properties.assign(Population_Density=st.session_state.default_dens)
+            if st.session_state.default_dens is None:
+                properties = properties.assign(pop_size=None)
+                properties = properties.assign(effective_size=None)
+            else:
+                properties = properties.assign(pop_size=np.round(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens)))
+                properties = properties.assign(effective_size=np.round(area_table.iloc[:, -1].values * np.array(st.session_state.default_dens) * np.array(default_nenc)))
+            st.session_state.properties = properties
         with st.form(key='polygon', enter_to_submit=False):
             default_nenc = st.number_input(
                 "Default Ne:Nc", 
@@ -283,38 +304,24 @@ if input is not None or st.session_state.polyinfo is not None:
             with st.expander(rtext("3_ex_ti"), expanded=False):
                 st.markdown(rtext("3_ex_te"))
 
-    #Create dataframe to be manipulated
-            properties = pd.DataFrame(
-                [
-                    {"Name": poly["properties"]["name"]}
-                    for poly in st.session_state.pop_polygons["features"]
-                ]
-            )
-
-            properties["Population_Density"] = [0] * len(properties)
-            properties["nenc"] = [0] * len(properties)
-            properties["pop_size"] = [0] * len(properties)
-            properties["effective_size"] = [0] * len(properties)
-
             if st.form_submit_button("Submit" ):
-                properties = properties.assign(Population_Density=st.session_state.default_dens)
-                properties = properties.assign(nenc=default_nenc)
-                if st.session_state.default_dens is None:
-                    properties = properties.assign(pop_size=None)
-                    properties = properties.assign(effective_size=None)
-                else:
-                    properties = properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens ) ))
-                    properties = properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(st.session_state.default_dens ) * np.array(default_nenc))
-                st.session_state.properties = properties
+                st.session_state.default_nenc = default_nenc
+                st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
+                if st.session_state.default_dens is not None:
+                    st.session_state.properties = st.session_state.properties.assign(
+                        effective_size=st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
+                    )
                 st.rerun()
 
-    
+        
     
 
 
 
         subcol1, subcol2 = st.columns(2)
-        if st.session_state.properties is not None:
+
+        if st.session_state.properties is not None and st.session_state.default_nenc is not None:
+            st.session_state.properties["Population_Density"] = st.session_state.properties["Population_Density"].astype(float)
             with subcol1:
                 st.markdown("### Population Properties")
                 st.markdown("The table bellow shows the properties of the populations. You can edit the Population Density and Population size values. The effective population size is calculated based on these values and the area of the polygons.")
@@ -323,7 +330,9 @@ if input is not None or st.session_state.polyinfo is not None:
                     if new_df is not None:
                         if new_df.equals(st.session_state.properties):
                             return
+    
                         old_df = st.session_state.properties
+
                         st.session_state.properties = new_df
 
                     df = st.session_state.properties
@@ -334,12 +343,15 @@ if input is not None or st.session_state.polyinfo is not None:
                                 
                     for i, row in df.iterrows():
                         calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                        if not np.isclose(row["pop_size"], calculated_pop_size):
+                        if row["pop_size"] is not None and not np.isclose(row["pop_size"], calculated_pop_size):
                             df.at[i, "Population_Density"] = None
-                        else:
-                            df.at[i, "pop_size"] = calculated_pop_size
-
-                        df.at[i, "effective_size"] = df.at[i, "pop_size"] * area_table.iloc[int(i), -1] / area_table.iloc[int(i), 1] * row["nenc"]
+                        elif calculated_pop_size is not None and not np.isnan(calculated_pop_size):
+                            df.at[i, "pop_size"] = round(calculated_pop_size)
+                        if row["pop_size"] is not None:
+                            if not pd.isna(df.at[i, "pop_size"]) and not pd.isna(row["nenc"]):
+                                df.at[i, "effective_size"] = round(df.at[i, "pop_size"] * area_table.iloc[int(i), -1] / area_table.iloc[int(i), 1] * row["nenc"])
+                            else:
+                                df.at[i, "effective_size"] = None
                     st.session_state.properties = df
                     st.rerun()
 
@@ -365,10 +377,10 @@ if input is not None or st.session_state.polyinfo is not None:
                         poly["properties"]["Population_Density"] = float(properties["Population_Density"][i])
                     poly["properties"]["nenc"] = float(properties["nenc"][i])
                     if properties["pop_size"][i] is not None:
-                        poly["properties"]["pop_size"] = int(properties["pop_size"][i])
+                        poly["properties"]["pop_size"] = int(properties["pop_size"][i]) if not pd.isna(properties["pop_size"][i]) else None
                     if properties["effective_size"][i] is not None:
-                        poly["properties"]["effective_size"] = int(properties["effective_size"][i])
-
+                        poly["properties"]["effective_size"] = int(properties["effective_size"][i]) if not pd.isna(properties["effective_size"][i]) else None
+                    st.session_state.properties = properties
                 adapt_df(editable_df)
 
                 with st.form(key='density', enter_to_submit=False):
@@ -383,9 +395,12 @@ if input is not None or st.session_state.polyinfo is not None:
                         st.session_state.default_dens = default_dens
                         st.session_state.properties = st.session_state.properties.assign(Population_Density=st.session_state.default_dens)
                         for i in range(0, len(st.session_state.properties)):
-                            st.session_state.properties = st.session_state.properties.assign(pop_size=(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens ) ))
-                            st.session_state.properties = st.session_state.properties.assign(effective_size=area_table.iloc[:, -1].values * np.array(st.session_state.default_dens ) * np.array(st.session_state.properties["nenc"]))
-                            
+                            st.session_state.properties = st.session_state.properties.assign(
+                                pop_size=np.round(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens))
+                            )
+                            st.session_state.properties = st.session_state.properties.assign(
+                                effective_size=np.round(st.session_state.properties["pop_size"] * np.array(st.session_state.properties["nenc"]))
+                            )
                         st.rerun()
 
 
@@ -433,18 +448,19 @@ if input is not None or st.session_state.polyinfo is not None:
 
                         # Calculate the ratio of populations with effective size > 500
                         ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
+                        PM_cutoff=st.slider("PM cutoff", 0, 100, ne_greater_500, key="PMcutoff")
                         ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
                         # Calculate the ratio of effective population sizes > 50
-                        ne_greater_50 = (st.session_state.properties["effective_size"] > 50).sum()
-                        ratio_ne_greater_50 = ne_greater_50 / len(st.session_state.properties)
+                        PM = (st.session_state.properties["effective_size"] > PM_cutoff).sum()
+                        PM_indicator = PM / len(st.session_state.properties)
 
                         st.markdown("### Effective Population Size (NE) Statistics")
                         st.markdown(
                             "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
                         )
                         st.markdown(
-                            "**PM:** {:.2f}".format(ratio_ne_greater_50)
+                            "**PM:** {:.2f}".format(PM_indicator)
                         )
 
 
