@@ -307,10 +307,10 @@ if input is not None or st.session_state.polyinfo is not None:
             if st.form_submit_button("Submit" ):
                 st.session_state.default_nenc = default_nenc
                 st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
-                if st.session_state.default_dens is not None:
-                    st.session_state.properties = st.session_state.properties.assign(
-                        effective_size=st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
-                    )
+                # if st.session_state.default_dens is not None:
+                #     st.session_state.properties = st.session_state.properties.assign(
+                #         effective_size=st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
+                #     )
                 st.rerun()
 
         
@@ -343,18 +343,17 @@ if input is not None or st.session_state.polyinfo is not None:
                                 
                     for i, row in df.iterrows():
                         calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                        if row["pop_size"] is not None and not np.isclose(row["pop_size"], calculated_pop_size):
+                        if row["pop_size"] is not None and not np.isclose(row["pop_size"], calculated_pop_size, atol=1):
                             df.at[i, "Population_Density"] = None
-                        elif calculated_pop_size is not None and not np.isnan(calculated_pop_size):
+                        if calculated_pop_size is not None and not np.isnan(calculated_pop_size):
                             df.at[i, "pop_size"] = round(calculated_pop_size)
                         if row["pop_size"] is not None:
                             if not pd.isna(df.at[i, "pop_size"]) and not pd.isna(row["nenc"]):
-                                df.at[i, "effective_size"] = round(df.at[i, "pop_size"] * area_table.iloc[int(i), -1] / area_table.iloc[int(i), 1] * row["nenc"])
+                                df.at[i, "effective_size"] = round(df.at[i, "pop_size"]/ area_table.iloc[int(i), 1] * area_table.iloc[int(i), -1] * row["nenc"])
                             else:
                                 df.at[i, "effective_size"] = None
                     st.session_state.properties = df
                     st.rerun()
-
 
             
 
@@ -399,7 +398,9 @@ if input is not None or st.session_state.polyinfo is not None:
                                 pop_size=np.round(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens))
                             )
                             st.session_state.properties = st.session_state.properties.assign(
-                                effective_size=np.round(st.session_state.properties["pop_size"] * np.array(st.session_state.properties["nenc"]))
+                                effective_size=np.round(
+                                    st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * area_table.iloc[:, -1] * np.array(st.session_state.properties["nenc"])
+                                )
                             )
                         st.rerun()
 
@@ -409,8 +410,8 @@ if input is not None or st.session_state.polyinfo is not None:
                 if st.session_state.properties["pop_size"].notnull().all():
                     NE = area_table.copy()
                     for i in range(0, len(NE)):
-                        ratio = st.session_state.properties["pop_size"][i] / area_table.iloc[i, 1] * st.session_state.properties["nenc"][i]
-                        NE.iloc[i, 1:] = NE.iloc[i, 1:] * ratio
+                        ratio = st.session_state.properties["pop_size"][i] / area_table.iloc[int(i), 1] * st.session_state.properties["nenc"][i]
+                        NE.iloc[i, 1:] = NE.iloc[int(i), 1:] * ratio
 
                     st.session_state.NE = NE
 
@@ -452,8 +453,12 @@ if input is not None or st.session_state.polyinfo is not None:
                         ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
                         # Calculate the ratio of effective population sizes > 50
-                        PM = (st.session_state.properties["effective_size"] > PM_cutoff).sum()
-                        PM_indicator = PM / len(st.session_state.properties)
+                        end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > PM_cutoff]
+                        start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
+                        
+                        pop_above= [start_pop >= PM_cutoff][0]
+                        end_pop_above=end_pop[pop_above]>=PM_cutoff
+                        PM_indicator = pop_above.sum() / end_pop_above.count()
 
                         st.markdown("### Effective Population Size (NE) Statistics")
                         st.markdown(
