@@ -16,7 +16,7 @@ import glasbey
 import geopandas as gpd
 import os
 
-texts = pd.read_csv("texts.csv").set_index("id")
+texts = pd.read_csv("texts_copy.csv").set_index("id")
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
 
@@ -51,6 +51,13 @@ def GBIF(data):
     headers = {"Content-Type": "application/json"}
     return requests.post(url, json=data, headers=headers)
 
+def LC_info(data):
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>LC_info.json/run"
+
+    headers = {"Content-Type": "application/json"}
+
+    return requests.post(url, json=data, headers=headers)
+
 def LC_area(data):
     url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>LC_area.json/run"
 
@@ -67,7 +74,12 @@ def TC_area(data):
 
     return requests.post(url, json=data, headers=headers)
 
+def Sensitivity(data):
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>sensitivity_analysis.json/run"
 
+    headers = {"Content-Type": "application/json"}
+
+    return requests.post(url, json=data, headers=headers)
 
 @st.fragment
 def edit_points():
@@ -107,7 +119,7 @@ def edit_points():
             st.session_state.index=None
 
         #Remove the point if the remove button is clicked
-        st.button("Click here to remove the selected observation", on_click=remove_point, args=(st.session_state.index,)) 
+        st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,)) 
 
         st.session_state.obs=obs_edit
         if (
@@ -134,7 +146,7 @@ def polygon_clustering():
     )
     obs = st.session_state.obs
     
-    if st.session_state.buffer is None and st.session_state.poly_creation != "Draw population boundaries manually":
+    if st.session_state.buffer is None and st.session_state.poly_creation != rtext("1_4_opt2"):
         # Display the points without edit functionality
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
@@ -152,7 +164,7 @@ def polygon_clustering():
             ).add_to(fg)
 
         st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
-    if st.session_state.poly_creation == "Automated calculation of population boundaries":
+    if st.session_state.poly_creation == rtext("1_4_opt1"):
         if st.session_state.buffer is not None and st.session_state.distance:
             st.session_state.polyinfo["polygons"] = None
 
@@ -233,7 +245,7 @@ def polygon_clustering():
             st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)       
 
 
-    if st.session_state.poly_creation == "Draw population boundaries manually":
+    if st.session_state.poly_creation == rtext("1_4_opt2"):
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
         fg = folium.FeatureGroup(name="Markers")
         for i, row in obs.iterrows():
@@ -317,23 +329,23 @@ def polygon_clustering():
     
     if st.session_state.original_polygons is not None:
 
-        if st.button("Confirm population polygons"):
-            if st.session_state.original_polygons is not None:
-                st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
-                st.session_state.polyinfo["polygons"]
-                
-                
-                st.session_state.zoom=st.session_state.output["zoom"]
-                st.session_state.center=st.session_state.output["center"]
-                st.session_state.stage = "LC"
-                st.session_state.biab_dir
-                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
-                with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
-                    geojson.dump(st.session_state.polyinfo["polygons"], f)
-                st.success("Polygons saved successfully.")
-                del st.session_state.original_polygons
-                st.rerun()
+        if st.button(rtext("1_4_2_bu2")):
+            
+            st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
+            st.session_state.polyinfo["polygons"]
+            
+            
+            st.session_state.zoom=st.session_state.output["zoom"]
+            st.session_state.center=st.session_state.output["center"]
+            st.session_state.stage = "LC"
+            st.session_state.biab_dir
+            st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+            os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
+            with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
+                geojson.dump(st.session_state.polyinfo["polygons"], f)
+            st.success("Polygons saved successfully.")
+            del st.session_state.original_polygons
+            st.rerun()
 
 
 
@@ -420,8 +432,8 @@ def mapbbox():
             'circlemarker': False  # Disable circle marker
         },
         edit_options={
-            'edit': True,   # Enable editing of drawn shapes
-            'remove': True  # Enable deleting of drawn shapes
+            'edit': False,   # Enable editing of drawn shapes
+            'remove': False  # Enable deleting of drawn shapes
         }
     )
     draw.add_to(m)
