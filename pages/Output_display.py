@@ -63,14 +63,13 @@ if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
-st.set_page_config(page_title="Habitat Change", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
 texts = pd.read_csv("texts_copy.csv").set_index("id")
 
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
 
 st.markdown(rtext("out_ti"))
-st.sidebar.header("Habitat")
 
 
 with st.sidebar:
@@ -115,6 +114,12 @@ if st.session_state.upload and input is not None:
 
 if not st.session_state.upload:
     st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
+    st.session_state.default_nenc = 0.1
+    st.session_state.default_dens = 0
+    
+default_dens = st.session_state.default_dens
+default_nenc = st.session_state.default_nenc
+
 
 rel_habitat_change_table=st.session_state.rel_habitat_change_table
 area_table=st.session_state.area_table
@@ -225,8 +230,8 @@ if input is not None or st.session_state.polyinfo is not None:
         for value in class_names:
             st.markdown(f"<li><strong>{value}</strong></li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
-        with st.expander(rtext("out_1_exp_ti"), expanded=False):
-            st.image("images/LC_types.png")
+        # with st.expander(rtext("out_1_exp_ti"), expanded=False):
+        #     st.image("images/LC_types.png")
         render_map_fragment()
 
 
@@ -244,7 +249,7 @@ if input is not None or st.session_state.polyinfo is not None:
             y="habitat_area",
             color="name",
             markers=True,
-            title="out_1_plot1_ti",
+            title=rtext("out_1_plot1_ti"),
             labels={"habitat_area": rtext("out_1_plot1_yax"), "year": rtext("out_1_plot1_xax"), "name": rtext("out_1_plot1_index")},
             color_discrete_map={
                 feature["properties"]["name"]: feature["properties"]["color"]
@@ -263,8 +268,8 @@ if input is not None or st.session_state.polyinfo is not None:
             y="area",
             color=area_df.columns[0],
             markers=True,
-            title="Area Trends Over Time",
-            labels={"area": rtext("out_1_plot2_xax"), "year": rtext("out_1_plot2_yax"), area_df.columns[0]: rtext("out_1_plot1_index")},
+            title=rtext("out_1_plot2_ti"),
+            labels={"area": rtext("out_1_plot2_yax"), "year": rtext("out_1_plot2_xax"), area_df.columns[0]: rtext("out_1_plot1_index")},
                     color_discrete_map={
                 feature["properties"]["name"]: feature["properties"]["color"]
                 for feature in st.session_state.pop_polygons["features"]
@@ -276,6 +281,8 @@ if input is not None or st.session_state.polyinfo is not None:
             relareaplot = st.plotly_chart(rel_change_fig, use_container_width=True, on_select="rerun")
         with plot2:
             areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
+    
+    
     ##Input form for population density and Ne:Nc
     if st.session_state.out is not None:
         if st.session_state.properties is None:
@@ -287,9 +294,9 @@ if input is not None or st.session_state.polyinfo is not None:
             )
 
             properties["Population_Density"] = [0] * len(properties)
-            properties["nenc"] = [0] * len(properties)
+            properties["nenc"] = [default_nenc] * len(properties)
             properties["pop_size"] = [0] * len(properties)
-            properties["effective_size"] = [0] * len(properties)
+            properties["effective_size"] = [default_dens] * len(properties)
             properties = properties.assign(Population_Density=st.session_state.default_dens)
             if st.session_state.default_dens is None:
                 properties = properties.assign(pop_size=None)
@@ -298,33 +305,8 @@ if input is not None or st.session_state.polyinfo is not None:
                 properties = properties.assign(pop_size=np.round(area_table.iloc[:, 1].values * np.array(st.session_state.default_dens)))
                 properties = properties.assign(effective_size=np.round(area_table.iloc[:, -1].values * np.array(st.session_state.default_dens) * np.array(default_nenc)))
             st.session_state.properties = properties
-        with st.form(key='polygon', enter_to_submit=False):
-            default_nenc = st.number_input(
-                rtext("out_2_plac"), 
-                min_value=0.0, 
-                max_value=1.0, 
-                step=0.01, 
-                value=st.session_state.default_nenc,
-
-                key="nenc"
-            )
-            with st.expander(rtext("out_2_exp_ti"), expanded=False):
-                st.markdown(rtext("out_2_exp_te"))
-
-            if st.form_submit_button(rtext("submit") ):
-                st.session_state.default_nenc = default_nenc
-                st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
-                # if st.session_state.default_dens is not None:
-                #     st.session_state.properties = st.session_state.properties.assign(
-                #         effective_size=st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
-                #     )
-                st.rerun()
-
         
-    
-
-
-
+  
         subcol1, subcol2 = st.columns(2)
 
         if st.session_state.properties is not None and st.session_state.default_nenc is not None:
@@ -466,7 +448,7 @@ if input is not None or st.session_state.polyinfo is not None:
                         end_pop_above=end_pop[pop_above]>=10
                         PM_indicator =  end_pop_above.count()/pop_above.sum()
 
-                        st.markdown("### Effective Population Size (NE) Statistics")
+                        st.markdown("### Estimated GBF genetic diversity indicators")
                         st.markdown(
                             "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
                         )
@@ -493,7 +475,7 @@ if input is not None or st.session_state.polyinfo is not None:
 
 
                     })
-                    st.markdown("#### Download The Run as a GeoJSON file")
+                    st.markdown("##### Download The Run as a GeoJSON file")
                     st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
                     st.download_button(
                     label="Download GeoJSON",
@@ -503,10 +485,31 @@ if input is not None or st.session_state.polyinfo is not None:
                     icon=":material/download:",
                 )
 
+## advance functionalities form
 
-            with st.expander("advanced analysis", expanded=False):
-                ancol1, ancol2 = st.columns(2)
-                with ancol1:
+            with st.expander("Advanced functionalities (beta)", expanded=False):
+                    
+                    with st.form(key='polygon', enter_to_submit=False):
+                        default_nenc = st.number_input(
+                        rtext("out_2_plac"), 
+                        placeholder="for example: 0.1",
+                        min_value=0.0, 
+                        max_value=1.0, 
+                        step=0.01, 
+                        value=st.session_state.default_nenc,
+
+                        key="nenc"
+                        )
+                        st.markdown(rtext("out_2_exp_ti"))
+                        st.markdown(rtext("out_2_exp_te"))
+
+                        if st.form_submit_button(rtext("submit") ):
+                            st.session_state.default_nenc = default_nenc
+                            st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
+                            st.rerun()
+
+                    st.markdown("##### PM cutoff vaue")
+
                     PM_cutoff=st.slider("PM cutoff", 0, 100, ne_greater_500, key="PMcutoff")
                     end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > PM_cutoff]
                     start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
@@ -514,17 +517,17 @@ if input is not None or st.session_state.polyinfo is not None:
                     pop_above= [start_pop >= PM_cutoff][0]
                     end_pop_above=end_pop[pop_above]>=PM_cutoff
                     PM_indicator =  end_pop_above.count()/pop_above.sum()
-                    st.markdown("### Effective Population Size (NE) Statistics")
+                    st.markdown("### Genetic diversity Indicators")
                     st.markdown(
                         "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
                     )
                     st.markdown(
                         "**PM:** {:.2f}".format(PM_indicator)
                     )
-                    if st.session_state.sensitivity_table_df is not None:
-                        st.write("### Sensitivity Analysis Table")
-                        st.dataframe(st.session_state.sensitivity_table_df)
-                with ancol2:
+            
+### Sensotivity Analysis form
+
+            with st.expander("Output sensitivity testing", expanded=False):
                     st.markdown("#### Sensitivity Analysis Report")
                     if "buffer_uncertainty" not in st.session_state:
                         st.session_state.buffer_uncertainty=None
@@ -587,6 +590,9 @@ if input is not None or st.session_state.polyinfo is not None:
                         )
                         st.session_state.sensitivity_table_df = st.session_state.sensitivity_table_df.iloc[:, [0, 3, 4, 7]]
                         
+                        if st.session_state.sensitivity_table_df is not None:
+                            st.write("### Sensitivity Analysis Table")
+                            st.dataframe(st.session_state.sensitivity_table_df)
                     
 
 

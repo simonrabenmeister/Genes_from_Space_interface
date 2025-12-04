@@ -234,10 +234,12 @@ col1, col2= st.columns(2)
 
 with col1.container( border=False, key="image-container", height=st.session_state.height):
 
+### 1st step: Set how to provide species input data
+
     st.markdown(rtext("1_ti"))
     st.markdown(rtext("1_te"))
 
-
+### Choose data source
 
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
@@ -268,7 +270,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.markdown(rtext("1_1_exp_te"))
     if st.session_state["data_source"] is not None:
         
-        if st.session_state["data_source"]==rtext("1_1_opt3"):
+        if st.session_state["data_source"]==rtext("1_1_opt3"): # Upload your own polygons
 
             st.markdown(rtext("1_3_1_ti"))
             st.markdown(rtext("1_3_1_te"))
@@ -310,7 +312,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
                 st.session_state.stage = "LC"
 
-        if st.session_state["data_source"]==rtext("1_1_opt1"):
+        if st.session_state["data_source"]==rtext("1_1_opt1"): # Upload your own points
 
             st.markdown(rtext("1_3_2_ti"))
             st.markdown(rtext("1_3_2_te"))
@@ -346,10 +348,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 mime="text/csv"
             )
 
-        if st.session_state["data_source"]==rtext("1_1_opt2"):
+        if st.session_state["data_source"]==rtext("1_1_opt2"): # Search species in GBIF
             
-            st.markdown(rtext("1_3_3_ti"))
-            st.markdown(rtext("1_3_3_te"))
+            st.markdown(rtext("1_3_3_ti")) 
+            st.markdown(rtext("1_3_3_te")) 
  
             name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"],  disabled=st.session_state["species"]!=None)
             with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
@@ -379,7 +381,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             if st.session_state["species"] is not None:
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=1992, max_value=2021, placeholder='Example: 2010', key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
@@ -450,6 +452,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         obs = pd.read_csv(obs_file, sep='\t')
                         st.session_state.obs_edit = obs
                         st.session_state.stage = "Manipulate points"
+    
     if st.session_state.obs_edit is not None:
         # Calculate the center of all point observations in total
         lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
@@ -461,6 +464,9 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.session_state.center = {"lat": center_lat, "lng": center_lng}
 
         if st.session_state.obs is None:
+
+            # Confirm points to be used
+
             st.markdown(rtext("1_3_3_4_ti"))
             st.markdown(rtext("1_3_3_4_te"))
             if st.button(rtext("1_3_3_4_bu1")):
@@ -484,7 +490,9 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
             with st.expander(rtext("1_2_exp_ti"), expanded=False):
                 st.markdown(rtext("1_2_exp_te"))
-        if st.session_state.baseyear is not None:
+        
+        
+        if st.session_state.obs is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("1_4_ti"))
             st.markdown(rtext("1_4_te"))
             buffer_selection= [rtext("1_4_opt1"),rtext("1_4_opt2")]
@@ -502,12 +510,12 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             )
             with st.expander(rtext("1_4_exp_ti"), expanded=False):
                 st.markdown(rtext("1_4_exp_te1"))
-                st.image('images/PointsToPoly-2048x422.png', caption='Polygon creation methods')
                 st.markdown(rtext("1_4_exp_te2"))
 
         if st.session_state.poly_creation==rtext("1_4_opt1"):
             st.markdown(rtext("1_4_2_ti"))
             st.markdown(rtext("1_4_2_te"))
+
 
             st.session_state.index_poly=0
             with st.form(key='parameters', enter_to_submit=False):
@@ -515,6 +523,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.number_input(rtext("1_4_2_plac2"), value=st.session_state.distance, key="distance_input")
                 with st.expander(rtext("1_4_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_4_2_exp_te"))
+                    st.image('images/PointsToPoly-2048x422.png', caption='Polygon creation methods')
+
                 if st.form_submit_button(rtext("1_4_2_bu1")):
                     st.session_state.stage="polygon_clustering"
 
@@ -693,7 +703,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     name = LC_names_advanced[values_precise.index(elem)]
                     # name = LC_names_advanced[values_precise.index(elem)]
                     fig.add_trace(go.Bar(
-                        x=[perc], y=["Composition"],  # one bar
+                        x=[perc], y=["Land cover class"],  # one bar
                         orientation='h',
                         name=name,
                         marker=dict(color=color),
@@ -804,6 +814,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
 
     if st.session_state.area_table is not None:
+        print('here')
         rel_habitat_change_table = st.session_state.area_table.copy()
         for i in range(1, st.session_state.area_table.shape[1]):  # Start from the second column (index 1)
             rel_habitat_change_table.iloc[:, i] = (st.session_state.area_table.iloc[:, i] / st.session_state.area_table.iloc[:, 1] * 100) - 100
@@ -811,13 +822,13 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.session_state.NC= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatNC.tif"
         st.session_state.GAIN= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatGAIN.tif"
         st.session_state.LOSS= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatLOSS.tif"
-        
-        if st.button(rtext("3_bu2")):
-            st.session_state["upload"] = False
-            st.session_state.default_dens=None
-            st.session_state.default_nenc=None
-            st.session_state.properties=None
-            st.switch_page("pages/Output_display.py")
+        print('here too')
+
+        st.session_state["upload"] = False
+        st.session_state.default_dens=None
+        st.session_state.default_nenc=None
+        st.session_state.properties=None
+        st.switch_page("pages/Output_display.py")
     
     # add 2 empty lines for readability
     st.markdown('')
