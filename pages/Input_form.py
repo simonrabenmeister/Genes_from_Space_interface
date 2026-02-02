@@ -130,39 +130,68 @@ texts = pd.read_csv("texts_copy.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
 LC_names_advanced = [
-    "Cropland, rainfed",
-    "Herbaceous cover",
-    "Tree or shrub cover",
-    "Cropland, irrigated or post-flooding",
-    "Mosaic cropland (>50%) / natural vegetation (tree, shrub, herbaceous cover) (<50%)",
-    "Mosaic natural vegetation (tree, shrub, herbaceous cover) (>50%) / cropland (<50%)",
-    "Tree cover, broadleaved, evergreen, closed to open (>15%)",
-    "Tree cover, broadleaved, deciduous, closed to open (>15%)",
-    "Tree cover, broadleaved, deciduous, closed (>40%)",
-    "Tree cover, broadleaved, deciduous, open (15-40%)",
-    "Tree cover, needleleaved, evergreen, closed to open (>15%)",
-    "Tree cover, needleleaved, evergreen, closed (>40%)",
-    "Tree cover, needleleaved, evergreen, open (15-40%)",
-    "Tree cover, needleleaved, deciduous, closed to open (>15%)",
-    "Tree cover, needleleaved, deciduous, closed (>40%)",
-    "Tree cover, needleleaved, deciduous, open (15-40%)",
-    "Tree cover, mixed leaf type (broadleaved and needleleaved)",
-    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)",
-    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)",
-    "Shrubland",
-    "Grassland",
-    "Lichens and mosses",
-    "Sparse vegetation (tree, shrub, herbaceous cover) (<15%)",
-    "Tree cover, flooded, fresh or brackish water",
-    "Tree cover, flooded, saline water",
-    "Shrub or herbaceous cover, flooded, fresh/saline/brackish water",
-    "Urban areas",
-    "Bare areas",
-    "Bare areas",
-    "Bare areas",
-    "Water bodies",
-    "Permanent snow and ice", 
-    "Shrubland"
+    "Rainfed cropland",                                   # 10
+    "Rainfed cropland",                                   # 11
+    "Rainfed cropland",                                   # 12
+    "Irrigated cropland",                                 # 20
+    "Mosaic cropland (>50%) / natural vegetation (<50%)", # 30
+    "Mosaic natural vegetation (>50%) / cropland (<50%)", # 40
+    "Tree cover, broadleaved, evergreen, closed to open (>15%)",   # 50
+    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 60
+    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 61
+    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 62
+    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 70
+    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 71
+    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 72
+    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 80
+    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 81
+    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 82
+    "Tree cover, mixed leaf type (broadleaved and needleleaved)",  # 90
+    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)",     # 100
+    "Tree cover, flooded, fresh or brackish water",               # 160
+    "Tree cover, flooded, saline water",                          # 170
+    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)",     # 110
+    "Grassland",                                                  # 130
+    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water", # 180
+    "Urban",                                                      # 190
+    "Shrubland",                                                  # 120
+    "Shrubland",                                                  # 121
+    "Shrubland",                                                  # 122
+    "Lichens and mosses",                                         # 140
+    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 150
+    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 151
+    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 152
+    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 153
+    "Bare areas",                                                 # 200
+    "Bare areas",                                                 # 201
+    "Bare areas",                                                 # 202
+    "Water",                                                  # 210
+    "Permanant Ice and Snow"
+]
+values_precise = [
+    10, 11, 12,
+    20,
+    30,
+    40,
+    50,
+    60, 61, 62,
+    70, 71, 72,
+    80, 81, 82,
+    90,
+    100,
+    160,
+    170,
+    110,
+    130,
+    180,
+    190,
+    120, 121, 122,
+    140,
+    150, 151, 152, 153,
+    200, 201, 202,
+    210,
+    220
+
 ]
 LC_names_simple_en= [
     "Forest",
@@ -188,11 +217,6 @@ if st.session_state.lan=="sp":
     LC_names_simple=LC_names_simple_sp
 elif st.session_state.lan=="en":    
     LC_names_simple=LC_names_simple_en
-
-values_precise = [
-    10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82,
-    90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 201, 202, 210, 220, 122
-]
 
 values_simple = [
     [50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 160, 170],  # Forest
@@ -330,6 +354,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 except Exception as e:
                     st.error(f"Error reading the CSV file: {e}")
             if st.session_state.obs_edit is not None:
+                
                 # Calculate the center of all point observations in total
                 lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
                 lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
@@ -388,7 +413,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
             if st.session_state["baseyear"] is not None:
 
-                st.session_state.GBIF_data["start_y"]=st.session_state.baseyear-10
+                st.session_state.GBIF_data["start_y"]=1970
                 st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
                 st.markdown(rtext("1_3_3_2_ti"))
                 st.markdown(rtext("1_3_3_2_te"))
@@ -737,10 +762,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("3_4_ti"))
             st.markdown(rtext("3_4_te"))
             st.session_state.LC["LC_class"]=["Treecover"]
-            if 2020-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+            if 2023-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2023, 2023-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2023, 5).astype(int).tolist()
         
         
     
@@ -828,7 +853,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.session_state.default_dens=None
         st.session_state.default_nenc=None
         st.session_state.properties=None
-        st.switch_page("pages/Output_display.py")
+        if st.button("View results"):
+            st.switch_page("pages/Output_display.py")
     
     # add 2 empty lines for readability
     st.markdown('')
