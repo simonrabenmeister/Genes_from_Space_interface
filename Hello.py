@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from streamlit_js_eval import streamlit_js_eval
+import base64
 st.set_page_config(
     page_title="Genes from Space",
     page_icon="🌍",
@@ -60,3 +61,43 @@ with col2:
     st.markdown(rtext("hello_7"))
     st.image('images/LandcoverToHabitat-2048x504.png', caption='Landcover to habitat',width=st.session_state.height*2)
     st.markdown(rtext("hello_8"))
+    st.markdown("\n")  # Add a break
+    st.markdown(rtext("thanks_ti"))
+    st.markdown(rtext("thanks_te"))
+# Define custom CSS for consistent spacing
+    # Encode the images to base64
+    nomis_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/Nomis_Logo.png"
+    uzh_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/uzh_logo.png"
+
+    nomis_logo_base64 = base64.b64encode(open(nomis_logo_path, "rb").read()).decode()
+    uzh_logo_base64 = base64.b64encode(open(uzh_logo_path, "rb").read()).decode()
+
+    # Define custom CSS for consistent spacing and layout
+    st.markdown(
+        """
+        <style>
+        .image-container {
+            display: flex;
+            justify-content: left;
+            align-items: center;
+            gap: 20px; /* Adjust spacing between images */
+        }
+        .image-container img {
+            max-width: auto;
+            height: 150px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Create a container for the images
+    st.markdown(
+        f"""
+        <div class="image-container">
+            <img src="data:image/png;base64,{nomis_logo_base64}" alt="Nomis Logo">
+            <img src="data:image/png;base64,{uzh_logo_base64}" alt="UZH Logo">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )

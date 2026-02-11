@@ -113,7 +113,8 @@ if st.session_state.upload and input is not None:
     st.session_state.run_id = geojson_data["run_id"]
 
 if not st.session_state.upload:
-    st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
+    if st.session_state.polyinfo is not None:
+        st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
     st.session_state.default_nenc = 0.1
     st.session_state.default_dens = 0
     

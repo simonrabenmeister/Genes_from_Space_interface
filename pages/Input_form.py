@@ -129,70 +129,31 @@ if "data_source" not in st.session_state:
 texts = pd.read_csv("texts_copy.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
-LC_names_advanced = [
-    "Rainfed cropland",                                   # 10
-    "Rainfed cropland",                                   # 11
-    "Rainfed cropland",                                   # 12
-    "Irrigated cropland",                                 # 20
-    "Mosaic cropland (>50%) / natural vegetation (<50%)", # 30
-    "Mosaic natural vegetation (>50%) / cropland (<50%)", # 40
-    "Tree cover, broadleaved, evergreen, closed to open (>15%)",   # 50
-    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 60
-    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 61
-    "Tree cover, broadleaved, deciduous, closed to open (>15%)",   # 62
-    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 70
-    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 71
-    "Tree cover, needleleaved, evergreen, closed to open (>15%)",  # 72
-    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 80
-    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 81
-    "Tree cover, needleleaved, deciduous, closed to open (>15%)",  # 82
-    "Tree cover, mixed leaf type (broadleaved and needleleaved)",  # 90
-    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)",     # 100
-    "Tree cover, flooded, fresh or brackish water",               # 160
-    "Tree cover, flooded, saline water",                          # 170
-    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)",     # 110
-    "Grassland",                                                  # 130
-    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water", # 180
-    "Urban",                                                      # 190
-    "Shrubland",                                                  # 120
-    "Shrubland",                                                  # 121
-    "Shrubland",                                                  # 122
-    "Lichens and mosses",                                         # 140
-    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 150
-    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 151
-    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 152
-    "Sparse vegetation (tree, shrub, herbaceous cover)",          # 153
-    "Bare areas",                                                 # 200
-    "Bare areas",                                                 # 201
-    "Bare areas",                                                 # 202
-    "Water",                                                  # 210
-    "Permanant Ice and Snow"
-]
-values_precise = [
-    10, 11, 12,
-    20,
-    30,
-    40,
-    50,
-    60, 61, 62,
-    70, 71, 72,
-    80, 81, 82,
-    90,
-    100,
-    160,
-    170,
-    110,
-    130,
-    180,
-    190,
-    120, 121, 122,
-    140,
-    150, 151, 152, 153,
-    200, 201, 202,
-    210,
-    220
+LC_dict = {
+    "Rainfed cropland": [10, 11, 12],
+    "Irrigated cropland": [20],
+    "Mosaic cropland (>50%) / natural vegetation (<50%)": [30],
+    "Mosaic natural vegetation (>50%) / cropland (<50%)": [40],
+    "Tree cover, broadleaved, evergreen, closed to open (>15%)": [50],
+    "Tree cover, broadleaved, deciduous, closed to open (>15%)": [60, 61, 62],
+    "Tree cover, needleleaved, evergreen, closed to open (>15%)": [70, 71, 72],
+    "Tree cover, needleleaved, deciduous, closed to open (>15%)": [80, 81, 82],
+    "Tree cover, mixed leaf type (broadleaved and needleleaved)": [90],
+    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)": [100],
+    "Tree cover, flooded, fresh or brackish water": [160],
+    "Tree cover, flooded, saline water": [170],
+    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)": [110],
+    "Grassland": [130],
+    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water": [180],
+    "Urban": [190],
+    "Shrubland": [120, 121, 122],
+    "Lichens and mosses": [140],
+    "Sparse vegetation (tree, shrub, herbaceous cover)": [150, 151, 152, 153],
+    "Bare areas": [200, 201, 202],
+    "Water": [210],
+    "Permanant Ice and Snow": [220]
+}
 
-]
 LC_names_simple_en= [
     "Forest",
     "Agriculture",
@@ -625,8 +586,11 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.LC_selection==rtext("2_opt3"):
             st.markdown(rtext("3_2_ti"))
             st.markdown(rtext("3_2_te"))
-            LC_class = st.multiselect(rtext("3_plac"), options=LC_names_advanced, key="LC_class", default=st.session_state.LC_class_names)
-            st.session_state.LC["LC_class"] = [values_precise[LC_names_advanced.index(name)] for name in LC_class]
+            LC_class = st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=st.session_state.LC_class_names)
+            st.session_state.LC["LC_classnames"]=LC_class
+            [item for lc in LC_class for item in LC_dict[lc]]
+            
+            st.session_state.LC["LC_class"] =  [item for lc in LC_class for item in LC_dict[lc]]
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
@@ -658,75 +622,68 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.session_state.info=get_output(st.session_state.info.text)
             if st.session_state.info is not None:
                 LC_cum=pd.read_csv(f"{st.session_state.biab_dir}/output/{st.session_state.info['GFS_IndicatorsTool>LC_info.yml@11']}/pop_lc_sorted_cum.csv")
-
                 # Compute individual element percentages
                 elements = LC_cum.iloc[:,0] 
                 cum_values = LC_cum.iloc[:,1]
-                dominant_classes=elements[:np.argmax(cum_values > 0.5) + 1]
+                
                 
                 percentages = np.diff([0] + cum_values) * 100
-                percentages = np.insert(percentages, 0, cum_values[0] * 100)
+                percentages = np.insert(percentages, 0, cum_values[0] * 100) # Initialize sums for each group
+                    
+                
+                grouped_percentages = []
+                for element, percentage in zip(elements, percentages):
+                    for group, group_elements in LC_dict.items():
+                        if element in group_elements:
+                            found = False
+                            for i, (grp, perc) in enumerate(grouped_percentages):
+                                if grp == group:
+                                    grouped_percentages[i] = (grp, perc + percentage)
+                                    found = True
+                                    break
+                            if not found:
+                                grouped_percentages.append((group, percentage))
+                            break  # Stop checking other groups once the element is matched
+                cumulative_percentage = 0
+                dominant_class_names = []
+                for elem, perc in grouped_percentages:
+                    if cumulative_percentage >= 50:
+                        break
+                    dominant_class_names.append(elem)
+                    cumulative_percentage += perc
 
                 # Create stacked single bar using Plotly
                 fig = go.Figure()
                 element_color_map = {
-                    # Forest – shades of green
-                    50:  "#1b5e20",  # dark green
-                    60:  "#2e7d32",
-                    61:  "#388e3c",
-                    62:  "#43a047",
-                    70:  "#4caf50",
-                    71:  "#66bb6a",
-                    72:  "#81c784",
-                    80:  "#a5d6a7",
-                    81:  "#c8e6c9",
-                    82:  "#e8f5e9",
-                    90:  "#2e8b57",
-                    100: "#3cb371",
-                    160: "#006400",
-                    170: "#228b22",
-
-                    # Agriculture – khaki / light yellow-green
-                    10: "#c3b091",
-                    11: "#d6c48e",
-                    12: "#e0d8a7",
-                    20: "#ede6b9",
-                    30: "#f0e68c",  # classic khaki
-                    40: "#d2b48c",  # tan khaki
-
-                    # Grassland – yellow
-                    110: "#fbc02d",
-                    130: "#fff176",
-
-                    # Wetlands – blue
-                    180: "#2196f3",
-
-                    # Shrubland – brown/tan
-                    120: "#8b4513",  # saddle brown
-                    121: "#a0522d",
-                    122: "#cd853f",
-
-                    # Sparse vegetation – beige/light gray-green
-                    140: "#c0b283",
-                    150: "#d9caa3",
-                    151: "#e0d6b8",
-                    152: "#ede0c8",
-                    153: "#f5f5dc",
-
-                    # Bare areas – grays
-                    200: "#9e9e9e",
-                    201: "#bdbdbd",
-                    202: "#e0e0e0",
-
-                    # Settlements – red
-                    190: "#d32f2f",
+                    "Rainfed cropland": "#c3b091",
+                    "Irrigated cropland": "#ede6b9",
+                    "Mosaic cropland (>50%) / natural vegetation (<50%)": "#f0e68c",
+                    "Mosaic natural vegetation (>50%) / cropland (<50%)": "#d2b48c",
+                    "Tree cover, broadleaved, evergreen, closed to open (>15%)": "#1b5e20",
+                    "Tree cover, broadleaved, deciduous, closed to open (>15%)": "#2e7d32",
+                    "Tree cover, needleleaved, evergreen, closed to open (>15%)": "#388e3c",
+                    "Tree cover, needleleaved, deciduous, closed to open (>15%)": "#4caf50",
+                    "Tree cover, mixed leaf type (broadleaved and needleleaved)": "#2e8b57",
+                    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)": "#3cb371",
+                    "Tree cover, flooded, fresh or brackish water": "#006400",
+                    "Tree cover, flooded, saline water": "#228b22",
+                    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)": "#fbc02d",
+                    "Grassland": "#fff176",
+                    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water": "#2196f3",
+                    "Urban": "#d32f2f",
+                    "Shrubland": "#8b4513",
+                    "Lichens and mosses": "#c0b283",
+                    "Sparse vegetation (tree, shrub, herbaceous cover)": "#d9caa3",
+                    "Bare areas": "#9e9e9e",
+                    "Water": "#2196f3",
+                    "Permanant Ice and Snow": "#bdbdbd"
                 }
+                
+            
+                for elem, perc in grouped_percentages:
 
-                dominant_class_names = [LC_names_advanced[values_precise.index(value)] for value in dominant_classes]
-                for elem, perc in zip(elements, percentages):
                     color = element_color_map.get(elem, "gray")
-                    name = LC_names_advanced[values_precise.index(elem)]
-                    # name = LC_names_advanced[values_precise.index(elem)]
+                    name = elem
                     fig.add_trace(go.Bar(
                         x=[perc], y=["Land cover class"],  # one bar
                         orientation='h',
@@ -749,9 +706,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     height=300
                 )
                 st.plotly_chart(fig, use_container_width=True)
-                LC_class=st.multiselect(rtext("3_plac"), options=LC_names_advanced, key="LC_class", default=dominant_class_names)
-                st.session_state.LC["LC_class"] = [values_precise[LC_names_advanced.index(name)] for name in LC_class]
+                LC_class=st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=dominant_class_names)
                 
+                st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
+                st.session_state.LC["LC_classnames"]=LC_class
 
                 if 2020-st.session_state.baseyear < 5:
                     st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
@@ -818,7 +776,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                             cover_output_code=output_area["GFS_IndicatorsTool>get_TCY.yml@203"]
                             st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                         if st.session_state.LC_selection==rtext("2_opt3"):
-                            st.session_state.LC_classnames=[LC_names_advanced[values_precise.index(value)] for value in st.session_state.LC["LC_class"]]
+                            st.session_state.LC_classnames= st.session_state.LC["LC_classnames"]
                             cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                             st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                         if st.session_state.LC_selection==rtext("2_opt2"):
@@ -834,12 +792,12 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                             
                             if isinstance(LC_class, int):
                                 LC_class=[LC_class]
-                            st.session_state.LC_classnames = [LC_names_advanced[values_precise.index(value)] for value in LC_class]
+                            st.session_state.LC_classnames = st.session_state.LC["LC_classnames"]
                         area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
 
     if st.session_state.area_table is not None:
-        print('here')
+
         rel_habitat_change_table = st.session_state.area_table.copy()
         for i in range(1, st.session_state.area_table.shape[1]):  # Start from the second column (index 1)
             rel_habitat_change_table.iloc[:, i] = (st.session_state.area_table.iloc[:, i] / st.session_state.area_table.iloc[:, 1] * 100) - 100
@@ -847,7 +805,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         st.session_state.NC= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatNC.tif"
         st.session_state.GAIN= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatGAIN.tif"
         st.session_state.LOSS= f"{st.session_state.biab_dir}{st.session_state.cover_maps}/HabitatLOSS.tif"
-        print('here too')
+
 
         st.session_state["upload"] = False
         st.session_state.default_dens=None
