@@ -585,7 +585,7 @@ if input is not None or st.session_state.polyinfo is not None:
                         sensitivity= Sensitivity(data)
                         sensitivity_table=get_output(sensitivity.text)["GFS_IndicatorsTool>sensitivity.yml@0"]
                         st.session_state.sensitivity_table_df = pd.read_csv(
-                            f"/home/ubuntu/bon-in-a-box-pipelines/output/{sensitivity_table}/sensitivity_table.tsv", 
+                            f"/home/ubuntu/BIAB/bon-in-a-box-pipelines/output/{sensitivity_table}/sensitivity_table.tsv", 
                             sep="\t", 
                             index_col=0
                         )
