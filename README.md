@@ -677,7 +677,7 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
 - **functions.py**: This file contains all custom functions used ind Input_form.py or Output_display.py. This includes f.e API call functions from Bon in a Box or interactive Map functions
 - **points_example.csv**: This is a example csv file with correct formatting for the function to upload custom point observations
 - **polygon_example.geojson**: This is an example GeoJSON file to demonstrate the required formatting for polygon data that can be uploaded in the Input_form.py file.
-- **text.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
+- **texts.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
 - **/images**: This folder contains all the images displayed in the diffrent Interface pages.
 
 ## Installation
