@@ -107,6 +107,7 @@ Circles that are geographically close to one another are merged into population 
 1_4_2_bu1,Visualize Population polygons,Calcular polígonos de población
 1_4_2_bu2, Confirm population polygons, Confirmar polígonos de población
 1_4_2_bu3, Draw population polygons manually,Dibujar polígonos de población manualmente
+1_4_2_info, **number of Poulations:**, **número de poblaciones:**
 2_ti,##### Step 2: Monitor the population habitats,##### Paso 2: Monitorear los hábitats de la población
 2_te,"Now that the spatial distribution of populations has been set, you can use earth observation-derived datasets to monitor how their habitats have changed over time.  \n\nChoose from the *Land cover type* list below the earth observation-derived dataset that will be used to describe habitat changes for the species of interest.","Ahora que se ha establecido la distribución espacial de las poblaciones, puede usar conjuntos de datos derivados de la observación de la Tierra para monitorear cómo han cambiado sus hábitats a lo largo del tiempo.  \n\nElija de la lista *Tipo de cobertura terrestre* a continuación el conjunto de datos derivados de la observación de la Tierra que se utilizará para describir los cambios de hábitat para la especie de interés, luego haga clic en el botón **Obtener datos de hábitat**."
 2_opt1,Tree Cover (Global Forest Watch),Cobertura arbórea

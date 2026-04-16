@@ -64,7 +64,7 @@ if "LC_classnames" not in st.session_state:
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
-texts = pd.read_csv("texts_copy.csv").set_index("id")
+texts = pd.read_csv("texts.csv").set_index("id")
 
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
@@ -262,7 +262,6 @@ if input is not None or st.session_state.polyinfo is not None:
         area_df = pd.DataFrame(area_table)
         area_df = area_df.melt(id_vars=area_df.columns[0], var_name="year", value_name="area")
         area_df["year"] = area_df["year"].str.replace("y", "").astype(int)
-
         area_fig = px.line(
             area_df,
             x="year",
@@ -339,7 +338,11 @@ if input is not None or st.session_state.polyinfo is not None:
                             df.at[i, "pop_size"] = round(calculated_pop_size)
                         if row["pop_size"] is not None:
                             if not pd.isna(df.at[i, "pop_size"]) and not pd.isna(row["nenc"]):
-                                df.at[i, "effective_size"] = round(df.at[i, "pop_size"]/ area_table.iloc[int(i), 1] * area_table.iloc[int(i), -1] * row["nenc"])
+                                calculated_effective_size = df.at[i, "pop_size"] / area_table.iloc[int(i), 1] * area_table.iloc[int(i), -1] * row["nenc"]
+                                if not np.isnan(calculated_effective_size):
+                                    df.at[i, "effective_size"] = round(calculated_effective_size)
+                                else:
+                                    df.at[i, "effective_size"] = None
                             else:
                                 df.at[i, "effective_size"] = None
                     st.session_state.properties = df
@@ -356,7 +359,7 @@ if input is not None or st.session_state.polyinfo is not None:
                     "effective_size": st.column_config.Column(disabled=True),
                     "nenc": st.column_config.Column(disabled=True)
                     },
-                    hide_index=True,
+
                 )
                 properties= st.session_state.properties
                 for i, poly in enumerate(st.session_state.pop_polygons["features"]):

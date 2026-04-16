@@ -17,7 +17,7 @@ with st.sidebar:
 
         st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
 
-texts = pd.read_csv("texts_copy.csv").set_index("id")
+texts = pd.read_csv("texts.csv").set_index("id")
 
 
 def rtext(id):

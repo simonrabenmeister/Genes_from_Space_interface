@@ -80,6 +80,8 @@ if "obs_edit" not in st.session_state:
     st.session_state.obs_edit = None
 if "info" not in st.session_state:
     st.session_state.info = None
+if "poly_old" not in st.session_state:
+    st.session_state.poly_old = None
   # Default base year selection
 if "GBIF_data" not in st.session_state:
     st.session_state.GBIF_data = {
@@ -102,6 +104,7 @@ if "polyinfo" not in st.session_state:
         "buffer": None,
         "distance": None,
         "polygons": None
+
     }
 if "LC" not in st.session_state:
     st.session_state.LC = {
@@ -126,7 +129,7 @@ if height_source is not None:
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 ##Load necessary functions, files etc
-texts = pd.read_csv("texts_copy.csv").set_index("id")
+texts = pd.read_csv("texts.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
 LC_dict = {
@@ -248,7 +251,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         setattr(st.session_state, 'area_table', None),
         setattr(st.session_state, 'stage', "upload"),
         setattr(st.session_state, 'LC_class_index', None),
-        setattr(st.session_state, "index_poly", None)
+        setattr(st.session_state, "index_poly", None),
+        setattr(st.session_state, "baseyear", None)
         )
     )
     with st.expander(rtext("1_1_exp_ti"), expanded=False):
@@ -270,16 +274,21 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
                 except Exception as e:
                     st.error(f"Error reading the GeoJSON file: {e}")
-                # Calculate the center of the polygon
-                coordinates = st.session_state.polyinfo["polygons"]["features"][0]["geometry"]["coordinates"][0]
-                flattened_coordinates = [point for sublist in coordinates for point in sublist]
-                lats = [point[1] for point in flattened_coordinates]
-                lngs = [point[0] for point in flattened_coordinates]
-                center_lat = sum(lats) / len(lats)
-                center_lng = sum(lngs) / len(lngs)
 
-                # Update session state with the center coordinates
-                st.session_state.center = {"lat": center_lat, "lng": center_lng}
+#######Removed center finder since it only works with multpolygons and not normal polygons
+                # # Calculate the center of the polygon
+                # st.session_state.polyinfo["polygons"]
+                # coordinates = st.session_state.polyinfo["polygons"]["features"][0]["geometry"]["coordinates"][0]
+                # coordinates
+                # flattened_coordinates = [point for sublist in coordinates for point in sublist]
+
+                # lats = [point[1] for point in flattened_coordinates]
+                # lngs = [point[0] for point in flattened_coordinates]
+                # center_lat = sum(lats) / len(lats)
+                # center_lng = sum(lngs) / len(lngs)
+
+                # # Update session state with the center coordinates
+                # st.session_state.center = {"lat": center_lat, "lng": center_lng}
         #Download example file
             st.download_button(
                 label=rtext("1_3_1_ex_file"),
@@ -431,8 +440,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         if data["pipeline@58"] is None:
                             data["pipeline@58"] = []
                         GBIF_response = GBIF(data)
-
                         output_GBIF = get_output(GBIF_response.text)
+                        # st.write(output_GBIF)
+                        if output_GBIF is not None and "error" in output_GBIF:
+                            st.error(output_GBIF["error"])
                         GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
                         obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
                         obs = pd.read_csv(obs_file, sep='\t')
@@ -440,6 +451,9 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         st.session_state.stage = "Manipulate points"
     
     if st.session_state.obs_edit is not None:
+        if st.session_state.obs_edit.empty:
+            st.warning("No observations available.")
+            st.stop()
         # Calculate the center of all point observations in total
         lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
         lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
@@ -504,9 +518,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
 
             st.session_state.index_poly=0
+
             with st.form(key='parameters', enter_to_submit=False):
-                st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input")
-                st.number_input(rtext("1_4_2_plac2"), value=st.session_state.distance, key="distance_input")
+                st.number_input(rtext("1_4_2_plac1"), key="buffer_input")
+                st.number_input(rtext("1_4_2_plac2"), key="distance_input")
                 with st.expander(rtext("1_4_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_4_2_exp_te"))
                     st.image('images/PointsToPoly-2048x422.png', caption='Polygon creation methods')
@@ -543,8 +558,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 "LC_class": None,
                 "index": None
             }
-            st.session_state.area_table = None
-            st.session_state.cover_maps = None
+            # st.session_state.area_table = None
+            # st.session_state.cover_maps = None
             if st.session_state.buffer is not None:
                 setattr(st.session_state, 'buffer', st.session_state.buffer_input)
 
@@ -588,7 +603,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("3_2_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=st.session_state.LC_class_names)
             st.session_state.LC["LC_classnames"]=LC_class
-            [item for lc in LC_class for item in LC_dict[lc]]
+
             
             st.session_state.LC["LC_class"] =  [item for lc in LC_class for item in LC_dict[lc]]
             if 2020-st.session_state.baseyear < 5:
@@ -617,9 +632,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
 
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
-
-            st.session_state.info=LC_info(data)
-            st.session_state.info=get_output(st.session_state.info.text)
+            if st.session_state.info is None or st.session_state.polyinfo["polygons"] != st.session_state.poly_old :
+                st.session_state.info=LC_info(data)
+                st.session_state.info=get_output(st.session_state.info.text)
+                st.session_state.poly_old = st.session_state.polyinfo["polygons"]   
             if st.session_state.info is not None:
                 LC_cum=pd.read_csv(f"{st.session_state.biab_dir}/output/{st.session_state.info['GFS_IndicatorsTool>LC_info.yml@11']}/pop_lc_sorted_cum.csv")
                 # Compute individual element percentages
@@ -797,7 +813,6 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
 
     if st.session_state.area_table is not None:
-
         rel_habitat_change_table = st.session_state.area_table.copy()
         for i in range(1, st.session_state.area_table.shape[1]):  # Start from the second column (index 1)
             rel_habitat_change_table.iloc[:, i] = (st.session_state.area_table.iloc[:, i] / st.session_state.area_table.iloc[:, 1] * 100) - 100

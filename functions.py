@@ -16,7 +16,7 @@ import glasbey
 import geopandas as gpd
 import os
 
-texts = pd.read_csv("texts_copy.csv").set_index("id")
+texts = pd.read_csv("texts.csv").set_index("id")
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
 
@@ -328,6 +328,7 @@ def polygon_clustering():
                 st.rerun(scope="fragment")
     
     if st.session_state.original_polygons is not None:
+        st.write(f"{rtext('1_4_2_info')} {len(st.session_state.original_polygons['features'])}")
 
         if st.button(rtext("1_4_2_bu2")):
             
@@ -358,7 +359,7 @@ def convert_df():
         for i in range(0, len(st.session_state.polygons["features"])):
             st.session_state.polygons["features"][i]["properties"].update({"population_density": "", "nenc": "", "size": ""})
     # Initialize folium map
-    m = folium.Map(location=[0, 0], zoom_start=2)
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lon"]], zoom_start=2)
 
     # Add the polygons to the map
     fg = folium.FeatureGroup(name="Polygons")
