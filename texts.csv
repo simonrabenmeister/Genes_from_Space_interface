@@ -152,3 +152,4 @@ out_2_exp_te,"**Ne:Nc ratio** represents the ratio between the effective populat
 submit, Submit, Enviar
 out_3_ti, ### Estimate population sizes, ### Propiedades de la població
 out_3_te,"The table can be used to assess the effective population size of every population. For every population you can enter a population density estimate (individuals per km²), or you can set a global population density for all populations using the form below. Population density estimates will then be automatically multiplied by population areas to estimate the population size of every population. Alternatively, you can directly enter the size of every population in the correspondingh column.",La tabla a continuación muestra las propiedades de las poblaciones. Puede editar los valores de Densidad de Población y Tamaño de Población. El tamaño efectivo de la población se calcula en función de estos valores y el área de los polígonos.
+name, Name, Nombre
