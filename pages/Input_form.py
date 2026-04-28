@@ -606,29 +606,29 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
             
             st.session_state.LC["LC_class"] =  [item for lc in LC_class for item in LC_dict[lc]]
-            if 2020-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+            if 2021-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
 
         if st.session_state.LC_selection==rtext("2_opt2"):
             st.markdown(rtext("3_1_ti"))
             st.markdown(rtext("3_1_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)
             st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
-            if 2020-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+            if 2021-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
         
         if st.session_state.LC_selection==rtext("2_opt4"):
             st.markdown(rtext("3_3_ti"))
             st.markdown(rtext("3_3_te"))
 
-            if 2020-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+            if 2021-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
 
 
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
@@ -727,10 +727,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
                 st.session_state.LC["LC_classnames"]=LC_class
 
-                if 2020-st.session_state.baseyear < 5:
-                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
+                if 2021-st.session_state.baseyear < 5:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
                 else:
-                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
     
         if st.session_state.LC_selection==rtext("2_opt1"):
             st.markdown(rtext("3_4_ti"))
