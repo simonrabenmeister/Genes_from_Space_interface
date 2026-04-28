@@ -9,7 +9,7 @@ from streamlit_folium import st_folium
 from folium.plugins import Draw
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 import seaborn as sns
 import glasbey
@@ -19,6 +19,24 @@ import os
 texts = pd.read_csv("texts.csv").set_index("id")
 def rtext(id):
         return texts.loc[id,st.session_state.lan].replace("\\n","\n")
+
+def clean_geometry(geom):
+    """Remove linestrings from geometry collections, keeping only polygon parts."""
+    if geom.is_empty:
+        return geom
+    
+    if geom.geom_type == 'GeometryCollection':
+        # Extract only polygon and multipolygon geometries
+        polys = [g for g in geom.geoms if g.geom_type in ['Polygon', 'MultiPolygon']]
+        if polys:
+            return unary_union(polys)
+        return geom
+    elif geom.geom_type == 'Polygon':
+        return MultiPolygon([geom])
+    elif geom.geom_type == 'MultiPolygon':
+        return geom
+    
+    return geom
 
 if "polygons" not in st.session_state:
     st.session_state.polygons = None
@@ -210,6 +228,10 @@ def polygon_clustering():
                                 melted_clusters.at[j, "geometry"] = melted_clusters.iloc[j]["geometry"].union(intersection)
                                 melted_clusters.at[i, "geometry"] = melted_clusters.iloc[i]["geometry"].difference(intersection)
             # Create a feature collection from melted_clusters
+            
+            # Clean geometries to remove any linestrings from geometry collections
+            melted_clusters["geometry"] = melted_clusters["geometry"].apply(clean_geometry)
+            
             # Generate a color palette for the clusters
             colors = glasbey.create_palette(palette_size=len(melted_clusters), colorblind_safe=True, cvd_severity=100)
 

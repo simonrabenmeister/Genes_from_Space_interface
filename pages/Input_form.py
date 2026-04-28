@@ -376,7 +376,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             if st.session_state["species"] is not None:
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1992, max_value=2021, placeholder='Example: 2010', key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=1992, max_value=2020, placeholder='Example: 2010', key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
@@ -486,7 +486,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.obs is not None and st.session_state["data_source"]==rtext("1_1_opt1"):
             st.markdown(rtext("1_2_ti"))
             st.markdown(rtext("1_2_te"))
-            st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+            st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
             with st.expander(rtext("1_2_exp_ti"), expanded=False):
                 st.markdown(rtext("1_2_exp_te"))
@@ -567,7 +567,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state["data_source"]==rtext("1_1_opt3"):
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2021, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
@@ -606,29 +606,29 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
             
             st.session_state.LC["LC_class"] =  [item for lc in LC_class for item in LC_dict[lc]]
-            if 2021-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
+            if 2020-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
         if st.session_state.LC_selection==rtext("2_opt2"):
             st.markdown(rtext("3_1_ti"))
             st.markdown(rtext("3_1_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)
             st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
-            if 2021-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
+            if 2020-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
         
         if st.session_state.LC_selection==rtext("2_opt4"):
             st.markdown(rtext("3_3_ti"))
             st.markdown(rtext("3_3_te"))
 
-            if 2021-st.session_state.baseyear < 5:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
+            if 2020-st.session_state.baseyear < 5:
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
-                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
+                st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
 
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
@@ -667,7 +667,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         break
                     dominant_class_names.append(elem)
                     cumulative_percentage += perc
-
+                st.session_state.LC["timeseries"]
                 # Create stacked single bar using Plotly
                 fig = go.Figure()
                 element_color_map = {
@@ -727,10 +727,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
                 st.session_state.LC["LC_classnames"]=LC_class
 
-                if 2021-st.session_state.baseyear < 5:
-                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 2021-st.session_state.baseyear+1).astype(int).tolist()
+                if 2020-st.session_state.baseyear < 5:
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
                 else:
-                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2021, 5).astype(int).tolist()
+                    st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
     
         if st.session_state.LC_selection==rtext("2_opt1"):
             st.markdown(rtext("3_4_ti"))
