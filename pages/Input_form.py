@@ -82,7 +82,8 @@ if "info" not in st.session_state:
     st.session_state.info = None
 if "poly_old" not in st.session_state:
     st.session_state.poly_old = None
-  # Default base year selection
+if "GBIF_range" not in st.session_state:
+    st.session_state.GBIF_range = None
 if "GBIF_data" not in st.session_state:
     st.session_state.GBIF_data = {
         "species": None,
@@ -374,17 +375,16 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
                         st.write(rtext('1_3_3_1_in_te3'))
             if st.session_state["species"] is not None:
-                st.markdown(rtext("1_2_ti"))
-                st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1992, max_value=2020, placeholder='Example: 2010', key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.markdown(rtext("1_2_2_ti"))
+                st.markdown(rtext("1_2_2_te"))
+                with st.form(key='GBIF_parameters', enter_to_submit=False):
+                    st.slider("Select a range of values", 1900, 2020, (1970, 2020), key="GBIF_year_range")
+                    st.form_submit_button("Update GBIF Range", on_click=lambda: setattr(st.session_state, 'GBIF_range', st.session_state.GBIF_year_range))
 
-                with st.expander(rtext("1_2_exp_ti"), expanded=False):
-                    st.markdown(rtext("1_2_exp_te"))
+            if st.session_state["GBIF_range"] is not None:
 
-            if st.session_state["baseyear"] is not None:
-
-                st.session_state.GBIF_data["start_y"]=1970
-                st.session_state.GBIF_data["end_y"]=st.session_state.baseyear
+                st.session_state.GBIF_data["start_y"]=st.session_state.GBIF_range[0]
+                st.session_state.GBIF_data["end_y"]=st.session_state.GBIF_range[1]
                 st.markdown(rtext("1_3_3_2_ti"))
                 st.markdown(rtext("1_3_3_2_te"))
                 
@@ -413,6 +413,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         st.markdown(rtext("1_3_3_3_te1"))
                         st.session_state.countries = []
             if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
+                
                 if st.button(rtext("1_3_3_bu")):
                     
                     st.session_state.polyinfo = {
@@ -483,16 +484,8 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
 
             
-        if st.session_state.obs is not None and st.session_state["data_source"]==rtext("1_1_opt1"):
-            st.markdown(rtext("1_2_ti"))
-            st.markdown(rtext("1_2_te"))
-            st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
-            with st.expander(rtext("1_2_exp_ti"), expanded=False):
-                st.markdown(rtext("1_2_exp_te"))
-        
-        
-        if st.session_state.obs is not None and st.session_state.baseyear is not None:
+        if st.session_state.obs is not None:
             st.markdown(rtext("1_4_ti"))
             st.markdown(rtext("1_4_te"))
             buffer_selection= [rtext("1_4_opt1"),rtext("1_4_opt2")]
@@ -571,7 +564,15 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
-                    
+
+        if st.session_state["data_source"]==rtext("1_1_opt2") or st.session_state["data_source"]==rtext("1_1_opt1"):
+            st.markdown(rtext("1_2_ti"))
+            st.markdown(rtext("1_2_te"))
+            st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+
+            with st.expander(rtext("1_2_exp_ti"), expanded=False):
+                st.markdown(rtext("1_2_exp_te"))
+        
         if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
@@ -667,7 +668,6 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         break
                     dominant_class_names.append(elem)
                     cumulative_percentage += perc
-                st.session_state.LC["timeseries"]
                 # Create stacked single bar using Plotly
                 fig = go.Figure()
                 element_color_map = {
@@ -736,6 +736,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("3_4_ti"))
             st.markdown(rtext("3_4_te"))
             st.session_state.LC["LC_class"]=["Treecover"]
+            st.session_state.LC_classnames=["Treecover"]
             if 2023-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2023, 2023-st.session_state.baseyear+1).astype(int).tolist()
             else:

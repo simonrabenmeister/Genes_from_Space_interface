@@ -41,10 +41,12 @@ thanks_te," We thank the NOMIS Foundation and the University of Zurich (UZH) for
 1_2_exp_ti, **-> What is the baseline year?**,**-> ¿Cuál es el año base?**
 1_2_exp_te,"The baseline year is the starting point for assessing habitat change in the studied populations. Selecting a baseline year that is several decades in the past (e.g., 2000) will capture long-term habitat change trends, while a more recent baseline (e.g., 2015) is recommended for shorter-term monitoring.
 Note that the earliest possible baseline year depends on the temporal coverage of the datasets used to describe habitat change (at the moment, monitoring is possible up to 2021).
-If you are retrieving species observations from the Global Biodiversity Information Facility (GBIF), population polygons will be based on observations recorded between 1970 and the chosen baseline year.","El año base es el punto de partida para evaluar el cambio de hábitat en las poblaciones estudiadas. Seleccionar un año base que sea de varias décadas en el pasado (por ejemplo, 2000) capturará las tendencias de cambio de hábitat a largo plazo, mientras que se recomienda un año base más reciente (por ejemplo, 2015) para el monitoreo a corto plazo.
-Tenga en cuenta que el año base más temprano posible depende de la cobertura temporal de los conjuntos de datos utilizados para describir el cambio de hábitat (en este momento, el monitoreo es posible hasta 2021).
-Si está recuperando observaciones de especies de la Infraestructura Mundial de Información sobre Biodiversidad (GBIF), los polígonos de población se basarán en observaciones registradas entre 1970 y el año base elegido."
+","El año base es el punto de partida para evaluar el cambio de hábitat en las poblaciones estudiadas. Seleccionar un año base que sea de varias décadas en el pasado (por ejemplo, 2000) capturará las tendencias de cambio de hábitat a largo plazo, mientras que se recomienda un año base más reciente (por ejemplo, 2015) para el monitoreo a corto plazo.
+Tenga en cuenta que el año base más temprano posible depende de la cobertura temporal de los conjuntos de datos utilizados para describir el cambio de hábitat (en este momento, el monitoreo es posible hasta 2021)."
 1_2_plac,Baseline year,Año base
+1_2_2_ti,###### GBIF time period,###### Periodo de tiempo de GBIF
+1_2_2_te,"Next, you will choose the time period for retrieving species observations from GBIF.","A continuación, deberá elegir el período de tiempo para recuperar las observaciones de especies de GBIF."
+1_2_2_plac,GBIF time period,Periodo de tiempo de GBIF
 1_3_1_ti,###### Upload population polygons,###### Sube polígonos de población
 1_3_1_te,"Click below to upload a GeoJSON file describing the spatial distribution of the species' populations.",
 1_3_1_exp_ti,"**->How should the document be formatted?**",
