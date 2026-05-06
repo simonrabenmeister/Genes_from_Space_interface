@@ -94,11 +94,12 @@ def open_tif(tif):
 
 
 ##Load Runs
-input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: st.session_state.update({"upload": True}))
 
-if st.session_state.upload and input is not None:
+
+def load_geojson():
     # Load the GeoJSON file
-    geojson_data = json.load(input)
+    st.session_state.upload = True
+    geojson_data = json.load(st.session_state.geojson)
     st.session_state.pop_polygons = geojson_data["pop_polygons"]
     st.session_state.default_nenc = geojson_data["NE"]
     st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
@@ -111,6 +112,8 @@ if st.session_state.upload and input is not None:
     st.session_state.upload = True
     st.session_state.LC_classnames =geojson_data["LC_class_names"]
     st.session_state.run_id = geojson_data["run_id"]
+
+input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
 
 if not st.session_state.upload:
     if st.session_state.polyinfo is not None:

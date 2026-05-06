@@ -119,17 +119,29 @@ def edit_points():
         folium.CircleMarker(
             location=corr,
             radius=6,
-            color="red" if st.session_state.index is not None and i in st.session_state.index else "blue",
+            color="red" if st.session_state.index is not None and i in st.session_state.index else "green" if row.get("source") == "user_defined" else "blue",
             fill_opacity=1,
             fill=True,
             fill_color='lightblue'
         ).add_to(fg)
-
-
+    draw = Draw(export=False, draw_options={
+        'polyline': False,
+        'polygon': True,
+        'circle': False,
+        'rectangle': True,
+        'marker': False,
+        'circlemarker': False
+    }, edit_options={
+        'edit': True,
+        'remove': True
+    })
+    draw.add_to(m)
     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
 #Get the index of the clicked point
+
     
     if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
+        
         st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
         (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
         def remove_point(index):
@@ -146,9 +158,32 @@ def edit_points():
         ):
             st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
             st.rerun(scope="fragment")
-    
+    with st.expander("advanced options"):
+        
+        st.write(st.session_state.output["last_object_clicked"])
+        def load_csv():
+            try:
+                st.session_state.obs_csv = pd.read_csv(st.session_state.csv_link, sep="\t")
+                # Check if the required columns are present
+                required_columns = ["decimallongitude", "decimallatitude"]
+                if not all(col in st.session_state.obs_csv.columns for col in required_columns):
+                    st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
+
+            except Exception as e:
+                st.error(f"Error reading the CSV file: {e}")
+            if st.session_state.obs_csv is not None:
+                st.session_state.obs_csv = st.session_state.obs_csv.assign(source="user_defined")
+                st.session_state.obs = st.session_state.obs_original.assign(source="GBIF")
+                st.session_state.obs_edit= pd.concat([st.session_state.obs, st.session_state.obs_csv], ignore_index=True).drop_duplicates(subset=["decimallatitude", "decimallongitude"]).reset_index(drop=True)
+            
+            
+        st.file_uploader(rtext("1_3_3_4_bu3"), key="csv_link",type=["csv"], on_change=lambda: load_csv())
 
 
+        if st.button("remove uploaded file"):
+            st.session_state.obs_edit=st.session_state.obs_original
+            st.session_state.obs_csv=None
+            st.rerun(scope="fragment")
 
 @st.fragment
 def polygon_clustering():
