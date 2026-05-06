@@ -710,6 +710,11 @@ This diagram shows how the code behind the Interface is structured, how the user
     ```bash
     streamlit run Hello.py
     ```
+5. Installing / Using Bon-in-a-Box:
+    You will also need to prepare a Bon in a Box installation and server that will run and respond to API calls. Installation instructions can be found here:
+   https://geo-bon.github.io/bon-in-a-box-pipeline-engine/how_to_install.html
+   Keep in mind that you will also need to update relevant files that point to the running installation of the Bon in a Box server (e.g., the final line in the `directories.txt` should be updated to be the production server instance or the local one for development). Of note: the Bon in a Box repo should be cloned to the subdirectory `~/BIAB`.
+
 # Bon in a Box Pipelines
 This section documents all Subfolders of the folder bon-in-a-box-pipelines/pipelines/GenesFromSpace of the Bon in a Box Tool (https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/genes-from-space--update)
 ## Tool

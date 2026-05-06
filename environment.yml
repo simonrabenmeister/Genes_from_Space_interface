@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python
   - geojson
   - numpy
   - matplotlib
@@ -20,5 +20,7 @@ dependencies:
   - glasbey
   - geopandas
   - streamlit-folium
-  - streamlit-js-eval
+  - fpdf
+  - pip:
+    - streamlit-js-eval
 prefix: /home/ubuntu/miniconda3/envs/habitat_env

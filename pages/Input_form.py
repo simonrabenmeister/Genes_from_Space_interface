@@ -22,6 +22,20 @@ import plotly.graph_objects as go
 from streamlit_js_eval import streamlit_js_eval
 
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
+
+# Initialize the height state variable/key
+if 'height' not in st.session_state:
+    # Try to get screen height if possible, otherwise default
+    try:
+        height_source = streamlit_js_eval(js_expressions='screen.height', key='SCR_page') 
+        if height_source is not None:
+            st.session_state.height = int(height_source * 0.3)
+        else:
+            st.session_state.height = 500
+    except Exception:
+        # Fallback if JS eval fails or function is missing
+        st.session_state.height = 500
+
 # Remove whitespace from the top of the page and sidebar
 
 with open("directories.txt", "r") as file:
@@ -440,6 +454,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         }
                         if data["pipeline@58"] is None:
                             data["pipeline@58"] = []
+                        # st.write('data',data)
                         GBIF_response = GBIF(data)
                         output_GBIF = get_output(GBIF_response.text)
                         # st.write(output_GBIF)
