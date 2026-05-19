@@ -136,6 +136,10 @@ if "species" not in st.session_state:
     st.session_state.species = None  # Default species name
 if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
+if "obs_csv" not in st.session_state:
+    st.session_state.obs_csv = None
+if "all_drawings" not in st.session_state:
+    st.session_state.all_drawings = None
 
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
@@ -328,21 +332,21 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         #Upload your own point file
             obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv"], label_visibility="collapsed", key="point_source", 
                                         on_change=lambda: st.session_state.update({"stage": "Manipulate points", "obs": None}))
-            if obs_link is not None and st.session_state.obs_edit is None:
+            if obs_link is not None and st.session_state.obs_original is None:
                 try:
-                    st.session_state.obs_edit = pd.read_csv(obs_link, sep="\t")
+                    st.session_state.obs_original = pd.read_csv(obs_link, sep="\t")
                     # Check if the required columns are present
                     required_columns = ["decimallongitude", "decimallatitude"]
-                    if not all(col in st.session_state.obs_edit.columns for col in required_columns):
+                    if not all(col in st.session_state.obs_original.columns for col in required_columns):
                         st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
 
                 except Exception as e:
                     st.error(f"Error reading the CSV file: {e}")
-            if st.session_state.obs_edit is not None:
+            if st.session_state.obs_original is not None:
                 
                 # Calculate the center of all point observations in total
-                lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
-                lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
+                lats = st.session_state.obs_original["decimallatitude"].to_numpy()
+                lngs = st.session_state.obs_original["decimallongitude"].to_numpy()
                 center_lat = np.mean(lats)
                 center_lng = np.mean(lngs)
 
@@ -441,7 +445,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                             "index": None
                         }  
 
-                    st.session_state.obs = None
+                    st.session_state.obs_original = None
                     with st.spinner(rtext("1_3_3_load")):
                         data = {
                             "pipeline@52": st.session_state.species,
@@ -463,13 +467,11 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         GBIF_output_code=output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
                         obs_file = open(f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv")
                         obs = pd.read_csv(obs_file, sep='\t')
-                        st.session_state.obs_edit = obs
+                        st.session_state.obs_original = obs
                         st.session_state.stage = "Manipulate points"
     
     if st.session_state.obs_edit is not None:
-        if st.session_state.obs_edit.empty:
-            st.warning("No observations available.")
-            st.stop()
+
         # Calculate the center of all point observations in total
         lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
         lngs = st.session_state.obs_edit["decimallongitude"].to_numpy()
@@ -479,23 +481,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         # Update session state with the center coordinates
         st.session_state.center = {"lat": center_lat, "lng": center_lng}
 
-        if st.session_state.obs is None:
 
-            # Confirm points to be used
-
-            st.markdown(rtext("1_3_3_4_ti"))
-            st.markdown(rtext("1_3_3_4_te"))
-            if st.button(rtext("1_3_3_4_bu1")):
-                st.session_state.obs = st.session_state.obs_edit
-                st.session_state.poly_creation = None
-                st.session_state.LC = {
-                    "LC_type": None,
-                    "LC_class": None,
-                    "index": None
-                }  
-                st.session_state.area_table = None
-                st.session_state.cover_maps = None
-                st.rerun()
 
 
             

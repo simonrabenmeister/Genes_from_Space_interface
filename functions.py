@@ -9,7 +9,7 @@ from streamlit_folium import st_folium
 from folium.plugins import Draw
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
-from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection, shape
 from shapely.ops import unary_union
 import seaborn as sns
 import glasbey
@@ -101,13 +101,19 @@ def Sensitivity(data):
 
 @st.fragment
 def edit_points():
-    obs= st.session_state.obs_edit
-#Set the columns for the latitude and longitude
     lat_col = "decimallatitude"
     lon_col = "decimallongitude"
+    # Use edited version if it exists, otherwise fall back to original
+    if st.session_state.get("obs_edit") is not None:
+        obs = st.session_state.obs_edit
+    else:
+        obs = st.session_state.obs_original
+        obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
+        st.session_state.obs_edit = obs.copy()
 
-    obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
-    obs_edit = obs.copy()
+
+
+    obs_edit = st.session_state.obs_edit
     # Remove duplicate points based on latitude and longitude
     
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
@@ -138,29 +144,88 @@ def edit_points():
     draw.add_to(m)
     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
 #Get the index of the clicked point
+    if "all_drawings" in st.session_state.output and st.session_state.output["all_drawings"] != None:
+        selected_indices = set()
+        for drawing in st.session_state.output["all_drawings"]:
+            geometry_data = drawing.get("geometry") if isinstance(drawing, dict) else None
+            if geometry_data is None and isinstance(drawing, dict) and "type" in drawing and "coordinates" in drawing:
+                geometry_data = drawing
+            if geometry_data is None:
+                continue
 
-    
+            try:
+                drawn_geom = shape(geometry_data)
+            except Exception:
+                continue
+
+            for i, row in obs_edit.iterrows():
+                point = Point(row[lon_col], row[lat_col])
+                if drawn_geom.contains(point) or drawn_geom.touches(point):
+                    selected_indices.add(i)
+
+        if selected_indices and st.session_state.index is not None:
+            st.session_state.index = pd.Index(st.session_state.index).union(selected_indices)
+        elif  st.session_state.index is None:
+            st.session_state.index = pd.Index(list(selected_indices))
+        if "all_drawings" in st.session_state and st.session_state.output["all_drawings"] != st.session_state.all_drawings:
+            st.session_state["all_drawings"] = st.session_state.output["all_drawings"]
+            st.rerun(scope="fragment")
+
     if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
         
-        st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
+        clicked_index = obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
         (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
-        def remove_point(index):
-            st.session_state.obs_edit=obs_edit.drop(index)
-            st.session_state.index=None
+        if st.session_state.index is not None:
+            st.session_state.index = pd.Index(st.session_state.index).union(clicked_index)
+        else:
+            st.session_state.index = clicked_index
 
-        #Remove the point if the remove button is clicked
-        st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,)) 
-
-        st.session_state.obs=obs_edit
         if (
             "last_object_clicked" in st.session_state.output
             and st.session_state.output["last_object_clicked"] != st.session_state["last_object_clicked"]
         ):
             st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
             st.rerun(scope="fragment")
+
+
+    def remove_point(index):
+        st.session_state.obs_edit=obs_edit.drop(index)
+        st.session_state.index=None
+
+    b1, b2 = st.columns([3, 1])
+    with b1:
+        if st.session_state.index is not None and not st.session_state.index.empty:
+            st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,)) 
+    with b2:
+
+        if st.button("reset points"):
+            st.session_state.obs_edit=st.session_state.obs_original
+            st.session_state.obs_csv=None
+            st.rerun(scope="fragment")
+
+
+
+
+
+    if st.session_state.obs is None:
+
+        # Confirm points to be used
+        st.markdown(rtext("1_3_3_4_ti"))
+        st.markdown(rtext("1_3_3_4_te"))
+        if st.button(rtext("1_3_3_4_bu1")):
+            st.session_state.obs = st.session_state.obs_edit
+            st.session_state.poly_creation = None
+            st.session_state.LC = {
+                "LC_type": None,
+                "LC_class": None,
+                "index": None
+            }  
+            st.session_state.area_table = None
+            st.session_state.cover_maps = None
+            st.rerun()
+
     with st.expander("advanced options"):
-        
-        st.write(st.session_state.output["last_object_clicked"])
+        st.session_state.index 
         def load_csv():
             try:
                 st.session_state.obs_csv = pd.read_csv(st.session_state.csv_link, sep="\t")
@@ -173,17 +238,10 @@ def edit_points():
                 st.error(f"Error reading the CSV file: {e}")
             if st.session_state.obs_csv is not None:
                 st.session_state.obs_csv = st.session_state.obs_csv.assign(source="user_defined")
-                st.session_state.obs = st.session_state.obs_original.assign(source="GBIF")
-                st.session_state.obs_edit= pd.concat([st.session_state.obs, st.session_state.obs_csv], ignore_index=True).drop_duplicates(subset=["decimallatitude", "decimallongitude"]).reset_index(drop=True)
+                st.session_state.obs_edit= pd.concat([st.session_state.obs_edit, st.session_state.obs_csv], ignore_index=True).drop_duplicates(subset=["decimallatitude", "decimallongitude"]).reset_index(drop=True)
             
             
         st.file_uploader(rtext("1_3_3_4_bu3"), key="csv_link",type=["csv"], on_change=lambda: load_csv())
-
-
-        if st.button("remove uploaded file"):
-            st.session_state.obs_edit=st.session_state.obs_original
-            st.session_state.obs_csv=None
-            st.rerun(scope="fragment")
 
 @st.fragment
 def polygon_clustering():

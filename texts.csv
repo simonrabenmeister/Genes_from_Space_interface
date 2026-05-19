@@ -86,6 +86,7 @@ Tenga en cuenta que el año base más temprano posible depende de la cobertura t
 1_3_3_4_te,"Coordinates of species occurrences are displayed on the interactive map. You can manually remove individual coordinates by clicking them on the map and then pressing the button that appears below. \n\nClick **Confirm observation coordinates** to proceed to the next step and use the displayed coordinates to define population distribution.","Las coordenadas de las ocurrencias de especies se muestran en el mapa interactivo. Puede eliminar manualmente coordenadas individuales haciendo clic en ellas en el mapa y luego seleccionando el botón que aparece debajo. \n\nHaga clic en **Confirmar coordenadas de observación** para continuar al siguiente paso y usar las coordenadas mostradas para definir la distribución de la población."
 1_3_3_4_bu1,Confirm Observation coordinates,Confirmar coordenadas de observación
 1_3_3_4_bu2, Remove Observation, Haga clic aquí para eliminar la observación seleccionada
+1_3_3_4_bu3, upload a new file with coordinates,Sube un nuevo archivo con coordenadas
 1_4_ti,###### Group species observations by population ,##### Agrupar observaciones de especies por población
 1_4_te,"In this step, we will group the species observations by population. This grouping can be performed automatically (based on geographic distance between observations), or manually on a map."," the coordinates describing species occurrence will be grouped to define the spatial distribution of the populations."""
 1_4_plac,Group observation by population,Creación de polígonos
