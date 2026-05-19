@@ -322,35 +322,54 @@ if input is not None or st.session_state.polyinfo is not None:
                     if new_df is not None:
                         if new_df.equals(st.session_state.properties):
                             return
-    
                         old_df = st.session_state.properties
-
                         st.session_state.properties = new_df
+                        df = st.session_state.properties
 
-                    df = st.session_state.properties
-                    for i, row in df.iterrows():
-                        calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                        if not np.isclose(old_df.at[i, "Population_Density"], row["Population_Density"], equal_nan=True):
-                            df.at[i, "pop_size"] = calculated_pop_size
-                                
-                    for i, row in df.iterrows():
-                        calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1]
-                        if row["pop_size"] is not None and not np.isclose(row["pop_size"], calculated_pop_size, atol=1):
-                            df.at[i, "Population_Density"] = None
-                        if calculated_pop_size is not None and not np.isnan(calculated_pop_size):
-                            df.at[i, "pop_size"] = round(calculated_pop_size)
-                        if row["pop_size"] is not None:
-                            if not pd.isna(df.at[i, "pop_size"]) and not pd.isna(row["nenc"]):
-                                calculated_effective_size = df.at[i, "pop_size"] / area_table.iloc[int(i), 1] * area_table.iloc[int(i), -1] * row["nenc"]
-                                if not np.isnan(calculated_effective_size):
-                                    df.at[i, "effective_size"] = round(calculated_effective_size)
+                        for i, row in df.iterrows():
+                            pop_size_changed = not np.isclose(
+                                old_df.at[i, "pop_size"] or 0,
+                                row["pop_size"] or 0,
+                                atol=1,
+                                equal_nan=True
+                            )
+                            density_changed = not np.isclose(
+                                old_df.at[i, "Population_Density"] or 0,
+                                row["Population_Density"] or 0,
+                                equal_nan=True
+                            )
+
+                            if pop_size_changed and not density_changed:
+                                # User edited pop_size → back-calculate Population_Density
+                                area = area_table.iloc[int(i), 1]
+                                if area and row["pop_size"] is not None and not pd.isna(row["pop_size"]):
+                                    df.at[i, "Population_Density"] = row["pop_size"] / area
                                 else:
-                                    df.at[i, "effective_size"] = None
+                                    df.at[i, "Population_Density"] = None
+                            else:
+                                # User edited Population_Density (or neither changed) → calculate pop_size
+                                calculated_pop_size = row["Population_Density"] * area_table.iloc[int(i), 1] \
+                                    if row["Population_Density"] is not None else None
+
+                                if calculated_pop_size is not None and not np.isnan(calculated_pop_size):
+                                    df.at[i, "pop_size"] = round(calculated_pop_size)
+                                else:
+                                    df.at[i, "pop_size"] = None
+
+                            # Recalculate effective_size from final pop_size
+                            if not pd.isna(df.at[i, "pop_size"]) and not pd.isna(row["nenc"]):
+                                calculated_effective_size = (
+                                    df.at[i, "Population_Density"]
+                                    * area_table.iloc[int(i), -1]
+                                    * row["nenc"]
+                                )
+                                df.at[i, "effective_size"] = round(calculated_effective_size) \
+                                    if not np.isnan(calculated_effective_size) else None
                             else:
                                 df.at[i, "effective_size"] = None
-                    st.session_state.properties = df
-                    st.rerun()
 
+                        st.session_state.properties = df
+                        st.rerun()
             
 
 
@@ -380,7 +399,7 @@ if input is not None or st.session_state.polyinfo is not None:
 
                 with st.form(key='density', enter_to_submit=False):
                     default_dens = st.number_input(
-                        "Default density", 
+                        "Default density (ind/km²)", 
                         min_value=0.0, 
                         step=0.01, 
 
