@@ -205,13 +205,12 @@ def edit_points():
 
 
 
-
-
-    if st.session_state.obs is None:
+    st.markdown(rtext("1_3_3_4_te"))
+    if st.session_state.obs is None or not st.session_state.obs.equals(st.session_state.obs_edit):
 
         # Confirm points to be used
-        st.markdown(rtext("1_3_3_4_ti"))
-        st.markdown(rtext("1_3_3_4_te"))
+
+
         if st.button(rtext("1_3_3_4_bu1")):
             st.session_state.obs = st.session_state.obs_edit
             st.session_state.poly_creation = None

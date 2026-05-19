@@ -1,6 +1,5 @@
 import streamlit as st
 import matplotlib.pyplot as plt 
-from streamlit_folium import folium_static
 import folium
 import rasterio
 import numpy as np
@@ -13,7 +12,7 @@ from streamlit_folium import st_folium# A dummy Sentinel 2 COG I had laying arou
 import plotly.express as px
 from typing import Union
 from PIL import Image
-from fpdf import FPDF
+
 import io
 import uuid
 import os
