@@ -443,24 +443,92 @@ def polygon_clustering():
     
     if st.session_state.original_polygons is not None:
         st.write(f"{rtext('1_4_2_info')} {len(st.session_state.original_polygons['features'])}")
+        st.session_state.zoom=st.session_state.output["zoom"]
 
-        if st.button(rtext("1_4_2_bu2")):
-            
-            st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
-            st.session_state.polyinfo["polygons"]
-            
-            
-            st.session_state.zoom=st.session_state.output["zoom"]
-            st.session_state.center=st.session_state.output["center"]
-            st.session_state.stage = "LC"
-            st.session_state.biab_dir
-            st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-            os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
-            with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
-                geojson.dump(st.session_state.polyinfo["polygons"], f)
-            st.success("Polygons saved successfully.")
-            del st.session_state.original_polygons
-            st.rerun()
+        st.write("You can edit the polygons by clicking on them, or add new polygons using the drawing tool. if you are happy with your pupulation selection,click on  button to save the polygons and proceed to the next step.")
+        bu1, bu2 = st.columns(2)
+        with bu1:
+            if st.button(rtext("1_4_2_bu2")):
+                
+                st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
+                st.session_state.polyinfo["polygons"]
+                
+                
+
+                st.session_state.stage = "LC"
+                st.session_state.biab_dir
+                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+                os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
+                with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
+                    geojson.dump(st.session_state.polyinfo["polygons"], f)
+                st.success("Polygons saved successfully.")
+                del st.session_state.original_polygons
+                st.rerun()
+
+        with bu2:
+            if st.button("add polygons to map"):
+                st.session_state.stage = "manual_polygon_creation"
+                st.session_state.polygon_addition = st.session_state.original_polygons
+                st.rerun()
+
+
+@st.fragment
+def manual_polygon_addition():
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+    fg = folium.FeatureGroup(name="Markers")
+        # Add the Draw tool to the map
+    draw = Draw(export=False, draw_options={
+        'polyline': False,
+        'polygon': True,
+        'circle': False,
+        'rectangle': True,
+        'marker': False,
+        'circlemarker': False
+    }, edit_options={
+        'edit': True,
+        'remove': True
+    })
+    draw.add_to(m)
+    fg2 = folium.FeatureGroup(name="Markers")
+    if st.session_state.polygon_addition is not None:
+        fg2.add_child(folium.GeoJson(st.session_state.polygon_addition, popup=folium.GeoJsonPopup(fields=["name"])))
+    st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], key="add_polygons_map", use_container_width=True, height=st.session_state.height)
+    if st.button("confirm polygons"):
+        # Append new drawings with placeholder properties
+        for i, drawing in enumerate(st.session_state.output["all_drawings"]):
+            next_index = len(st.session_state.polygon_addition["features"])
+            drawing["properties"] = {
+                "name": f"Pop {next_index + 1}",
+                "style": {"color": "gray"}  # temporary, will be reassigned below
+            }
+            st.session_state.polygon_addition["features"].append(drawing)
+
+        # Reassign colors to all features
+        colors = glasbey.create_palette(
+            palette_size=len(st.session_state.polygon_addition["features"]),
+            colorblind_safe=True,
+            cvd_severity=100
+        )
+        for i, feature in enumerate(st.session_state.polygon_addition["features"]):
+            feature["properties"]["style"]["color"] = colors[i]
+        st.rerun(scope="fragment")
+    if st.button(rtext("1_4_2_bu2")):
+        
+        st.session_state.polyinfo["polygons"]= st.session_state.polygon_addition
+        st.session_state.polyinfo["polygons"]
+        
+        
+
+        st.session_state.stage = "LC"
+        st.session_state.biab_dir
+        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+        os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
+        with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
+            geojson.dump(st.session_state.polyinfo["polygons"], f)
+        st.success("Polygons saved successfully.")
+        del st.session_state.polygon_addition
+        del st.session_state.original_polygons
+        st.rerun()
 
 
 

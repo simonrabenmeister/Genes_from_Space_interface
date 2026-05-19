@@ -20,7 +20,7 @@ import uuid
 import os
 import plotly.graph_objects as go
 from streamlit_js_eval import streamlit_js_eval
-
+from functions import manual_polygon_addition
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
 
 # Initialize the height state variable/key
@@ -140,7 +140,8 @@ if "obs_csv" not in st.session_state:
     st.session_state.obs_csv = None
 if "all_drawings" not in st.session_state:
     st.session_state.all_drawings = None
-
+if "polygon_addition" not in st.session_state:
+    st.session_state.polygon_addition = None
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
@@ -577,7 +578,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
-            LC_selection = [rtext("2_opt2"), rtext("2_opt3"), rtext("2_opt4"), rtext("2_opt1")]
+            LC_selection = [ rtext("2_opt4"), rtext("2_opt2"), rtext("2_opt3"), rtext("2_opt1")]
             st.session_state.LC_selection = st.selectbox(
                 rtext("2_plac"),
                 LC_selection,
@@ -723,6 +724,15 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     height=300
                 )
                 st.plotly_chart(fig, use_container_width=True)
+
+                # st.plotly_chart(
+                #     fig,
+                #     use_container_width=True,
+                #     on_select="rerun",
+                #     key="bar_chart"
+                # )
+
+                # st.write(st.session_state["bar_chart"])
                 LC_class=st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=dominant_class_names)
                 
                 st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
@@ -844,6 +854,8 @@ with col2:
         edit_points()
     if st.session_state.stage=="polygon_clustering":
         polygon_clustering()
+    if st.session_state.stage=="manual_polygon_creation":
+        manual_polygon_addition()
     if st.session_state.stage=="LC":
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
