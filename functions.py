@@ -9,7 +9,7 @@ from streamlit_folium import st_folium
 from folium.plugins import Draw
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
-from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection, shape
+from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 import seaborn as sns
 import glasbey
@@ -41,206 +41,356 @@ def clean_geometry(geom):
 if "polygons" not in st.session_state:
     st.session_state.polygons = None
 
-def get_output(response_code):
-    while True:
-        max_retries = 12
-        history = None  # Initialize history variable
-        for attempt in range(max_retries):
-            try:
-                history = requests.get(f"{st.session_state.api_link}api/history").json()
-                break
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    time.sleep(2)
-        if history is None:
-            st.error("Failed to retrieve history after multiple attempts.")
-            return None
-        status = [entry["status"] for entry in history if entry["runId"] == response_code]
-        if status[0] != "running":
-            break
-    if status[0] == "completed":
+# Error handling classes and functions
+class BiaBError(Exception):
+    """Custom exception for Bon-in-a-Box errors shown to users."""
+    def __init__(self, source, message, detail=None):
+        self.source = source      # "connection", "server", or "pipeline"
+        self.message = message
+        self.detail = detail
+        super().__init__(message)
+
+
+def _handle_biab_response(response, pipeline_name):
+    """
+    Inspect an HTTP response from BiaB and raise BiaBError if something is wrong.
+    Returns parsed JSON if successful.
+    """
+    # 1) HTTP-level error (4xx, 5xx)
+    if response.status_code >= 400:
+        # Log the raw response for debugging
+        print(f"DEBUG: HTTP Error {response.status_code} from {pipeline_name}")
+        print(f"DEBUG: Headers: {response.headers}")
+        print(f"DEBUG: Body (raw): {response.text[:500]}")  # First 500 chars
         
-        output_bbiab= requests.get(f"{st.session_state.api_link}api/{response_code}/outputs").json()
-        return output_bbiab
+        try:
+            body = response.json()
+            detail = body.get("message", body.get("error", str(body)))
+        except Exception:
+            detail = response.text[:500] if response.text else f"HTTP {response.status_code}"
+
+        raise BiaBError(
+            source="server",
+            message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned HTTP {response.status_code}",
+            detail=detail
+        )
+
+    # 2) Successful HTTP — parse JSON
+    try:
+        return response.json()
+    except Exception as e:
+        # Log the raw response for debugging
+        print(f"DEBUG: Invalid JSON from {pipeline_name}")
+        print(f"DEBUG: Status: {response.status_code}")
+        print(f"DEBUG: Headers: {response.headers}")
+        print(f"DEBUG: Body (raw): {response.text[:500]}")  # First 500 chars
+        
+        raise BiaBError(
+            source="server",
+            message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned invalid JSON",
+            detail=f"Status: {response.status_code}\nRaw Response:\n{response.text[:500]}"
+        )
+
+
+def _call_biab_pipeline(pipeline_name, data):
+    """
+    Post to a BiaB pipeline endpoint.
+    Returns:
+      - A string (Job ID) if the server returns plain text (most common).
+      - A dict (parsed JSON) if the server returns immediate results.
+    """
+    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>{pipeline_name}.json/run"
+    headers = {"Content-Type": "application/json"}
+
+    # --- Connection error handling ---
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=120)
+    except requests.exceptions.ConnectionError:
+        raise BiaBError(
+            source="connection",
+            message="Connection error — could not reach the Bon-in-a-Box server",
+            detail=f"URL: {url}"
+        )
+    except requests.exceptions.Timeout:
+        raise BiaBError(
+            source="connection",
+            message="Connection error — request to Bon-in-a-Box timed out",
+            detail=f"URL: {url}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise BiaBError(
+            source="connection",
+            message="Connection error — request to Bon-in-a-Box failed",
+            detail=str(e)
+        )
+
+    # --- HTTP error handling ---
+    if response.status_code >= 400:
+        try:
+            body = response.json()
+            detail = body.get("message", body.get("error", str(body)))
+        except Exception:
+            detail = response.text[:500] if response.text else f"HTTP {response.status_code}"
+
+        raise BiaBError(
+            source="server",
+            message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned HTTP {response.status_code}",
+            detail=detail
+        )
+
+    # --- Success: determine response type ---
+    content_type = response.headers.get("Content-Type", "")
+
+    if "application/json" in content_type:
+        # Server returned JSON — parse it
+        try:
+            return response.json()
+        except Exception:
+            raise BiaBError(
+                source="server",
+                message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' claimed JSON but sent invalid data",
+                detail=response.text[:500]
+            )
+    else:
+        # Server returned plain text — this is a Job ID
+        text_body = response.text.strip()
+        if text_body:
+            return text_body  # <-- Return the Job ID as a string
+        else:
+            raise BiaBError(
+                source="server",
+                message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned an empty response",
+                detail=None
+            )
+
+
+def _show_biab_error(error):
+    """Display a BiaBError to the user with clear source labeling."""
+    if error.source == "connection":
+        st.error(f"🔌 {error.message}")
+    elif error.source == "server":
+        st.error(f"🖥️ {error.message}")
+        if error.detail:
+            with st.expander("Server details"):
+                st.code(error.detail)
+    elif error.source == "pipeline":
+        st.error(f"⚙️ {error.message}")
+        if error.detail:
+            with st.expander("Pipeline error details"):
+                st.code(error.detail)
+
+def get_output(response_code):
+    """
+    Poll BiaB for job completion. Returns output JSON on success.
+    Raises BiaBError on connection or pipeline failure.
+    """
+    max_retries = 12
+    retry_delay = 2  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            history = requests.get(
+                f"{st.session_state.api_link}api/history",
+                timeout=30
+            ).json()
+            break
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                raise BiaBError(
+                    source="connection",
+                    message="Connection error — could not reach Bon-in-a-Box to check job status",
+                    detail=str(e)
+                )
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                raise BiaBError(
+                    source="server",
+                    message="Server error (Bon-in-a-Box) — invalid response when checking job status",
+                    detail=str(e)
+                )
+
+    # Find our job in the history
+    matching = [entry for entry in history if entry.get("runId") == response_code]
+    if not matching:
+        raise BiaBError(
+            source="server",
+            message=f"Server error (Bon-in-a-Box) — job '{response_code}' not found in history",
+            detail=None
+        )
+
+    status = matching[0].get("status", "unknown")
+
+    # If still running, wait and poll again
+    while status == "running":
+        time.sleep(2)
+        try:
+            history = requests.get(
+                f"{st.session_state.api_link}api/history",
+                timeout=30
+            ).json()
+            matching = [entry for entry in history if entry.get("runId") == response_code]
+            if matching:
+                status = matching[0].get("status", "unknown")
+            else:
+                raise BiaBError(
+                    source="server",
+                    message=f"Server error (Bon-in-a-Box) — job '{response_code}' disappeared from history",
+                    detail=None
+                )
+        except requests.exceptions.RequestException as e:
+            raise BiaBError(
+                source="connection",
+                message="Connection error — lost contact with Bon-in-a-Box while waiting for results",
+                detail=str(e)
+            )
+
+    # Completed — fetch outputs
+    if status == "completed":
+        try:
+            output = requests.get(
+                f"{st.session_state.api_link}api/{response_code}/outputs",
+                timeout=60
+            ).json()
+            return output
+        except requests.exceptions.RequestException as e:
+            raise BiaBError(
+                source="connection",
+                message="Connection error — could not retrieve pipeline outputs",
+                detail=str(e)
+            )
+        except Exception as e:
+            raise BiaBError(
+                source="server",
+                message="Server error (Bon-in-a-Box) — pipeline outputs returned invalid data",
+                detail=str(e)
+            )
+
+    # Any other status (failed, error, etc.)
+    raise BiaBError(
+        source="pipeline",
+        message=f"Pipeline error (Bon-in-a-Box) — job ended with status: {status}",
+        detail=f"runId: {response_code}"
+    )
     
 def GBIF(data):
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>GBIF_API.json/run"
-
-    headers = {"Content-Type": "application/json"}
-    return requests.post(url, json=data, headers=headers)
+    return _call_biab_pipeline("GBIF_API", data)
 
 def LC_info(data):
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>LC_info.json/run"
-
-    headers = {"Content-Type": "application/json"}
-
-    return requests.post(url, json=data, headers=headers)
+    return _call_biab_pipeline("LC_info", data)
 
 def LC_area(data):
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>LC_area.json/run"
-
-    headers = {"Content-Type": "application/json"}
-
-    return requests.post(url, json=data, headers=headers)
-
+    return _call_biab_pipeline("LC_area", data)
 
 def TC_area(data):
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>TC_area.json/run"
-
-
-    headers = {"Content-Type": "application/json"}
-
-    return requests.post(url, json=data, headers=headers)
+    return _call_biab_pipeline("TC_area", data)
 
 def Sensitivity(data):
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>sensitivity_analysis.json/run"
-
-    headers = {"Content-Type": "application/json"}
-
-    return requests.post(url, json=data, headers=headers)
+    return _call_biab_pipeline("sensitivity_analysis", data)
 
 @st.fragment
 def edit_points():
-    lat_col = "decimallatitude"
-    lon_col = "decimallongitude"
-    # Use edited version if it exists, otherwise fall back to original
-    if st.session_state.get("obs_edit") is not None:
-        obs = st.session_state.obs_edit
-    else:
-        obs = st.session_state.obs_original
-        obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
-        st.session_state.obs_edit = obs.copy()
-
-
-
-    obs_edit = st.session_state.obs_edit
-    # Remove duplicate points based on latitude and longitude
+    try:
+        obs= st.session_state.obs_edit
+    #Set the columns for the latitude and longitude
+        lat_col = "decimallatitude"
+        lon_col = "decimallongitude"
     
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-
-    # Add the observations to the map
-    fg = folium.FeatureGroup(name="Markers")
-    for i, row in obs_edit.iterrows():
-        corr=[row["decimallatitude"], row["decimallongitude"]]
-        folium.CircleMarker(
-            location=corr,
-            radius=6,
-            color="red" if st.session_state.index is not None and i in st.session_state.index else "green" if row.get("source") == "user_defined" else "blue",
-            fill_opacity=1,
-            fill=True,
-            fill_color='lightblue'
-        ).add_to(fg)
-    draw = Draw(export=False, draw_options={
-        'polyline': False,
-        'polygon': True,
-        'circle': False,
-        'rectangle': True,
-        'marker': False,
-        'circlemarker': False
-    }, edit_options={
-        'edit': True,
-        'remove': True
-    })
-    draw.add_to(m)
-    st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
-#Get the index of the clicked point
-    if "all_drawings" in st.session_state.output and st.session_state.output["all_drawings"] != None:
-        selected_indices = set()
-        for drawing in st.session_state.output["all_drawings"]:
-            geometry_data = drawing.get("geometry") if isinstance(drawing, dict) else None
-            if geometry_data is None and isinstance(drawing, dict) and "type" in drawing and "coordinates" in drawing:
-                geometry_data = drawing
-            if geometry_data is None:
-                continue
-
-            try:
-                drawn_geom = shape(geometry_data)
-            except Exception:
-                continue
-
-            for i, row in obs_edit.iterrows():
-                point = Point(row[lon_col], row[lat_col])
-                if drawn_geom.contains(point) or drawn_geom.touches(point):
-                    selected_indices.add(i)
-
-        if selected_indices and st.session_state.index is not None:
-            st.session_state.index = pd.Index(st.session_state.index).union(selected_indices)
-        elif  st.session_state.index is None:
-            st.session_state.index = pd.Index(list(selected_indices))
-        if "all_drawings" in st.session_state and st.session_state.output["all_drawings"] != st.session_state.all_drawings:
-            st.session_state["all_drawings"] = st.session_state.output["all_drawings"]
-            st.rerun(scope="fragment")
-
-    if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
+        obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
+        obs_edit = obs.copy()
+        # Remove duplicate points based on latitude and longitude
         
-        clicked_index = obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
-        (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
-        if st.session_state.index is not None:
-            st.session_state.index = pd.Index(st.session_state.index).union(clicked_index)
-        else:
-            st.session_state.index = clicked_index
-
-        if (
-            "last_object_clicked" in st.session_state.output
-            and st.session_state.output["last_object_clicked"] != st.session_state["last_object_clicked"]
-        ):
-            st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
-            st.rerun(scope="fragment")
-
-
-    def remove_point(index):
-        st.session_state.obs_edit=obs_edit.drop(index)
-        st.session_state.index=None
-
-    b1, b2 = st.columns([3, 1])
-    with b1:
-        if st.session_state.index is not None and not st.session_state.index.empty:
+        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+    
+        # Add the observations to the map
+        fg = folium.FeatureGroup(name="Markers")
+        for i, row in obs_edit.iterrows():
+            corr=[row["decimallatitude"], row["decimallongitude"]]
+            folium.CircleMarker(
+                location=corr,
+                radius=6,
+                color="red" if st.session_state.index is not None and i in st.session_state.index else "green" if row.get("source") == "user_defined" else "blue",
+                fill_opacity=1,
+                fill=True,
+                fill_color='lightblue'
+            ).add_to(fg)
+        draw = Draw(export=False, draw_options={
+            'polyline': False,
+            'polygon': True,
+            'circle': False,
+            'rectangle': True,
+            'marker': False,
+            'circlemarker': False
+        }, edit_options={
+            'edit': True,
+            'remove': True
+        })
+        draw.add_to(m)
+        st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
+    #Get the index of the clicked point
+    
+        
+        if "last_object_clicked" in st.session_state.output and st.session_state.output["last_object_clicked"] is not None:
+            
+            st.session_state.index=obs_edit.index[(obs_edit[lat_col] == st.session_state.output["last_object_clicked"]["lat"]) & 
+            (obs_edit[lon_col] == st.session_state.output["last_object_clicked"]["lng"])]
+            def remove_point(index):
+                st.session_state.obs_edit=obs_edit.drop(index)
+                st.session_state.index=None
+    
+            #Remove the point if the remove button is clicked
             st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,)) 
-    with b2:
-
-        if st.button("reset points"):
-            st.session_state.obs_edit=st.session_state.obs_original
-            st.session_state.obs_csv=None
-            st.rerun(scope="fragment")
-
-
-
-    st.markdown(rtext("1_3_3_4_te"))
-    if st.session_state.obs is None or not st.session_state.obs.equals(st.session_state.obs_edit):
-
-        # Confirm points to be used
-
-
-        if st.button(rtext("1_3_3_4_bu1")):
-            st.session_state.obs = st.session_state.obs_edit
-            st.session_state.poly_creation = None
-            st.session_state.LC = {
-                "LC_type": None,
-                "LC_class": None,
-                "index": None
-            }  
-            st.session_state.area_table = None
-            st.session_state.cover_maps = None
-            st.rerun()
-
-    with st.expander("advanced options"):
-        st.session_state.index 
-        def load_csv():
-            try:
-                st.session_state.obs_csv = pd.read_csv(st.session_state.csv_link, sep="\t")
-                # Check if the required columns are present
-                required_columns = ["decimallongitude", "decimallatitude"]
-                if not all(col in st.session_state.obs_csv.columns for col in required_columns):
-                    st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
-
-            except Exception as e:
-                st.error(f"Error reading the CSV file: {e}")
-            if st.session_state.obs_csv is not None:
-                st.session_state.obs_csv = st.session_state.obs_csv.assign(source="user_defined")
-                st.session_state.obs_edit= pd.concat([st.session_state.obs_edit, st.session_state.obs_csv], ignore_index=True).drop_duplicates(subset=["decimallatitude", "decimallongitude"]).reset_index(drop=True)
+    
+            st.session_state.obs=obs_edit
+            if (
+                "last_object_clicked" in st.session_state.output
+                and st.session_state.output["last_object_clicked"] != st.session_state["last_object_clicked"]
+            ):
+                st.session_state["last_object_clicked"] = st.session_state.output["last_object_clicked"]
+                st.rerun(scope="fragment")
+        with st.expander("advanced options"):
             
-            
-        st.file_uploader(rtext("1_3_3_4_bu3"), key="csv_link",type=["csv"], on_change=lambda: load_csv())
+            st.write(st.session_state.output["last_object_clicked"])
+            def load_csv():
+                try:
+                    st.session_state.obs_csv = pd.read_csv(st.session_state.csv_link, sep="\t")
+                    # Check if the required columns are present
+                    required_columns = ["decimallongitude", "decimallatitude"]
+                    if not all(col in st.session_state.obs_csv.columns for col in required_columns):
+                        st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
+    
+                except Exception as e:
+                    st.error(f"Error reading the CSV file: {e}")
+                if st.session_state.obs_csv is not None:
+                    st.session_state.obs_csv = st.session_state.obs_csv.assign(source="user_defined")
+                    st.session_state.obs = st.session_state.obs_original.assign(source="GBIF")
+                    st.session_state.obs_edit= pd.concat([st.session_state.obs, st.session_state.obs_csv], ignore_index=True).drop_duplicates(subset=["decimallatitude", "decimallongitude"]).reset_index(drop=True)
+                
+                
+            st.file_uploader(rtext("1_3_3_4_bu3"), key="csv_link",type=["csv"], on_change=lambda: load_csv())
+    
+    
+            if st.button("remove uploaded file"):
+                st.session_state.obs_edit=st.session_state.obs_original
+                st.session_state.obs_csv=None
+                st.rerun(scope="fragment")
+    except KeyError as e:
+            # Specific handling for missing CSV keys (optional, but helpful)
+            key_name = str(e).strip("'")
+            st.error(f"⚠️ Configuration Error: Missing text ID '{key_name}' in 'texts.csv'.")
+    
+    except Exception as e:
+        # CATCH-ALL: Handles ANY other unexpected error (typos, logic bugs, etc.)
+        st.error("⚠️ Something went wrong while loading this section.")
+    
+        # Optional: Show technical details in an expander for debugging
+        with st.expander("View Technical Details"):
+            st.code(f"Error Type: {type(e).__name__}\nMessage: {str(e)}")
+            # You can also log this to your file logger here:
+            # logger.error(f"UI Render Error in edit_points: {e}", exc_info=True)
 
 @st.fragment
 def polygon_clustering():
@@ -443,92 +593,24 @@ def polygon_clustering():
     
     if st.session_state.original_polygons is not None:
         st.write(f"{rtext('1_4_2_info')} {len(st.session_state.original_polygons['features'])}")
-        st.session_state.zoom=st.session_state.output["zoom"]
 
-        st.write("You can edit the polygons by clicking on them, or add new polygons using the drawing tool. if you are happy with your pupulation selection,click on  button to save the polygons and proceed to the next step.")
-        bu1, bu2 = st.columns(2)
-        with bu1:
-            if st.button(rtext("1_4_2_bu2")):
-                
-                st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
-                st.session_state.polyinfo["polygons"]
-                
-                
-
-                st.session_state.stage = "LC"
-                st.session_state.biab_dir
-                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
-                with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
-                    geojson.dump(st.session_state.polyinfo["polygons"], f)
-                st.success("Polygons saved successfully.")
-                del st.session_state.original_polygons
-                st.rerun()
-
-        with bu2:
-            if st.button("add polygons to map"):
-                st.session_state.stage = "manual_polygon_creation"
-                st.session_state.polygon_addition = st.session_state.original_polygons
-                st.rerun()
-
-
-@st.fragment
-def manual_polygon_addition():
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-    fg = folium.FeatureGroup(name="Markers")
-        # Add the Draw tool to the map
-    draw = Draw(export=False, draw_options={
-        'polyline': False,
-        'polygon': True,
-        'circle': False,
-        'rectangle': True,
-        'marker': False,
-        'circlemarker': False
-    }, edit_options={
-        'edit': True,
-        'remove': True
-    })
-    draw.add_to(m)
-    fg2 = folium.FeatureGroup(name="Markers")
-    if st.session_state.polygon_addition is not None:
-        fg2.add_child(folium.GeoJson(st.session_state.polygon_addition, popup=folium.GeoJsonPopup(fields=["name"])))
-    st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], key="add_polygons_map", use_container_width=True, height=st.session_state.height)
-    if st.button("confirm polygons"):
-        # Append new drawings with placeholder properties
-        for i, drawing in enumerate(st.session_state.output["all_drawings"]):
-            next_index = len(st.session_state.polygon_addition["features"])
-            drawing["properties"] = {
-                "name": f"Pop {next_index + 1}",
-                "style": {"color": "gray"}  # temporary, will be reassigned below
-            }
-            st.session_state.polygon_addition["features"].append(drawing)
-
-        # Reassign colors to all features
-        colors = glasbey.create_palette(
-            palette_size=len(st.session_state.polygon_addition["features"]),
-            colorblind_safe=True,
-            cvd_severity=100
-        )
-        for i, feature in enumerate(st.session_state.polygon_addition["features"]):
-            feature["properties"]["style"]["color"] = colors[i]
-        st.rerun(scope="fragment")
-    if st.button(rtext("1_4_2_bu2")):
-        
-        st.session_state.polyinfo["polygons"]= st.session_state.polygon_addition
-        st.session_state.polyinfo["polygons"]
-        
-        
-
-        st.session_state.stage = "LC"
-        st.session_state.biab_dir
-        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-        os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
-        with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
-            geojson.dump(st.session_state.polyinfo["polygons"], f)
-        st.success("Polygons saved successfully.")
-        del st.session_state.polygon_addition
-        del st.session_state.original_polygons
-        st.rerun()
+        if st.button(rtext("1_4_2_bu2")):
+            
+            st.session_state.polyinfo["polygons"]= st.session_state.original_polygons
+            st.session_state.polyinfo["polygons"]
+            
+            
+            st.session_state.zoom=st.session_state.output["zoom"]
+            st.session_state.center=st.session_state.output["center"]
+            st.session_state.stage = "LC"
+            st.session_state.biab_dir
+            st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+            os.makedirs(os.path.dirname(f"{st.session_state.biab_dir }{st.session_state.poly_directory}"), exist_ok=True)
+            with open(f"{st.session_state.biab_dir }{st.session_state.poly_directory}", "w") as f:
+                geojson.dump(st.session_state.polyinfo["polygons"], f)
+            st.success("Polygons saved successfully.")
+            del st.session_state.original_polygons
+            st.rerun()
 
 
 
