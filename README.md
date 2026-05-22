@@ -1,7 +1,114 @@
+![Genes from Space Interface Diagram](images/logo.png)
 # Genes from Space Tool
 
+## Overview
+The Genes from Space Interface is a tool designed to leverage public EO data and enable users to calculate genetic diversity indicators adopted by the Convention on Biological Diversity. To achieve this goal, it provides an intuitive interface for for Users to interact with the Data analysis Pipeline that we created on Bon in a Box. It also visualizes the data created by this datap ipeline in an intuitive and interactive way. You can find more information [here](https://www.geo.uzh.ch/en/units/sg/news/genes-from-space.html).
 
-## FAQ:
+## Contact
+For questions or support, please contact [info@genesfromspace.com](mailto:genesfromspace) or [file a GitHub issue](https://github.com/simonrabenmeister/Genes_from_Space_interface/issues).
+
+## Diagram
+This diagram shows how the code behind the Interface is structured, how the user interacts with it and how it is linked with bon in a box:
+![Genes from Space Interface Diagram](images/Interface_diagram.png)
+
+## Developer Instructions: Installation and Deployment
+
+Here are detailed instructions on how to install the necessary software to run the tool then deploy the servers on a virtual machine. For addition technical information about the software and the repo, see the [relevant section below](#additional-technical-instructions-for-developers).
+
+1.  Install Install MiniConda (for reference, [here](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install#installation-steps) are the official instructions):
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+sha256sum Miniconda3-latest-Linux-x86_64.sh
+bash ~/Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+conda config --set auto_activate_base false
+conda deactivate
+```
+
+2. Install Docker (for reference, [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) are the official instructions):
+
+```bash
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl start docker
+sudo systemctl status docker
+```
+
+3. Clone the Genes from Space Repo and create the Conda Environment:
+```bash
+git clone https://github.com/simonrabenmeister/Genes_from_Space_interface
+cd Genes_from_Space_interface/
+conda env create -f environment.yml
+cd ..
+```
+
+**Note**: If `conda env create` fails due to a database issue, switch solvers then retry with:
+```bash
+conda config --set solver classic
+conda env create -f environment.yml
+```
+
+4. Install Bon-in-a-Box (see [here](https://geo-bon.github.io/bon-in-a-box-pipeline-engine/how_to_install.html) for the official instructions) then start the server:
+```bash
+# Because Docker was already installed ⬆️; continue with BiaB step 2
+ssh-keygen -t ed25519
+cat .ssh/id_ed25519.pub
+```
+
+**Note**: at this step you will need to [add the key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
+
+Once the key has been added, continue with:
+```bash
+mkdir BIAB
+cd BIAB
+git clone git@github.com:GEO-BON/bon-in-a-box-pipelines.git
+cd bon-in-a-box-pipelines/
+cp runner-sample.env runner.env
+```
+**Note**: Fill the properties of the `runner.env` depending on what you intend to run. Include any API keys that you need to access data (e.g. GBIF or IUCN).
+
+Moreover, as the default port `81` can conflict with default ports, change the `runner.env` file to have the following variable `HTTP_PORT=8000`. Then continue:
+
+```bash
+sudo usermod -aG docker $USER
+```
+Exit the VM then reconnect to fully refresh the session (sourcing .bashrc is not sufficient):
+
+```bash
+cd ~/BIAB/bon-in-a-box-pipelines/
+./server-up.sh
+```
+
+5. Start the StreamLit app in a screen session; optionally, log the server output (follow the log via `tail -Fn 0 screenlog.0`):
+
+```bash
+cd ~
+screen -dmS gfs_streamlit -L
+screen -S gfs_streamlit -X colon "logfile flush 0^M"
+screen -r gfs_streamlit
+# !! Within the screen session
+cd ~/Genes_from_Space_interface/
+conda activate gfs_env
+streamlit run Hello.py
+```
+
+At this point, Check the server via the `ip_address:8000`. Make sure to open the VM ports if they have not already been opened.
+
+### FAQ:
 
 <details closed>
 <summary> <b>English</b> </summary>
@@ -659,16 +766,13 @@ Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://d
 
 </details>
 
-## Technical Instructions for developers
+<a id="additional-technical-instructions-for-developers"></a>
+### Additional Technical Instructions for developers
 <details closed>
 <summary><b></b></summary>
 
-# Genes from Space Interface v2
 
-## Overview
-The Genes from Space Interface v2 is a tool designed to . It provides an intuitive interface for for Users to interact with the Data analysis Pipeline that we created on Bon in a Box. It also visualizes the data created by this datapipeline intuitivly and interactively
-
-## Content
+#### Content
 - **Hello.py**: This is the main streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
 - **/pages/Input_form.py**: This file is the main Input form. It is linked to and called by the "Homepage" Hello.py. The contents of this script generates all the relevant User inputs and executes the Bon in a Box scripts. It saves all relevant data in the session_state and finally redirects the User to the Output_display.py when all the Information is provided.
 - **/pages/Output_display.py**: This file uses the Output data created in Input_form.py to create interactive maps and plots to visualize the data. It also allows you to download created runs or upload previos runs as GeoJSON files.
@@ -679,54 +783,20 @@ The Genes from Space Interface v2 is a tool designed to . It provides an intuiti
 - **polygon_example.geojson**: This is an example GeoJSON file to demonstrate the required formatting for polygon data that can be uploaded in the Input_form.py file.
 - **text.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
 - **/images**: This folder contains all the images displayed in the diffrent Interface pages.
-## Additional Files
+#### Additional Files
 - **conda_environment.yml**: This file contains the specifications for the conda environment used to run the Streamlit application. It ensures that all necessary dependencies and packages are installed for the tool to function correctly.
 - **directories.txt**: This file lists the directory structure of the project, providing an overview of the organization of files and folders within the repository. 
 
-## Diagram
-This diagram shows how the code behind the Interface is structured, how the user interacts with it and how it is linked with bon in a box:
-![Genes from Space Interface Diagram](Interface_diagram.png)
-## Installation
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/simonrabenmeister/Genes_from_Space_interface
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd Genes_from_Space_interface/Interface_v2
-    ```
-3. Set up the conda environment:
-    Navigate to the directory containing the YAML file in your terminal or command prompt. Then, use the following command to create the environment:
-    ```bash
-    conda env create -f conda_environment.yml
-    ```
-    Once the environment is created, you can activate the environment using the following command:
-    ```bash
-    conda activate genes_from_space
-    ```
-    For more information on creating or setting up a conda environment: https://docs.conda.io/projects/conda/en/stable/user-guide/getting-started.html
-4. Start the application:
-    Once you set up the conda environment, you can navigate into the Genes_from_Space_interface directory in your terminal run the streamlit app within the environment with the following command
-    ```bash
-    streamlit run Hello.py
-    ```
-5. Installing / Using Bon-in-a-Box:
-    You will also need to prepare a Bon in a Box installation and server that will run and respond to API calls. Installation instructions can be found here:
-   https://geo-bon.github.io/bon-in-a-box-pipeline-engine/how_to_install.html
-   Keep in mind that you will also need to update relevant files that point to the running installation of the Bon in a Box server (e.g., the final line in the `directories.txt` should be updated to be the production server instance or the local one for development). Of note: the Bon in a Box repo should be cloned to the subdirectory `~/BIAB`.
-
-# Bon in a Box Pipelines
+### Bon in a Box Pipelines
 This section documents all Subfolders of the folder bon-in-a-box-pipelines/pipelines/GenesFromSpace of the Bon in a Box Tool (https://github.com/GEO-BON/bon-in-a-box-pipelines/tree/genes-from-space--update)
-## Tool
+#### Tool
 - This Folder contains all Pipelines which execute the complete Genes from Space Workflow. The title of each Pipeline describes the Landcover used, source of Point observations (GBIF or userdata) and method of area selection. These are used by the Interface_V1 and thus all the runs conducted during the Genes from Space Workshop(Feb 2025).
 Example: Forest_cover_v_GBIF_bbox.json
 - For the _obs.json Pipeline there is a obs_server.json version which requires the observation data Input to be a string with the format: [('ID', 'Value'), (1, 'a'), (2, 'b'), (3, 'c')], transforms it into a tsv for further use. This version is used by the Interface on the server, since users cant upload data to the user folder.
 The normal _obs.json version the observation data input is a directory to a file in the user data folder. This script should be used if Users run Biab on their own machine and can upload files into the userdata folder.
-## ToolComponents
+#### ToolComponents
 - This Folder contains sub pipelines which are used within the main /Tool Pipelines.
-## ToolComponents/Interface
+#### ToolComponents/Interface
 -This Folder contains Pipelines which are used by the Interface_V2
 -The Pipelines are mostly single scripts contained in a Pipeline framework, since (to the knowlege of the developers) API calls are only possible with pipelines. So for the Tool to be able to run specific parts of the bigger Genes from Space Workflow, each step has to be a pipeline.
 
-## Contact
-For questions or support, please contact [info@genesfromspace.com](mailto:genesfromspace).
