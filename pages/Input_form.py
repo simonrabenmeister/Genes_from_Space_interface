@@ -695,7 +695,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
             if st.session_state.info is None or st.session_state.polyinfo["polygons"] != st.session_state.poly_old :
                 st.session_state.info=LC_info(data)
-                st.session_state.info=get_output(st.session_state.info.text)
+                st.session_state.info=get_output(st.session_state.info)
                 st.session_state.poly_old = st.session_state.polyinfo["polygons"]   
             if st.session_state.info is not None:
                 LC_cum=pd.read_csv(f"{st.session_state.biab_dir}/output/{st.session_state.info['GFS_IndicatorsTool>LC_info.yml@11']}/pop_lc_sorted_cum.csv")
@@ -846,7 +846,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
                     if "area" in st.session_state:
 
-                        output_area=get_output(st.session_state.area.text)
+                        output_area=get_output(st.session_state.area)
 
                         area_output_code=output_area["GFS_IndicatorsTool>pop_area_by_habitat.yml@200"]
                         if st.session_state.LC_selection==rtext("2_opt1"):
