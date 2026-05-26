@@ -8,15 +8,18 @@ import json
 import folium
 from streamlit_folium import st_folium
 from folium.plugins import Draw
-from functions import get_output
-from functions import GBIF
-from functions import mapbbox
-from functions import edit_points
-from functions import polygon_clustering
-from functions import LC_area
-from functions import TC_area
-from functions import LC_info
-from functions import BiaBError, GBIF, get_output, _show_biab_error
+from functions import (
+    get_output, 
+    GBIF, 
+    mapbbox, 
+    edit_points, 
+    polygon_clustering, 
+    LC_area, 
+    TC_area, 
+    LC_info, 
+    BiaBError, 
+    _show_biab_error
+)
 import uuid
 import os
 import plotly.graph_objects as go
@@ -137,6 +140,8 @@ if "species" not in st.session_state:
     st.session_state.species = None  # Default species name
 if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8] 
 
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
@@ -459,43 +464,55 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         try:
                             # 1. Call the pipeline
                             initial_response = GBIF(data)
-                            
-                            output_GBIF = None  # Initialize to avoid NameError if logic fails early
-                        
-                            # 2. Check if we got a Job ID (string) or immediate results (dict)
-                            if isinstance(initial_response, str):
-                                # Case A: Server returned a Job ID (e.g., "GenesFromSpace>...>V87792...")
-                                run_id = initial_response
-                                st.info(f"Request submitted: {run_id}. Waiting for results...")
-                                
+    
+                            output_GBIF = None
+
+                            # 2. Determine if we have a Job ID or Immediate Results
+                            # NEW LOGIC: Check if it's a dict with ONLY a runId (Job Submission)
+                            if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
+                                # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
+                                run_id = initial_response["runId"]
+                                st.info(f"Job submitted: {run_id}. Waiting for results...")
+        
                                 # Poll for the result
                                 output_GBIF = get_output(run_id)
-                                st.success("Analysis complete!") 
-                            else:
-                                # Case B: Server returned immediate JSON results
-                                # No need to call get_output() again!
+                                st.success("Analysis complete!")
+        
+                            elif isinstance(initial_response, str):
+                                # Case B: Server returned a raw string Job ID (Legacy support)
+                                run_id = initial_response
+                                st.info(f"Job submitted: {run_id}. Waiting for results...")
+                                output_GBIF = get_output(run_id)
+                                st.success("Analysis complete!")
+        
+                            elif isinstance(initial_response, dict):
+                                # Case C: Server returned immediate JSON results (Full data, not just runId)
                                 output_GBIF = initial_response
                                 st.success("Analysis complete (immediate)!")
-                       
+        
+                            else:
+                                st.error(f"Unexpected response type from pipeline: {type(initial_response)}")
+                                raise ValueError("Invalid response type")
+
                             # 3. Process the result (Only runs if no exception occurred above)
                             if output_GBIF is not None:
-                                # Check for errors in the result structure (if your API puts errors in JSON)
+                                # Check for errors in the result structure
                                 if isinstance(output_GBIF, dict) and "error" in output_GBIF:
                                     st.error(f"Pipeline error: {output_GBIF['error']}")
                                 else:
                                     # Extract the specific code you need
-                                    # Ensure the key exists before accessing to avoid KeyError
-                                    if isinstance(output_GBIF, dict) and "GFS_IndicatorsTool>GBIF_obs.yml@51" in output_GBIF:
-                                        GBIF_output_code = output_GBIF["GFS_IndicatorsTool>GBIF_obs.yml@51"]
-                                        
+                                    target_key = "GFS_IndicatorsTool>GBIF_obs.yml@51"
+                                    if isinstance(output_GBIF, dict) and target_key in output_GBIF:
+                                        GBIF_output_code = output_GBIF[target_key]
+                
                                         # Construct the file path
                                         file_path = f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv"
-                                        
+                
                                         # Read the file
                                         try:
                                             with open(file_path, "r") as obs_file:
                                                 obs = pd.read_csv(obs_file, sep='\t')
-                                            
+                    
                                             st.session_state.obs_edit = obs
                                             st.session_state.stage = "Manipulate points"
                                             st.success("Data loaded successfully!")
@@ -504,12 +521,15 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                                         except Exception as e:
                                             st.error(f"Error reading output file: {e}")
                                     else:
-                                            st.error("Unexpected response format from pipeline.")
+                                        # This should now only happen if the pipeline returned valid JSON but missing the key
+                                        st.error(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
+                                        # Optional: Debug print to see what we actually got
+                                        # st.code(f"Received: {output_GBIF}")
 
                         except BiaBError as e:
                             _show_biab_error(e)
                         except Exception as e:
-                            st.error(f"Unexpected error: {str(e)}")
+                            st.error(f"Unexpected app error: {e}")
     
     if st.session_state.obs_edit is not None:
         if st.session_state.obs_edit.empty:
@@ -694,9 +714,25 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
             if st.session_state.info is None or st.session_state.polyinfo["polygons"] != st.session_state.poly_old :
-                st.session_state.info=LC_info(data)
-                st.session_state.info=get_output(st.session_state.info)
-                st.session_state.poly_old = st.session_state.polyinfo["polygons"]   
+                try:
+                    # 1. Call the API
+                    info_response = LC_info(data)
+    
+                    # 2. Extract runId
+                    if isinstance(info_response, dict) and "runId" in info_response:
+                        run_id = info_response["runId"]
+                    elif isinstance(info_response, str):
+                        run_id = info_response
+                    else:
+                        st.error("Unexpected response from LC_info.")
+                        st.stop()
+    
+                    # 3. Poll for results
+                    st.session_state.info = get_output(run_id)
+                    st.session_state.poly_old = st.session_state.polyinfo["polygons"]
+                except BiaBError as e:
+                    _show_biab_error(e)
+                    st.stop()  
             if st.session_state.info is not None:
                 LC_cum=pd.read_csv(f"{st.session_state.biab_dir}/output/{st.session_state.info['GFS_IndicatorsTool>LC_info.yml@11']}/pop_lc_sorted_cum.csv")
                 # Compute individual element percentages
@@ -825,53 +861,67 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 if st.session_state.LC_selection==rtext("2_opt2") or st.session_state.LC_selection==rtext("2_opt3"):
                     setattr(st.session_state,"LC_class_names",  LC_class)
                 with st.spinner(rtext("3_load")):
-                    timeseries = st.session_state.LC["timeseries"]
-                    if st.session_state.LC_selection==rtext("2_opt2") or st.session_state.LC_selection==rtext("2_opt3") or st.session_state.LC_selection==rtext("2_opt4"):
-                        data = {
-                            "pipeline@197": st.session_state.poly_directory,
-                            "pipeline@198": timeseries,
-                            "pipeline@199": st.session_state.LC["LC_class"]
-                        }
-                        st.session_state.area=LC_area(data)
-                    if st.session_state.LC_selection==rtext("2_opt1"):
-                        data = {
-                            "pipeline@197": st.session_state.poly_directory,
-                            "pipeline@204": timeseries
-                        }
-                        st.session_state.area= TC_area(data)
-                        
-                    # Reset subsequent session states
-                    st.session_state.area_table = None
-                    st.session_state.cover_maps = None
-
-                    if "area" in st.session_state:
-
-                        output_area=get_output(st.session_state.area)
-
-                        area_output_code=output_area["GFS_IndicatorsTool>pop_area_by_habitat.yml@200"]
+                    try:
+                        timeseries = st.session_state.LC["timeseries"]
+                        if st.session_state.LC_selection==rtext("2_opt2") or st.session_state.LC_selection==rtext("2_opt3") or st.session_state.LC_selection==rtext("2_opt4"):
+                            data = {
+                                "pipeline@197": st.session_state.poly_directory,
+                                "pipeline@198": timeseries,
+                                "pipeline@199": st.session_state.LC["LC_class"]
+                            }
+                            st.session_state.area=LC_area(data)
                         if st.session_state.LC_selection==rtext("2_opt1"):
-                            cover_output_code=output_area["GFS_IndicatorsTool>get_TCY.yml@203"]
-                            st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
-                        if st.session_state.LC_selection==rtext("2_opt3"):
-                            st.session_state.LC_classnames= st.session_state.LC["LC_classnames"]
-                            cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
-                            st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
-                        if st.session_state.LC_selection==rtext("2_opt2"):
-                            st.session_state.LC_classnames=[LC_names_simple[values_simple.index(value)] for value in st.session_state.LC["LC_class"] if value in values_simple]
-                            cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
-                            st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
-                        pop_area=f"/output/{area_output_code}/pop_habitat_area.tsv"
-                        if st.session_state.LC_selection ==rtext("2_opt4"):
+                            data = {
+                                "pipeline@197": st.session_state.poly_directory,
+                                "pipeline@204": timeseries
+                            }
+                            st.session_state.area= TC_area(data)
                             
-                            cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
-                            st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
-                            LC_class = json.load(open(f"{st.session_state.biab_dir}/output/{cover_output_code}/output.json"))["lc_classes"]
-                            
-                            if isinstance(LC_class, int):
-                                LC_class=[LC_class]
-                            st.session_state.LC_classnames = st.session_state.LC["LC_classnames"]
-                        area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
-                        st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
+                        # Reset subsequent session states
+                        st.session_state.area_table = None
+                        st.session_state.cover_maps = None
+                        
+                        if "area" in st.session_state:
+                            # Extract the runId string from the dictionary returned by LC_area
+                            area_response = st.session_state.area
+                            if isinstance(area_response, dict) and "runId" in area_response:
+                                run_id = area_response["runId"]
+                            elif isinstance(area_response, str):
+                                run_id = area_response
+                            else:
+                                st.error("Unexpected response format from LC_area pipeline.")
+                                st.stop()
+                        
+                            # Now pass the string run_id to get_output
+                            output_area = get_output(run_id)
+                        
+                            area_output_code=output_area["GFS_IndicatorsTool>pop_area_by_habitat.yml@200"]
+                            if st.session_state.LC_selection==rtext("2_opt1"):
+                                cover_output_code=output_area["GFS_IndicatorsTool>get_TCY.yml@203"]
+                                st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
+                            if st.session_state.LC_selection==rtext("2_opt3"):
+                                st.session_state.LC_classnames= st.session_state.LC["LC_classnames"]
+                                cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
+                                st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
+                            if st.session_state.LC_selection==rtext("2_opt2"):
+                                st.session_state.LC_classnames=[LC_names_simple[values_simple.index(value)] for value in st.session_state.LC["LC_class"] if value in values_simple]
+                                cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
+                                st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
+                            pop_area=f"/output/{area_output_code}/pop_habitat_area.tsv"
+                            if st.session_state.LC_selection ==rtext("2_opt4"):
+                                
+                                cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
+                                st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
+                                LC_class = json.load(open(f"{st.session_state.biab_dir}/output/{cover_output_code}/output.json"))["lc_classes"]
+                                
+                                if isinstance(LC_class, int):
+                                    LC_class=[LC_class]
+                                st.session_state.LC_classnames = st.session_state.LC["LC_classnames"]
+                            area_file_path = f"{st.session_state.biab_dir}/output/{area_output_code}/pop_habitat_area.tsv"
+                            st.session_state.area_table = pd.read_csv(area_file_path, sep='\t')
+                    except BiaBError as e:
+                        _show_biab_error(e)
+                        st.stop()
 
     if st.session_state.area_table is not None:
         rel_habitat_change_table = st.session_state.area_table.copy()
