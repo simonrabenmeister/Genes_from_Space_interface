@@ -20,12 +20,17 @@ from functions import (
     BiaBError, 
     _show_biab_error
 )
+from logging_config import log_and_show, log_and_warn
 import uuid
 import os
 import plotly.graph_objects as go
 from streamlit_js_eval import streamlit_js_eval
-
+from functions import manual_polygon_addition
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
+
+# Ensure a session ID exists for log correlation across all pages
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8]
 
 # Initialize the height state variable/key
 if 'height' not in st.session_state:
@@ -140,9 +145,12 @@ if "species" not in st.session_state:
     st.session_state.species = None  # Default species name
 if "run_id" not in st.session_state:
     st.session_state.run_id = str(uuid.uuid4())
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())[:8] 
-
+if "obs_csv" not in st.session_state:
+    st.session_state.obs_csv = None
+if "all_drawings" not in st.session_state:
+    st.session_state.all_drawings = None
+if "polygon_addition" not in st.session_state:
+    st.session_state.polygon_addition = None
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
@@ -203,6 +211,7 @@ if st.session_state.lan=="sp":
 elif st.session_state.lan=="en":    
     LC_names_simple=LC_names_simple_en
 
+
 values_simple = [
     [50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 160, 170],  # Forest
     [10, 11, 12, 20, 30, 40],      # Agriculture
@@ -235,6 +244,12 @@ st.image('images/logo.png')
 with st.sidebar:
     with st.expander("Settings", expanded=False):
         st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
+    # Display the session ID for user confirmation when debugging
+    st.divider()
+    st.caption(
+        f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
+        )
+
 
 def rtext(id):
     return texts.loc[id, st.session_state.lan].replace("\\n", "\n")
@@ -294,7 +309,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
 
                 except Exception as e:
-                    st.error(f"Error reading the GeoJSON file: {e}")
+                    log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
 
 #######Removed center finder since it only works with multpolygons and not normal polygons
                 # # Calculate the center of the polygon
@@ -340,10 +355,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     # Check if the required columns are present
                     required_columns = ["decimallongitude", "decimallatitude"]
                     if not all(col in st.session_state.obs_edit.columns for col in required_columns):
-                        st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
+                        log_and_show(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
 
                 except Exception as e:
-                    st.error(f"Error reading the CSV file: {e}")
+                    log_and_show(f"Error reading the CSV file: {e}", exc_info=True)
             if st.session_state.obs_edit is not None:
                 
                 # Calculate the center of all point observations in total
@@ -491,14 +506,14 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                                 st.success("Analysis complete (immediate)!")
         
                             else:
-                                st.error(f"Unexpected response type from pipeline: {type(initial_response)}")
+                                log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
                                 raise ValueError("Invalid response type")
 
                             # 3. Process the result (Only runs if no exception occurred above)
                             if output_GBIF is not None:
                                 # Check for errors in the result structure
                                 if isinstance(output_GBIF, dict) and "error" in output_GBIF:
-                                    st.error(f"Pipeline error: {output_GBIF['error']}")
+                                    log_and_show(f"Pipeline error: {output_GBIF['error']}")
                                 else:
                                     # Extract the specific code you need
                                     target_key = "GFS_IndicatorsTool>GBIF_obs.yml@51"
@@ -517,23 +532,23 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                                             st.session_state.stage = "Manipulate points"
                                             st.success("Data loaded successfully!")
                                         except FileNotFoundError:
-                                            st.error(f"Output file not found: {file_path}")
+                                            log_and_show(f"Output file not found: {file_path}")
                                         except Exception as e:
-                                            st.error(f"Error reading output file: {e}")
+                                            log_and_show(f"Error reading output file: {e}", exc_info=True)
                                     else:
                                         # This should now only happen if the pipeline returned valid JSON but missing the key
-                                        st.error(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
+                                        log_and_show(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
                                         # Optional: Debug print to see what we actually got
                                         # st.code(f"Received: {output_GBIF}")
 
                         except BiaBError as e:
                             _show_biab_error(e)
                         except Exception as e:
-                            st.error(f"Unexpected app error: {e}")
+                            log_and_show(f"Unexpected app error: {e}", exc_info=True)
     
     if st.session_state.obs_edit is not None:
         if st.session_state.obs_edit.empty:
-            st.warning("No observations available.")
+            log_and_warn("No observations available.")
             st.stop()
         # Calculate the center of all point observations in total
         lats = st.session_state.obs_edit["decimallatitude"].to_numpy()
@@ -724,7 +739,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     elif isinstance(info_response, str):
                         run_id = info_response
                     else:
-                        st.error("Unexpected response from LC_info.")
+                        log_and_show("Unexpected response from LC_info.")
                         st.stop()
     
                     # 3. Poll for results
@@ -889,7 +904,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                             elif isinstance(area_response, str):
                                 run_id = area_response
                             else:
-                                st.error("Unexpected response format from LC_area pipeline.")
+                                log_and_show("Unexpected response format from LC_area pipeline.")
                                 st.stop()
                         
                             # Now pass the string run_id to get_output
@@ -953,6 +968,8 @@ with col2:
         edit_points()
     if st.session_state.stage=="polygon_clustering":
         polygon_clustering()
+    if st.session_state.stage=="manual_polygon_creation":
+        manual_polygon_addition()
     if st.session_state.stage=="LC":
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 

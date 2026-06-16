@@ -4,3 +4,8 @@ __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 *.ipynb
+logs/*
+!logs/.gitkeep
+directories.txt
+temp_tiles/
+*.pyc

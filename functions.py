@@ -16,6 +16,16 @@ import glasbey
 import geopandas as gpd
 import os
 
+from logging_config import (
+    get_logger,
+    sanitize_headers,
+    sanitize_json,
+    safe_response_preview,
+    truncate_text,
+)
+
+logger = get_logger(__name__)
+
 texts = pd.read_csv("texts.csv").set_index("id")
 
 def rtext(id):
@@ -42,13 +52,11 @@ def _handle_biab_response(response, pipeline_name):
     Inspect an HTTP response from BiaB.
     Handles both JSON responses and plain-text run IDs.
     """
-    # DEBUG: Log raw response details
-    
-    print(f"\n[DEBUG] Session {_sid()}: Response for pipeline '{pipeline_name}':")
-    print(f"[DEBUG] Session {_sid()}: Session {_sid()}:   Status Code: {response.status_code}")
-    print(f"[DEBUG] Session {_sid()}: Session {_sid()}:   Headers: {dict(response.headers)}")
-    print(f"[DEBUG] Session {_sid()}: Session {_sid()}:   Raw Body (first 500 chars): {response.text[:500]}")
-    print(f"[DEBUG] Session {_sid()}: Session {_sid()}:   Content-Type: {response.headers.get('Content-Type', 'Unknown')}")
+    logger.debug("Response for pipeline '%s'", pipeline_name)
+    logger.debug("  Status code: %s", response.status_code)
+    logger.debug("  Headers: %s", sanitize_headers(response.headers))
+    logger.debug("  Body preview: %s", safe_response_preview(response))
+    logger.debug("  Content-Type: %s", response.headers.get("Content-Type", "Unknown"))
 
     if response.status_code >= 400:
         try:
@@ -57,7 +65,8 @@ def _handle_biab_response(response, pipeline_name):
         except Exception:
             detail = response.text[:500] if response.text else f"HTTP {response.status_code}"
 
-        print(f"[DEBUG] Session {_sid()}:   -> Raising BiaBError (Server Error): {detail}")
+        logger.error("Server error for pipeline '%s' (HTTP %s): %s",
+                     pipeline_name, response.status_code, truncate_text(detail))
         raise BiaBError(
             source="server",
             message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned HTTP {response.status_code}",
@@ -67,23 +76,23 @@ def _handle_biab_response(response, pipeline_name):
     # Try to parse as JSON first
     try:
         json_data = response.json()
-        print(f"[DEBUG] Session {_sid()}:   -> Parsed JSON successfully: {json_data}")
+        logger.debug("Parsed JSON successfully: %s", sanitize_json(json_data))
         return json_data
     except ValueError as e:
-        print(f"[DEBUG] Session {_sid()}:   -> JSON parsing failed: {e}")
+        logger.debug("JSON parsing failed: %s", e)
         # If JSON fails, check if it's a plain text run ID
         text = response.text.strip()
-        print(f"[DEBUG] Session {_sid()}:   -> Raw text response: '{text}'")
-        
+        logger.debug("Raw text response: %r", truncate_text(text))
+
         # Heuristic: If the text looks like a run ID (alphanumeric, dashes, underscores)
         # and doesn't look like an error message, treat it as a successful run ID.
         if text and not text.startswith("Error") and not text.startswith("Traceback"):
-            print(f"[DEBUG] Session {_sid()}:   -> Treating as run ID: {text}")
+            logger.debug("Treating as run ID: %s", text)
             # Return a standardized JSON object that get_output expects
             return {"runId": text}
-        
+
         # If it's not a valid run ID, raise an error
-        print(f"[DEBUG] Session {_sid()}:   -> Raising BiaBError (Unexpected Format)")
+        logger.error("Unexpected response format for pipeline '%s'", pipeline_name)
         raise BiaBError(
             source="server",
             message=f"Server error (Bon-in-a-Box) — pipeline '{pipeline_name}' returned unexpected format",
@@ -97,31 +106,30 @@ def _call_biab_pipeline(pipeline_name, data):
     """
     url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>{pipeline_name}.json/run"
     headers = {"Content-Type": "application/json"}
-    
-    
-    print(f"\n[DEBUG] Session {_sid()}: Calling Pipeline: {pipeline_name}")
-    print(f"[DEBUG] Session {_sid()}:   URL: {url}")
-    print(f"[DEBUG] Session {_sid()}:   Data (first 200 chars): {str(data)[:200]}")
+
+    logger.debug("Calling pipeline: %s", pipeline_name)
+    logger.debug("  URL: %s", url)
+    logger.debug("  Request data: %s", sanitize_json(data))
 
     try:
         response = requests.post(url, json=data, headers=headers, timeout=120)
-        print(f"[DEBUG] Session {_sid()}:   Request sent. Waiting for response...")
+        logger.debug("Request sent, waiting for response...")
     except requests.exceptions.ConnectionError as e:
-        print(f"[DEBUG] Session {_sid()}:   -> Connection Error: {e}")
+        logger.exception("Connection error calling %s", url)
         raise BiaBError(
             source="connection",
             message="Connection error — could not reach the Bon-in-a-Box server",
             detail=f"URL: {url}\nError: {str(e)}"
         )
     except requests.exceptions.Timeout as e:
-        print(f"[DEBUG] Session {_sid()}:   -> Timeout Error: {e}")
+        logger.exception("Timeout calling %s", url)
         raise BiaBError(
             source="connection",
             message="Connection error — request to Bon-in-a-Box timed out",
             detail=f"URL: {url}\nError: {str(e)}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"[DEBUG] Session {_sid()}:   -> Request Exception: {e}")
+        logger.exception("Request failed calling %s", url)
         raise BiaBError(
             source="connection",
             message="Connection error — request to Bon-in-a-Box failed",
@@ -132,12 +140,10 @@ def _call_biab_pipeline(pipeline_name, data):
 
 def _show_biab_error(error):
     """Display a BiaBError to the user with clear source labeling."""
-    # DEBUG: Log error to console
-    
-    print(f"\n[DEBUG] Session {_sid()}: Showing BiaBError to user:")
-    print(f"[DEBUG] Session {_sid()}:   Source: {error.source}")
-    print(f"[DEBUG] Session {_sid()}:   Message: {error.message}")
-    print(f"[DEBUG] Session {_sid()}:   Detail: {error.detail}")
+    # Presentation layer: the originating error was already logged at the
+    # point of detection, so log only at DEBUG here to avoid double-logging.
+    logger.debug("Showing BiaBError to user (source=%s): %s", error.source, error.message)
+    logger.debug("  Detail: %s", truncate_text(error.detail))
 
     if error.source == "connection":
         st.error(f"🔌 {error.message}")
@@ -176,34 +182,36 @@ def get_output(response_code):
     Poll BiaB for job completion. Returns output JSON on success.
     Raises BiaBError on connection, server, or pipeline failure.
     """
-    print(f"\n[DEBUG] Session {_sid()}: Starting get_output for runId: {response_code}")
-    
+    logger.debug("Starting get_output for runId: %s", response_code)
+
     max_retries = 12
     retry_delay = 2  # seconds
     history = None
 
     # 1. Fetch History with Retry Logic
     for attempt in range(max_retries):
-        print(f"[DEBUG] Session {_sid()}: Attempt {attempt+1}/{max_retries} to fetch history...")
+        logger.debug("Attempt %d/%d to fetch history...", attempt + 1, max_retries)
         try:
             history = requests.get(f"{st.session_state.api_link}api/history", timeout=30).json()
-            print(f"[DEBUG] Session {_sid()}:   -> History fetched successfully. Found {len(history)} entries.")
+            logger.debug("History fetched. Found %d entries.", len(history))
             break
         except requests.exceptions.RequestException as e:
-            print(f"[DEBUG] Session {_sid()}:   -> Request Exception: {e}")
+            logger.warning("History fetch failed (attempt %d): %s", attempt + 1, e)
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
             else:
+                logger.exception("Could not reach Bon-in-a-Box to check job status")
                 raise BiaBError(
                     source="connection",
                     message="Connection error — could not reach Bon-in-a-Box to check job status",
                     detail=str(e)
                 )
         except Exception as e:
-            print(f"[DEBUG] Session {_sid()}:   -> Unexpected Exception: {e}")
+            logger.warning("Unexpected error fetching history (attempt %d): %s", attempt + 1, e)
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
             else:
+                logger.exception("Invalid response when checking job status")
                 raise BiaBError(
                     source="server",
                     message="Server error (Bon-in-a-Box) — invalid response when checking job status",
@@ -211,6 +219,7 @@ def get_output(response_code):
                 )
 
     if history is None:
+        logger.error("Failed to retrieve history after %d attempts", max_retries)
         raise BiaBError(
             source="server",
             message="Server error (Bon-in-a-Box) — failed to retrieve history after multiple attempts",
@@ -220,14 +229,14 @@ def get_output(response_code):
     # 2. Find Job in History
     matching = [entry for entry in history if entry.get("runId") == response_code]
     if not matching:
-        print(f"[DEBUG] Session {_sid()}:   -> Job '{response_code}' NOT found in history.")
+        logger.error("Job '%s' not found in history", response_code)
         raise BiaBError(
             source="server",
             message=f"Server error (Bon-in-a-Box) — job '{response_code}' not found in history",
             detail=None
         )
-    
-    print(f"[DEBUG] Session {_sid()}:   -> Job found. Initial status: {matching[0].get('status')}")
+
+    logger.debug("Job found. Initial status: %s", matching[0].get("status"))
 
     status = matching[0].get("status", "unknown")
 
@@ -235,23 +244,23 @@ def get_output(response_code):
     poll_count = 0
     while status == "running":
         poll_count += 1
-        print(f"[DEBUG] Session {_sid()}:   Poll {poll_count}: Status is 'running'. Waiting {retry_delay}s...")
+        logger.debug("Poll %d: status 'running', waiting %ds...", poll_count, retry_delay)
         time.sleep(retry_delay)
         try:
             history = requests.get(f"{st.session_state.api_link}api/history", timeout=30).json()
             matching = [entry for entry in history if entry.get("runId") == response_code]
             if matching:
                 status = matching[0].get("status", "unknown")
-                print(f"[DEBUG] Session {_sid()}:   Poll {poll_count}: Status updated to '{status}'")
+                logger.debug("Poll %d: status updated to '%s'", poll_count, status)
             else:
-                print(f"[DEBUG] Session {_sid()}:   Poll {poll_count}: Job disappeared from history!")
+                logger.error("Poll %d: job '%s' disappeared from history", poll_count, response_code)
                 raise BiaBError(
                     source="server",
                     message=f"Server error (Bon-in-a-Box) — job '{response_code}' disappeared from history",
                     detail=None
                 )
         except requests.exceptions.RequestException as e:
-            print(f"[DEBUG] Session {_sid()}:   Poll {poll_count}: Connection error while polling: {e}")
+            logger.exception("Poll %d: connection error while polling", poll_count)
             raise BiaBError(
                 source="connection",
                 message="Connection error — lost contact with Bon-in-a-Box while waiting for results",
@@ -259,22 +268,23 @@ def get_output(response_code):
             )
 
     # 4. Handle Final Status
-    print(f"[DEBUG] Session {_sid()}:   Final Status: {status}")
+    logger.debug("Final status: %s", status)
     if status == "completed":
-        print(f"[DEBUG] Session {_sid()}:   -> Fetching outputs...")
+        logger.debug("Fetching outputs...")
         try:
             output = requests.get(f"{st.session_state.api_link}api/{response_code}/outputs", timeout=60).json()
-            print(f"[DEBUG] Session {_sid()}:   -> Outputs fetched successfully. Keys: {list(output.keys()) if isinstance(output, dict) else 'Not a dict'}")
+            logger.debug("Outputs fetched. Keys: %s",
+                         list(output.keys()) if isinstance(output, dict) else "not a dict")
             return output
         except requests.exceptions.RequestException as e:
-            print(f"[DEBUG] Session {_sid()}:   -> Error fetching outputs: {e}")
+            logger.exception("Error fetching outputs")
             raise BiaBError(
                 source="connection",
                 message="Connection error — could not retrieve pipeline outputs",
                 detail=str(e)
             )
         except Exception as e:
-            print(f"[DEBUG] Session {_sid()}:   -> Error parsing outputs: {e}")
+            logger.exception("Error parsing outputs")
             raise BiaBError(
                 source="server",
                 message="Server error (Bon-in-a-Box) — pipeline outputs returned invalid data",
@@ -282,7 +292,7 @@ def get_output(response_code):
             )
     else:
         # Status is 'failed', 'error', etc.
-        print(f"[DEBUG] Session {_sid()}:   -> Job failed with status: {status}")
+        logger.error("Job '%s' failed with status: %s", response_code, status)
         raise BiaBError(
             source="pipeline",
             message=f"Pipeline error (Bon-in-a-Box) — job ended with status: {status}",
@@ -290,7 +300,7 @@ def get_output(response_code):
         )
 
 # ============================================================
-# UI & Helper Functions (Unchanged)
+# UI & Helper Functions
 # ============================================================
 
 def clean_geometry(geom):
@@ -299,6 +309,7 @@ def clean_geometry(geom):
         return geom
     
     if geom.geom_type == 'GeometryCollection':
+        # Extract only polygon and multipolygon geometries
         polys = [g for g in geom.geoms if g.geom_type in ['Polygon', 'MultiPolygon']]
         if polys:
             return unary_union(polys)
@@ -415,6 +426,7 @@ def edit_points():
             st.rerun(scope="fragment")
 
     st.markdown(rtext("1_3_3_4_te"))
+    # Confirm points to be used
     if st.session_state.obs is None or not st.session_state.obs.equals(st.session_state.obs_edit):
         if st.button(rtext("1_3_3_4_bu1"), key="btn_confirm_points"):
             st.session_state.obs = st.session_state.obs_edit
@@ -433,6 +445,7 @@ def edit_points():
         def load_csv():
             try:
                 st.session_state.obs_csv = pd.read_csv(st.session_state.csv_link, sep="\t")
+                # Check if the required columns are present
                 required_columns = ["decimallongitude", "decimallatitude"]
                 if not all(col in st.session_state.obs_csv.columns for col in required_columns):
                     st.error(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
@@ -448,8 +461,9 @@ def edit_points():
 def polygon_clustering():
     if st.session_state.polyinfo["polygons"] is not None:
         st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
-    
+    # Create a dummy DataFrame for point data
     points_df = pd.DataFrame(st.session_state.obs)
+    # Convert the DataFrame to a GeoDataFrame
     points_gdf = gpd.GeoDataFrame(
         points_df,
         geometry=gpd.points_from_xy(points_df["decimallongitude"], points_df["decimallatitude"]),
@@ -458,7 +472,9 @@ def polygon_clustering():
     obs = st.session_state.obs
     
     if st.session_state.buffer is None and st.session_state.poly_creation != rtext("1_4_opt2"):
+        # Display the points without edit functionality
         m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        # Add the observations to the map
         fg = folium.FeatureGroup(name="Markers")
         for i, row in obs.iterrows():
             corr = [row["decimallatitude"], row["decimallongitude"]]
@@ -475,18 +491,25 @@ def polygon_clustering():
     if st.session_state.poly_creation == rtext("1_4_opt1"):
         if st.session_state.buffer is not None and st.session_state.distance:
             st.session_state.polyinfo["polygons"] = None
-            radius = st.session_state.buffer 
+            # Define the buffer radius in kilometers
+            radius = st.session_state.buffer # Example: 10 km
+            # Create circular buffers around each point
             circles_gdf = points_gdf.copy()
             circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius*1000).to_crs(epsg=4326)
+            # Project geometries to a metric CRS for accurate distance calculations
             points_gdf_metric = points_gdf.to_crs(epsg=3857)
+            # Calculate the distance matrix between points in meters
             distances = points_gdf_metric.geometry.apply(
                 lambda geom: points_gdf_metric.geometry.distance(geom)
             ).to_numpy()
+            # Perform hierarchical clustering
             linkage_matrix = linkage(squareform(distances), method="average")
+            # Assign population clusters
             pop_distance = st.session_state.distance * 1000
+            # Melt all circles from the same population into a MultiPolygon
             circles_gdf["pop"] = ["pop_" + str(cluster) for cluster in fcluster(linkage_matrix, t=pop_distance, criterion="distance")]
             melted_clusters = circles_gdf.dissolve(by="pop").reset_index()
-            
+            # Resolve overlaps by assigning the overlap to the population with the lower number
             for i, row1 in melted_clusters.iterrows():
                 for j, row2 in melted_clusters.iterrows():
                     if i >= j:
@@ -494,6 +517,8 @@ def polygon_clustering():
                     if melted_clusters.iloc[i]["geometry"].intersects(melted_clusters.iloc[j]["geometry"]):
                         intersection = melted_clusters.iloc[i]["geometry"].intersection(melted_clusters.iloc[j]["geometry"])
                         if not intersection.is_empty:
+                            # Assign the overlap to the population with the lower number
+
                             if int(i) < int(j):
                                 melted_clusters.at[i, "geometry"] = melted_clusters.iloc[i]["geometry"].union(intersection)
                                 melted_clusters.at[j, "geometry"] = melted_clusters.iloc[j]["geometry"].difference(intersection)
@@ -501,7 +526,10 @@ def polygon_clustering():
                                 melted_clusters.at[j, "geometry"] = melted_clusters.iloc[j]["geometry"].union(intersection)
                                 melted_clusters.at[i, "geometry"] = melted_clusters.iloc[i]["geometry"].difference(intersection)
             
+            # Create a feature collection from melted_clusters
+            # Clean geometries to remove any linestrings from geometry collections
             melted_clusters["geometry"] = melted_clusters["geometry"].apply(clean_geometry)
+            # Generate a color palette for the clusters
             colors = glasbey.create_palette(palette_size=len(melted_clusters), colorblind_safe=True, cvd_severity=100)
             features = []
             for i, row in melted_clusters.iterrows():
@@ -514,6 +542,8 @@ def polygon_clustering():
             st.session_state.original_polygons = geojson.FeatureCollection(features)
             
             m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+
+            # Add the observations to the map
             fg = folium.FeatureGroup(name="Markers")
             for i, row in obs.iterrows():
                 corr = [row["decimallatitude"], row["decimallongitude"]]
@@ -540,6 +570,7 @@ def polygon_clustering():
                 color="blue",
                 fill_opacity=1,
                 fill=True,
+                # Add the Draw tool to the map
                 fill_color='lightblue'
             ).add_to(fg)
         draw = Draw(export=False, draw_options={
@@ -567,6 +598,8 @@ def polygon_clustering():
         if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None and st.session_state.buffer is not None:
             size = st.session_state.buffer * 1000
             if st.button("Group observations by polygon"):
+                
+                # Group the circles into clusters depending on drawn polygons
                 circles = new_df['geometry'].buffer(size)
                 obs['circles'] = circles.to_crs(epsg=4326)
                 clusters = pd.DataFrame()
@@ -582,6 +615,7 @@ def polygon_clustering():
                     for j, row2 in clusters.iterrows():
                         if i >= j:
                             continue
+                        # Assign the overlap to the population with the lower number
                         if clusters.iloc[i]["geometry"].intersects(clusters.iloc[j]["geometry"]):
                             intersection = clusters.iloc[i]["geometry"].intersection(clusters.iloc[j]["geometry"])
                             if not intersection.is_empty:
@@ -591,9 +625,10 @@ def polygon_clustering():
                                 else:
                                     clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].union(intersection)
                                     clusters.iloc[i]["geometry"] = clusters.iloc[i]["geometry"].difference(intersection)
-                
+                # Create a color palette for the clusters
                 colors = glasbey.create_palette(palette_size=len(clusters), colorblind_safe=True, cvd_severity=100)
                 sns.palplot(colors)
+                # Create features to plot
                 features = []
                 for i, poly in clusters.iterrows():
                     color = colors[i % len(colors)]
@@ -611,6 +646,7 @@ def polygon_clustering():
             if st.button(rtext("1_4_2_bu2")):
                 st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
                 st.session_state.stage = "LC"
+                st.session_state.biab_dir
                 st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
                 os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
                 with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
@@ -645,6 +681,7 @@ def manual_polygon_addition():
     st.session_state.output = st_folium(m, feature_group_to_add=[fg2], key="add_polygons_map", use_container_width=True, height=st.session_state.height)
     
     if st.button("confirm polygons"):
+        # Append new drawings with placeholder properties
         for i, drawing in enumerate(st.session_state.output["all_drawings"]):
             next_index = len(st.session_state.polygon_addition["features"])
             drawing["properties"] = {
@@ -652,6 +689,8 @@ def manual_polygon_addition():
                 "style": {"color": "gray"}
             }
             st.session_state.polygon_addition["features"].append(drawing)
+
+        # Reassign colors to all features
         colors = glasbey.create_palette(
             palette_size=len(st.session_state.polygon_addition["features"]),
             colorblind_safe=True,
@@ -678,10 +717,13 @@ def convert_df():
     polygons = st.session_state.polyinfo["polygons"]
     if st.session_state.polygons["features"][0]["properties"]["population_density"] is None:
         for i in range(0, len(st.session_state.polygons["features"])):
+            # Initialize folium map
             st.session_state.polygons["features"][i]["properties"].update({"population_density": "", "nenc": "", "size": ""})
     
+    # Add the polygons to the map
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lon"]], zoom_start=2)
     fg = folium.FeatureGroup(name="Polygons")
+    # Display the map
     fg.add_child(folium.GeoJson(polygons, popup=folium.GeoJsonPopup(fields=["name", "population_density", "nenc", "size"])))
     st.session_state.output2 = st_folium(m, feature_group_to_add=fg, use_container_width=True)
 
@@ -733,24 +775,28 @@ def convert_df():
 
 @st.fragment
 def mapbbox():
+    # Create the map
+
+    # Add the Draw tool to the map
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
     draw = Draw(
         export=False,
         draw_options={
-            'polyline': False,
-            'polygon': False,
-            'circle': False,
-            'rectangle': True,
-            'marker': False,
-            'circlemarker': False
+            'polyline': False,  # Disable polyline
+            'polygon': False,   # Disable polygon
+            'circle': False,    # Disable circle
+            'rectangle': True,  # Enable rectangle
+            'marker': False,    # Disable marker
+            'circlemarker': False  # Disable circle marker
         },
         edit_options={
-            'edit': False,
-            'remove': False
+            'edit': False,   # Enable editing of drawn shapes
+            'remove': False  # Enable deleting of drawn shapes
         }
     )
     draw.add_to(m)
 
+    # If GBIF data contains a bounding box, draw it on the map
     if st.session_state.GBIF_data["bbox"] is not None:
         bbox = st.session_state.GBIF_data["bbox"]
         rectangle = folium.Rectangle(
@@ -761,14 +807,22 @@ def mapbbox():
         )
         rectangle.add_to(m)
 
+    # Display the map
     output = st_folium(m, use_container_width=True)
 
+    # Get the bounding box of the last clicked polygon
     if output["last_active_drawing"] is not None:
         geometry = output["last_active_drawing"]["geometry"]
+
+        # Update the bounding box in GBIF data
         def get_bounding_box(geom):
             coords = np.array(list(geojson.utils.coords(geom)))
             return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
         st.session_state.GBIF_data["bbox"] = [float(coord) for coord in get_bounding_box(geometry)]
+
+        # Update map center and zoom
         st.session_state.zoom = output["zoom"]
         st.session_state.center = output["center"]
+
+        # Trigger a rerun to refresh the map with the new shape
         st.rerun()

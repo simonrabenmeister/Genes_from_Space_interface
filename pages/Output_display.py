@@ -19,6 +19,8 @@ import os
 import plotly.graph_objects as go
 from functions import Sensitivity
 from functions import get_output
+from functions import BiaBError, _show_biab_error
+from logging_config import log_and_show
 
 if "sensitivity_table_df" not in st.session_state:
     st.session_state.sensitivity_table_df = None
@@ -62,12 +64,25 @@ if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
-if "lan" not in st.session_state:
-    st.session_state.lan = "en"
-
-
-
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
+
+# Ensure biab_dir is available even when this page is opened directly
+# (it is normally set in Input_form.py, which may not have run yet).
+if "biab_dir" not in st.session_state:
+    with open("directories.txt", "r") as file:
+        directories = file.readlines()
+    st.session_state.biab_dir = directories[0].strip()
+    st.session_state.api_link = directories[2].strip()
+
+# Ensure a session ID exists for log correlation across all pages
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8]
+
+# Initialize language if not already set (prevents AttributeError on direct navigation)
+if "lan" not in st.session_state:
+    st.session_state.lan = "en"  # Default to English
+
+
 texts = pd.read_csv("texts.csv").set_index("id")
 
 def rtext(id):
@@ -82,7 +97,11 @@ with st.sidebar:
             "Page Height",0, 2000, st.session_state.height
         )
         st.session_state.lan = st.radio("Select Language", ["en"], index=0)
-
+    # Display the session ID for user confirmation when debugging
+    st.divider()
+    st.caption(
+        f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
+        )
 
 
 
@@ -634,18 +653,23 @@ if input is not None or st.session_state.polyinfo is not None:
                             "pipeline@7": st.session_state.default_nenc,#User Ne:Nc
                             "pipeline@8": st.session_state.nenc_uncertainty,#Ne:Nc uncertainty
                         }
-                        sensitivity= Sensitivity(data)
-                        sensitivity_table=get_output(sensitivity.text)["GFS_IndicatorsTool>sensitivity.yml@0"]
-                        st.session_state.sensitivity_table_df = pd.read_csv(
-                            f"/home/ubuntu/BIAB/bon-in-a-box-pipelines/output/{sensitivity_table}/sensitivity_table.tsv", 
-                            sep="\t", 
-                            index_col=0
-                        )
-                        st.session_state.sensitivity_table_df = st.session_state.sensitivity_table_df.iloc[:, [0, 3, 4, 7]]
+                        try:
+                            sensitivity= Sensitivity(data)
+                            sensitivity_table=get_output(sensitivity.text)["GFS_IndicatorsTool>sensitivity.yml@0"]
+                            st.session_state.sensitivity_table_df = pd.read_csv(
+                                f"{st.session_state.biab_dir}/output/{sensitivity_table}/sensitivity_table.tsv",
+                                sep="\t",
+                                index_col=0
+                            )
+                            st.session_state.sensitivity_table_df = st.session_state.sensitivity_table_df.iloc[:, [0, 3, 4, 7]]
                         
-                        if st.session_state.sensitivity_table_df is not None:
-                            st.write("### Sensitivity Analysis Table")
-                            st.dataframe(st.session_state.sensitivity_table_df)
+                            if st.session_state.sensitivity_table_df is not None:
+                                st.write("### Sensitivity Analysis Table")
+                                st.dataframe(st.session_state.sensitivity_table_df)
+                        except BiaBError as e:
+                            _show_biab_error(e)
+                        except Exception as e:
+                            log_and_show(f"Error generating sensitivity table: {e}", exc_info=True)
                     
 
 

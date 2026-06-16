@@ -2,11 +2,16 @@ import streamlit as st
 import pandas as pd
 from streamlit_js_eval import streamlit_js_eval
 import base64
+import uuid
 st.set_page_config(
     page_title="Genes from Space",
     page_icon="🌍",
     layout="wide"
 )
+
+# Ensure a session ID exists for log correlation across all pages
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8]
 
 # Initialize the height state variable/key
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
@@ -19,8 +24,12 @@ else:
 st.image('images/logo.png')
 with st.sidebar:
     with st.expander("Settings", expanded=False):
-
         st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
+    # Display the session ID for user confirmation when debugging
+    st.divider()
+    st.caption(
+        f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
+        )
 
 texts = pd.read_csv("texts.csv").set_index("id")
 
