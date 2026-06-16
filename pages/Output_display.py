@@ -62,6 +62,11 @@ if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
+if "lan" not in st.session_state:
+    st.session_state.lan = "en"
+
+
+
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
 texts = pd.read_csv("texts.csv").set_index("id")
 
@@ -97,20 +102,22 @@ def open_tif(tif):
 
 def load_geojson():
     # Load the GeoJSON file
-    st.session_state.upload = True
-    geojson_data = json.load(st.session_state.geojson)
-    st.session_state.pop_polygons = geojson_data["pop_polygons"]
-    st.session_state.default_nenc = geojson_data["NE"]
-    st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
-    st.session_state.rel_habitat_change_table  = pd.DataFrame(geojson_data["rel_habitat_change_table"])
-    st.session_state.editable_df = pd.DataFrame(geojson_data["editable_df"])
-    st.session_state.NC = geojson_data["NC"]
-    st.session_state.GAIN = geojson_data["GAIN"]
-    st.session_state.LOSS = geojson_data["LOSS"]
-    st.session_state.properties = pd.DataFrame(geojson_data["properties"])
-    st.session_state.upload = True
-    st.session_state.LC_classnames =geojson_data["LC_class_names"]
-    st.session_state.run_id = geojson_data["run_id"]
+    if st.session_state.geojson is not None:
+        st.session_state.upload = True
+        geojson_data = json.load(st.session_state.geojson)
+        st.session_state.pop_polygons = geojson_data["pop_polygons"]
+        st.session_state.default_nenc = geojson_data["NE"]
+        st.session_state.area_table = pd.DataFrame(geojson_data["area_table"])
+        st.session_state.rel_habitat_change_table  = pd.DataFrame(geojson_data["rel_habitat_change_table"])
+        st.session_state.editable_df = pd.DataFrame(geojson_data["editable_df"])
+        st.session_state.NC = geojson_data["NC"]
+        st.session_state.GAIN = geojson_data["GAIN"]
+        st.session_state.LOSS = geojson_data["LOSS"]
+        st.session_state.properties = pd.DataFrame(geojson_data["properties"])
+        st.session_state.properties["habitat_area"] = st.session_state.area_table.iloc[:, -1].values
+        st.session_state.upload = True
+        st.session_state.LC_classnames =geojson_data["LC_class_names"]
+        st.session_state.run_id = geojson_data["run_id"]
 
 input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
 
@@ -280,7 +287,11 @@ if input is not None or st.session_state.polyinfo is not None:
 
         plot1, plot2 = st.columns(2)
         with plot1:
+            endangered_pop= rel_change[rel_change["habitat_area"] < -50]["name"].unique()
             relareaplot = st.plotly_chart(rel_change_fig, use_container_width=True, on_select="rerun")
+            if len(endangered_pop)>0:
+                st.error(f"Populations {endangered_pop} have experienced a habitat loss of more than 50%. This population is at high risk of extinction")
+
         with plot2:
             areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
     
@@ -299,6 +310,8 @@ if input is not None or st.session_state.polyinfo is not None:
             properties["nenc"] = [default_nenc] * len(properties)
             properties["pop_size"] = [0] * len(properties)
             properties["effective_size"] = [default_dens] * len(properties)
+            properties["habitat_area"] = area_table.iloc[:, 1].values
+            
             properties = properties.assign(Population_Density=st.session_state.default_dens)
             if st.session_state.default_dens is None:
                 properties = properties.assign(pop_size=None)
@@ -313,9 +326,11 @@ if input is not None or st.session_state.polyinfo is not None:
 
         if st.session_state.properties is not None and st.session_state.default_nenc is not None:
             st.session_state.properties["Population_Density"] = st.session_state.properties["Population_Density"].astype(float)
+
             with subcol1:
                 st.markdown(rtext("out_3_ti"))
                 st.markdown(rtext("out_3_te"))
+                
                 ##Make the dataframe adaptable
                 def adapt_df(new_df: Union[pd.DataFrame, None] = None):
                     if new_df is not None:
@@ -368,6 +383,8 @@ if input is not None or st.session_state.polyinfo is not None:
                                 df.at[i, "effective_size"] = None
 
                         st.session_state.properties = df
+                        
+                        
                         st.rerun()
             
 
@@ -378,7 +395,8 @@ if input is not None or st.session_state.polyinfo is not None:
                     key="data",
                     column_config={
                     "effective_size": st.column_config.Column(disabled=True),
-                    "nenc": st.column_config.Column(disabled=True)
+                    "nenc": st.column_config.Column(disabled=True),
+                    "habitat_area": st.column_config.Column(disabled=True)
                     },
 
                 )
@@ -469,18 +487,28 @@ if input is not None or st.session_state.polyinfo is not None:
                         end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > 10]
                         start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
                         
-                        pop_above= [start_pop >= 10][0]
-                        end_pop_above=end_pop[pop_above]>=10
-                        PM_indicator =  end_pop_above.count()/pop_above.sum()
+                        pop_total= len(start_pop)
+                        pop_above= [start_pop >= 500][0]
+                        end_pop_bellow=end_pop[pop_above]<100
+                        pop_above_count = int(pop_above.sum())
+                        end_pop_bellow_count = int(end_pop_bellow.sum())
+                        PM_table = pd.DataFrame(
+                            {
+                                "Value": [pop_total, pop_above_count, end_pop_bellow_count]
+                            },
+                            index=["total populations", "starting populations with NE>500", "at risk populations (NE drop bellow 100)"]
+                        )
 
                         st.markdown("### Estimated GBF genetic diversity indicators")
                         st.markdown(
                             "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
                         )
                         st.markdown(
-                            "**PM:** {:.2f}".format(PM_indicator)
+                            "**PM:** "
                         )
+                        st.markdown("For multiple reasons our Tool is not capable of correctly estimating the PM indicator. We are working on solving this issue, but for the moment we can provide you with an overview of the populations that are at risk of extinction. In the following Table, all populations are considered that had Ne>500 at the start of the observation period. Of these, Populations that drop bellow 100 within the observation period are considered at risk of extinction.")
 
+                        st.dataframe(PM_table, use_container_width=False)
 
 
 
