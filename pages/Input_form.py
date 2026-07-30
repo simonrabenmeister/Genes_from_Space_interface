@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
+
 import numpy as np
 import geojson
 import json
@@ -24,6 +25,7 @@ from logging_config import log_and_show, log_and_warn
 import uuid
 import os
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
 from functions import manual_polygon_addition
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
@@ -157,33 +159,31 @@ if height_source is not None:
     st.session_state.height=int(height_source*0.5)
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
+if "scroll_image_container" not in st.session_state:
+    st.session_state.scroll_image_container = False
 ##Load necessary functions, files etc
 texts = pd.read_csv("texts.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
 
 LC_dict = {
-    "Rainfed cropland": [10, 11, 12],
-    "Irrigated cropland": [20],
-    "Mosaic cropland (>50%) / natural vegetation (<50%)": [30],
-    "Mosaic natural vegetation (>50%) / cropland (<50%)": [40],
-    "Tree cover, broadleaved, evergreen, closed to open (>15%)": [50],
-    "Tree cover, broadleaved, deciduous, closed to open (>15%)": [60, 61, 62],
-    "Tree cover, needleleaved, evergreen, closed to open (>15%)": [70, 71, 72],
-    "Tree cover, needleleaved, deciduous, closed to open (>15%)": [80, 81, 82],
+    "Cropland": [10, 11, 12],
+    "Cropland, irrigated or post-flooding": [20],
+    "Tree cover, broadleaved, evergreen": [50],
+    "Tree cover, broadleaved, deciduous": [60, 61, 62],
+    "Tree cover, needleleaved, evergreen": [70, 71, 72],
+    "Tree cover, needleleaved, deciduous": [80, 81, 82],
     "Tree cover, mixed leaf type (broadleaved and needleleaved)": [90],
-    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)": [100],
+    "Shrubland": [120, 121, 122],
+    "Grassland": [130],
+    "Sparse vegetation (tree, shrub, herbaceous cover)": [150, 151, 152, 153],
     "Tree cover, flooded, fresh or brackish water": [160],
     "Tree cover, flooded, saline water": [170],
-    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)": [110],
-    "Grassland": [130],
-    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water": [180],
+    "Shrub or herbaceous cover, flooded, fresh/saline/brakish water": [180],
     "Urban": [190],
-    "Shrubland": [120, 121, 122],
-    "Lichens and mosses": [140],
-    "Sparse vegetation (tree, shrub, herbaceous cover)": [150, 151, 152, 153],
-    "Bare areas": [200, 201, 202],
+    "Bare areas": [140, 200, 201, 202],
     "Water": [210],
-    "Permanant Ice and Snow": [220]
+    "Permanant Ice and Snow": [220],
+
 }
 
 LC_names_simple_en= [
@@ -242,8 +242,8 @@ st.markdown("""
 
 st.image('images/logo.png')
 with st.sidebar:
-    with st.expander("Settings", expanded=False):
-        st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
+
+    st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
     # Display the session ID for user confirmation when debugging
     st.divider()
     st.caption(
@@ -253,6 +253,28 @@ with st.sidebar:
 
 def rtext(id):
     return texts.loc[id, st.session_state.lan].replace("\\n", "\n")
+
+
+def render_scroll_image_container():
+    components.html(
+        f"""
+        <script>
+            function scrollContainer(dummy) {{
+                var containers = window.parent.document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"]');
+                containers.forEach(function(c) {{
+                    if (c.innerText.includes("")) {{}}  // placeholder, see note below
+                }});
+                // Fallback: scroll all bordered containers with overflow
+                var scrollables = window.parent.document.querySelectorAll('div[style*="overflow"]');
+                scrollables.forEach(function(el) {{
+                    el.scrollTop = el.scrollHeight;
+                }});
+            }}
+            scrollContainer({st.session_state.height});
+        </script>
+        """,
+        height=0,
+    )
 col1, col2= st.columns(2)
 
 
@@ -404,6 +426,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                         st.write(rtext('1_3_3_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_3_3_1_in_te2'))
                         if st.button(rtext('1_3_3_1_in_bu1')):
                             st.session_state["species"] = response["scientificName"]
+                            st.session_state.scroll_image_container = True
                             st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
 
                     else:
@@ -414,7 +437,13 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.markdown(rtext("1_2_2_te"))
                 with st.form(key='GBIF_parameters', enter_to_submit=False):
                     st.slider("Select a range of values", 1900, 2020, (1970, 2020), key="GBIF_year_range")
-                    st.form_submit_button("Update GBIF Range", on_click=lambda: setattr(st.session_state, 'GBIF_range', st.session_state.GBIF_year_range))
+                    st.form_submit_button(
+                        "Select GBIF Range",
+                        on_click=lambda: (
+                            setattr(st.session_state, 'GBIF_range', st.session_state.GBIF_year_range),
+                            setattr(st.session_state, 'scroll_image_container', True),
+                        ),
+                    )
 
             if st.session_state["GBIF_range"] is not None:
 
@@ -527,7 +556,6 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                                         try:
                                             with open(file_path, "r") as obs_file:
                                                 obs = pd.read_csv(obs_file, sep='\t')
-                    
                                             st.session_state.obs_edit = obs
                                             st.session_state.stage = "Manipulate points"
                                             st.success("Data loaded successfully!")
@@ -655,7 +683,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state["data_source"]==rtext("1_1_opt3"):
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2025, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
@@ -671,13 +699,15 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
-            LC_selection = [rtext("2_opt2"), rtext("2_opt3"), rtext("2_opt4"), rtext("2_opt1")]
+            LC_selection = [rtext("2_opt2"), rtext("2_opt3"), rtext("2_opt4")]#removed rtext("2_opt1") since get_TCY is not working properly.
+            
             st.session_state.LC_selection = st.selectbox(
                 rtext("2_plac"),
                 LC_selection,
                 index=st.session_state.LC_index,
                 placeholder=rtext("2_desc"),
                 key="LC_type_key",
+                
                 on_change=lambda: (
                     setattr(st.session_state, "LC_index", LC_selection.index(st.session_state.LC_type_key)),
                     setattr(st.session_state, "LC_class_names", None),
@@ -685,7 +715,9 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
 
                 )
+
             )
+            st.warning("At the moment the Global forest watch data option is not available. we are working on fixing it. Please use the ESA CCI dataset.")
 
             
             with st.expander(rtext("3_exp_ti"), expanded=False):
@@ -757,7 +789,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 
                 percentages = np.diff([0] + cum_values) * 100
                 percentages = np.insert(percentages, 0, cum_values[0] * 100) # Initialize sums for each group
-                    
+                
                 
                 grouped_percentages = []
                 for element, percentage in zip(elements, percentages):
@@ -780,30 +812,26 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     dominant_class_names.append(elem)
                     cumulative_percentage += perc
                 # Create stacked single bar using Plotly
+                
                 fig = go.Figure()
                 element_color_map = {
-                    "Rainfed cropland": "#c3b091",
-                    "Irrigated cropland": "#ede6b9",
-                    "Mosaic cropland (>50%) / natural vegetation (<50%)": "#f0e68c",
-                    "Mosaic natural vegetation (>50%) / cropland (<50%)": "#d2b48c",
-                    "Tree cover, broadleaved, evergreen, closed to open (>15%)": "#1b5e20",
-                    "Tree cover, broadleaved, deciduous, closed to open (>15%)": "#2e7d32",
-                    "Tree cover, needleleaved, evergreen, closed to open (>15%)": "#388e3c",
-                    "Tree cover, needleleaved, deciduous, closed to open (>15%)": "#4caf50",
-                    "Tree cover, mixed leaf type (broadleaved and needleleaved)": "#2e8b57",
-                    "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)": "#3cb371",
-                    "Tree cover, flooded, fresh or brackish water": "#006400",
-                    "Tree cover, flooded, saline water": "#228b22",
-                    "Mosaic herbaceous cover (>50%) / tree and shrub (<50%)": "#fbc02d",
-                    "Grassland": "#fff176",
-                    "Shrub or herbaceous cover, flooded, fresh-saline or brackish water": "#2196f3",
-                    "Urban": "#d32f2f",
-                    "Shrubland": "#8b4513",
-                    "Lichens and mosses": "#c0b283",
-                    "Sparse vegetation (tree, shrub, herbaceous cover)": "#d9caa3",
-                    "Bare areas": "#9e9e9e",
-                    "Water": "#2196f3",
-                    "Permanant Ice and Snow": "#bdbdbd"
+                    "Cropland": "#ffff64",
+                    "Cropland, irrigated or post-flooding": "#aaf0f0",
+                    "Tree cover, broadleaved, evergreen": "#006400",
+                    "Tree cover, broadleaved, deciduous": "#00a000",
+                    "Tree cover, needleleaved, evergreen": "#003c00",
+                    "Tree cover, needleleaved, deciduous": "#285000",
+                    "Tree cover, mixed leaf type (broadleaved and needleleaved)": "#788200",
+                    "Shrubland": "#966400",
+                    "Grassland": "#ffb400",
+                    "Sparse vegetation (tree, shrub, herbaceous cover)": "#ffebaf",
+                    "Tree cover, flooded, fresh or brakish water": "#00785a",
+                    "Tree cover, flooded, saline water": "#009678",
+                    "Shrub or herbaceous cover, flooded, fresh/saline/brakish water": "#00dc82",
+                    "Urban": "#c31400",
+                    "Bare areas": "#fff5d7",
+                    "Water": "#0046c8",
+                    "Permanant Ice and Snow": "#ffffff",
                 }
                 
             
@@ -834,6 +862,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 LC_class=st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=dominant_class_names)
+                
                 
                 st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
                 st.session_state.LC["LC_classnames"]=LC_class
@@ -958,6 +987,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
     # add 2 empty lines for readability
     st.markdown('')
     st.markdown('')
+
+if st.session_state.get("scroll_image_container"):
+    render_scroll_image_container()
+    st.session_state.scroll_image_container = False
 
 with col2:
     if st.session_state.stage=="bbox_draw":

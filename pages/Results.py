@@ -92,11 +92,7 @@ st.markdown(rtext("out_ti"))
 
 
 with st.sidebar:
-    with st.expander("Settings", expanded=False):
-        st.session_state.height = st.slider(
-            "Page Height",0, 2000, st.session_state.height
-        )
-        st.session_state.lan = st.radio("Select Language", ["en"], index=0)
+    st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
     # Display the session ID for user confirmation when debugging
     st.divider()
     st.caption(
@@ -559,117 +555,117 @@ if input is not None or st.session_state.polyinfo is not None:
 
 ## advance functionalities form
 
-            with st.expander("Advanced functionalities (beta)", expanded=False):
+#             with st.expander("Advanced functionalities (beta)", expanded=False):
                     
-                    with st.form(key='polygon', enter_to_submit=False):
-                        default_nenc = st.number_input(
-                        rtext("out_2_plac"), 
-                        placeholder="for example: 0.1",
-                        min_value=0.0, 
-                        max_value=1.0, 
-                        step=0.01, 
-                        value=st.session_state.default_nenc,
+#                     with st.form(key='polygon', enter_to_submit=False):
+#                         default_nenc = st.number_input(
+#                         rtext("out_2_plac"), 
+#                         placeholder="for example: 0.1",
+#                         min_value=0.0, 
+#                         max_value=1.0, 
+#                         step=0.01, 
+#                         value=st.session_state.default_nenc,
 
-                        key="nenc"
-                        )
-                        st.markdown(rtext("out_2_exp_ti"))
-                        st.markdown(rtext("out_2_exp_te"))
+#                         key="nenc"
+#                         )
+#                         st.markdown(rtext("out_2_exp_ti"))
+#                         st.markdown(rtext("out_2_exp_te"))
 
-                        if st.form_submit_button(rtext("submit") ):
-                            st.session_state.default_nenc = default_nenc
-                            st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
-                            st.rerun()
+#                         if st.form_submit_button(rtext("submit") ):
+#                             st.session_state.default_nenc = default_nenc
+#                             st.session_state.properties = st.session_state.properties.assign(nenc=st.session_state.default_nenc)
+#                             st.rerun()
 
-                    st.markdown("##### PM cutoff vaue")
+#                     st.markdown("##### PM cutoff vaue")
 
-                    PM_cutoff=st.slider("PM cutoff", 0, 100, ne_greater_500, key="PMcutoff")
-                    end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > PM_cutoff]
-                    start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
+#                     PM_cutoff=st.slider("PM cutoff", 0, 100, ne_greater_500, key="PMcutoff")
+#                     end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > PM_cutoff]
+#                     start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
                     
-                    pop_above= [start_pop >= PM_cutoff][0]
-                    end_pop_above=end_pop[pop_above]>=PM_cutoff
-                    PM_indicator =  end_pop_above.count()/pop_above.sum()
-                    st.markdown("### Genetic diversity Indicators")
-                    st.markdown(
-                        "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
-                    )
-                    st.markdown(
-                        "**PM:** {:.2f}".format(PM_indicator)
-                    )
+#                     pop_above= [start_pop >= PM_cutoff][0]
+#                     end_pop_above=end_pop[pop_above]>=PM_cutoff
+#                     PM_indicator =  end_pop_above.count()/pop_above.sum()
+#                     st.markdown("### Genetic diversity Indicators")
+#                     st.markdown(
+#                         "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
+#                     )
+#                     st.markdown(
+#                         "**PM:** {:.2f}".format(PM_indicator)
+#                     )
             
-### Sensotivity Analysis form
+# ### Sensotivity Analysis form
 
-            with st.expander("Output sensitivity testing", expanded=False):
-                    st.markdown("#### Sensitivity Analysis Report")
-                    if "buffer_uncertainty" not in st.session_state:
-                        st.session_state.buffer_uncertainty=None
-                    if "distance_uncertainty" not in st.session_state:
-                        st.session_state.distance_uncertainty=None  
-                    if "density_uncertainty" not in st.session_state:
-                        st.session_state.density_uncertainty=None
-                    if "nenc_uncertainty" not in st.session_state:
-                        st.session_state.nenc_uncertainty=None
-                    st.write(f"your provided Buffer is:{st.session_state.buffer} Km")
-                    st.session_state.buffer_uncertainty=st.number_input(
-                        "Buffer Uncertainty (Km)", 
-                        min_value=0.0, 
-                        step=0.1, 
-                        value=st.session_state.buffer_uncertainty,
-                        key="buffer_uncertainty_input"
-                    )
-                    st.write(f"your provided distance is:{st.session_state.distance} Km")
-                    st.session_state.distance_uncertainty=st.number_input(
-                        "Distance Uncertainty (Km)", 
-                        min_value=0.0, 
-                        step=0.1, 
-                        value=st.session_state.distance_uncertainty,
-                        key="distance_uncertainty_input"
-                    )
-                    st.write(f"your provided default density is:{st.session_state.default_dens} individuals/Km²")
-                    st.session_state.density_uncertainty=st.number_input(
-                        "Density Uncertainty (individuals/Km²)", 
-                        min_value=0.0, 
-                        step=0.1, 
-                        value=st.session_state.density_uncertainty,
-                        key="density_uncertainty_input"
-                    )
-                    st.write(f"your provided Ne:Nc is:{st.session_state.default_nenc}")
-                    st.session_state.nenc_uncertainty=st.number_input(
-                        "Ne:Nc Uncertainty", 
-                        min_value=0.0, 
-                        step=0.01, 
-                        value=st.session_state.nenc_uncertainty,
-                        key="nenc_uncertainty_input"
-                    )
+#             with st.expander("Output sensitivity testing", expanded=False):
+#                     st.markdown("#### Sensitivity Analysis Report")
+#                     if "buffer_uncertainty" not in st.session_state:
+#                         st.session_state.buffer_uncertainty=None
+#                     if "distance_uncertainty" not in st.session_state:
+#                         st.session_state.distance_uncertainty=None  
+#                     if "density_uncertainty" not in st.session_state:
+#                         st.session_state.density_uncertainty=None
+#                     if "nenc_uncertainty" not in st.session_state:
+#                         st.session_state.nenc_uncertainty=None
+#                     st.write(f"your provided Buffer is:{st.session_state.buffer} Km")
+#                     st.session_state.buffer_uncertainty=st.number_input(
+#                         "Buffer Uncertainty (Km)", 
+#                         min_value=0.0, 
+#                         step=0.1, 
+#                         value=st.session_state.buffer_uncertainty,
+#                         key="buffer_uncertainty_input"
+#                     )
+#                     st.write(f"your provided distance is:{st.session_state.distance} Km")
+#                     st.session_state.distance_uncertainty=st.number_input(
+#                         "Distance Uncertainty (Km)", 
+#                         min_value=0.0, 
+#                         step=0.1, 
+#                         value=st.session_state.distance_uncertainty,
+#                         key="distance_uncertainty_input"
+#                     )
+#                     st.write(f"your provided default density is:{st.session_state.default_dens} individuals/Km²")
+#                     st.session_state.density_uncertainty=st.number_input(
+#                         "Density Uncertainty (individuals/Km²)", 
+#                         min_value=0.0, 
+#                         step=0.1, 
+#                         value=st.session_state.density_uncertainty,
+#                         key="density_uncertainty_input"
+#                     )
+#                     st.write(f"your provided Ne:Nc is:{st.session_state.default_nenc}")
+#                     st.session_state.nenc_uncertainty=st.number_input(
+#                         "Ne:Nc Uncertainty", 
+#                         min_value=0.0, 
+#                         step=0.01, 
+#                         value=st.session_state.nenc_uncertainty,
+#                         key="nenc_uncertainty_input"
+#                     )
 
-                    if st.button("Generate Sensitivity Analysis Table"):
-                        data={
-                            "pipeline@1": st.session_state.buffer,#Buffer
-                            "pipeline@2": st.session_state.buffer_uncertainty,#buffer uncertainty
-                            "pipeline@3": st.session_state.distance,#Distance
-                            "pipeline@4": st.session_state.distance_uncertainty,#distance uncertainty
-                            "pipeline@5": st.session_state.default_dens,#User Density
-                            "pipeline@6": st.session_state.density_uncertainty,#density uncertainty
-                            "pipeline@7": st.session_state.default_nenc,#User Ne:Nc
-                            "pipeline@8": st.session_state.nenc_uncertainty,#Ne:Nc uncertainty
-                        }
-                        try:
-                            sensitivity= Sensitivity(data)
-                            sensitivity_table=get_output(sensitivity.text)["GFS_IndicatorsTool>sensitivity.yml@0"]
-                            st.session_state.sensitivity_table_df = pd.read_csv(
-                                f"{st.session_state.biab_dir}/output/{sensitivity_table}/sensitivity_table.tsv",
-                                sep="\t",
-                                index_col=0
-                            )
-                            st.session_state.sensitivity_table_df = st.session_state.sensitivity_table_df.iloc[:, [0, 3, 4, 7]]
+#                     if st.button("Generate Sensitivity Analysis Table"):
+#                         data={
+#                             "pipeline@1": st.session_state.buffer,#Buffer
+#                             "pipeline@2": st.session_state.buffer_uncertainty,#buffer uncertainty
+#                             "pipeline@3": st.session_state.distance,#Distance
+#                             "pipeline@4": st.session_state.distance_uncertainty,#distance uncertainty
+#                             "pipeline@5": st.session_state.default_dens,#User Density
+#                             "pipeline@6": st.session_state.density_uncertainty,#density uncertainty
+#                             "pipeline@7": st.session_state.default_nenc,#User Ne:Nc
+#                             "pipeline@8": st.session_state.nenc_uncertainty,#Ne:Nc uncertainty
+#                         }
+#                         try:
+#                             sensitivity= Sensitivity(data)
+#                             sensitivity_table=get_output(sensitivity.text)["GFS_IndicatorsTool>sensitivity.yml@0"]
+#                             st.session_state.sensitivity_table_df = pd.read_csv(
+#                                 f"{st.session_state.biab_dir}/output/{sensitivity_table}/sensitivity_table.tsv",
+#                                 sep="\t",
+#                                 index_col=0
+#                             )
+#                             st.session_state.sensitivity_table_df = st.session_state.sensitivity_table_df.iloc[:, [0, 3, 4, 7]]
                         
-                            if st.session_state.sensitivity_table_df is not None:
-                                st.write("### Sensitivity Analysis Table")
-                                st.dataframe(st.session_state.sensitivity_table_df)
-                        except BiaBError as e:
-                            _show_biab_error(e)
-                        except Exception as e:
-                            log_and_show(f"Error generating sensitivity table: {e}", exc_info=True)
+#                             if st.session_state.sensitivity_table_df is not None:
+#                                 st.write("### Sensitivity Analysis Table")
+#                                 st.dataframe(st.session_state.sensitivity_table_df)
+#                         except BiaBError as e:
+#                             _show_biab_error(e)
+#                         except Exception as e:
+#                             log_and_show(f"Error generating sensitivity table: {e}", exc_info=True)
                     
 
 
@@ -678,81 +674,81 @@ if input is not None or st.session_state.polyinfo is not None:
 
 
 
-    # if st.button("Generate PDF Report"):
-    #     pdf = FPDF()
-    #     pdf.set_auto_page_break(auto=True, margin=15)
-    #     pdf.add_page()
-    #     pdf.set_font("Arial", size=12)
+#     # if st.button("Generate PDF Report"):
+#     #     pdf = FPDF()
+#     #     pdf.set_auto_page_break(auto=True, margin=15)
+#     #     pdf.add_page()
+#     #     pdf.set_font("Arial", size=12)
 
-    #     # Add title
-    #     pdf.set_font("Arial", style="B", size=16)
-    #     pdf.cell(200, 10, txt="Habitat Change Report", ln=True, align="C")
-    #     pdf.ln(10)
+#     #     # Add title
+#     #     pdf.set_font("Arial", style="B", size=16)
+#     #     pdf.cell(200, 10, txt="Habitat Change Report", ln=True, align="C")
+#     #     pdf.ln(10)
 
-    #     # Add map
-    #     pdf.set_font("Arial", size=12)
-    #     pdf.cell(200, 10, txt="Map Overview", ln=True, align="L")
-    #     pdf.ln(5)
+#     #     # Add map
+#     #     pdf.set_font("Arial", size=12)
+#     #     pdf.cell(200, 10, txt="Map Overview", ln=True, align="L")
+#     #     pdf.ln(5)
  
-    #     map=st.session_state.map
-    #     img_data=map._to_png(5)
-    #     img = Image.open(io.BytesIO(img_data))
-    #     img.save('map_image.png')
-    #     pdf.image("map_image.png", x=10, y=None, w=190)
-    #     pdf.ln(10)
+#     #     map=st.session_state.map
+#     #     img_data=map._to_png(5)
+#     #     img = Image.open(io.BytesIO(img_data))
+#     #     img.save('map_image.png')
+#     #     pdf.image("map_image.png", x=10, y=None, w=190)
+#     #     pdf.ln(10)
 
-    # # Add data table
-    #     pdf.cell(200, 10, txt="Population Properties Table", ln=True, align="L")
-    #     pdf.ln(5)
+#     # # Add data table
+#     #     pdf.cell(200, 10, txt="Population Properties Table", ln=True, align="L")
+#     #     pdf.ln(5)
 
-    #     # Create a Plotly table
-    #     table_data = st.session_state.properties
-    #     fig_table = go.Figure(data=[go.Table(
-    #         header=dict(values=list(table_data.columns),
-    #                     fill_color='paleturquoise',
-    #                     align='left'),
-    #         cells=dict(values=[table_data[col] for col in table_data.columns],
-    #                 fill_color='lavender',
-    #                 align='left'))
-    #     ])
+#     #     # Create a Plotly table
+#     #     table_data = st.session_state.properties
+#     #     fig_table = go.Figure(data=[go.Table(
+#     #         header=dict(values=list(table_data.columns),
+#     #                     fill_color='paleturquoise',
+#     #                     align='left'),
+#     #         cells=dict(values=[table_data[col] for col in table_data.columns],
+#     #                 fill_color='lavender',
+#     #                 align='left'))
+#     #     ])
 
-    #     # Save the table as an image
-    #     fig_table.write_image("table_plot.png")
+#     #     # Save the table as an image
+#     #     fig_table.write_image("table_plot.png")
 
-    #     # Add the table image to the PDF
-    #     pdf.image("table_plot.png", x=10, y=None, w=190)
-    #     pdf.ln(10)
+#     #     # Add the table image to the PDF
+#     #     pdf.image("table_plot.png", x=10, y=None, w=190)
+#     #     pdf.ln(10)
 
-    #     # Add NE plot
-    #     pdf.ln(5)
-    #     ne_fig.write_image("ne_plot.png")
-    #     pdf.image("ne_plot.png", x=10, y=None, w=190)
-    #     pdf.ln(10)
+#     #     # Add NE plot
+#     #     pdf.ln(5)
+#     #     ne_fig.write_image("ne_plot.png")
+#     #     pdf.image("ne_plot.png", x=10, y=None, w=190)
+#     #     pdf.ln(10)
 
-    #     # Add relative habitat change plot
-    #     pdf.ln(5)
-    #     rel_change_fig.write_image("rel_change_plot.png")
-    #     pdf.image("rel_change_plot.png", x=10, y=None, w=190)
-    #     pdf.ln(10)
+#     #     # Add relative habitat change plot
+#     #     pdf.ln(5)
+#     #     rel_change_fig.write_image("rel_change_plot.png")
+#     #     pdf.image("rel_change_plot.png", x=10, y=None, w=190)
+#     #     pdf.ln(10)
 
-    #     # Add area trends plot
-    #     pdf.ln(5)
-    #     area_fig.write_image("area_plot.png")
-    #     pdf.image("area_plot.png", x=10, y=None, w=190)
-    #     pdf.ln(10)
+#     #     # Add area trends plot
+#     #     pdf.ln(5)
+#     #     area_fig.write_image("area_plot.png")
+#     #     pdf.image("area_plot.png", x=10, y=None, w=190)
+#     #     pdf.ln(10)
 
-    #     # Add indicators
-    #     pdf.cell(200, 10, txt="Indicators", ln=True, align="L")
-    #     pdf.ln(5)
-    #     pdf.cell(0, 10, txt=f"NE>500: {ratio_ne_greater_500:.2f}", ln=True)
-    #     pdf.cell(0, 10, txt=f"PM: {ratio_ne_greater_50:.2f}", ln=True)
+#     #     # Add indicators
+#     #     pdf.cell(200, 10, txt="Indicators", ln=True, align="L")
+#     #     pdf.ln(5)
+#     #     pdf.cell(0, 10, txt=f"NE>500: {ratio_ne_greater_500:.2f}", ln=True)
+#     #     pdf.cell(0, 10, txt=f"PM: {ratio_ne_greater_50:.2f}", ln=True)
 
-    #     # Save and download PDF
-    #     pdf_output = io.BytesIO()
-    #     pdf_output.write(pdf.output(dest='S').encode('latin1'))
-    #     st.download_button(
-    #         label="Download PDF Report",
-    #         data=pdf_output.getvalue(),
-    #         file_name="Habitat_Change_Report.pdf",
-    #         mime="application/pdf",
-    #     )
+#     #     # Save and download PDF
+#     #     pdf_output = io.BytesIO()
+#     #     pdf_output.write(pdf.output(dest='S').encode('latin1'))
+#     #     st.download_button(
+#     #         label="Download PDF Report",
+#     #         data=pdf_output.getvalue(),
+#     #         file_name="Habitat_Change_Report.pdf",
+#     #         mime="application/pdf",
+#     #     )

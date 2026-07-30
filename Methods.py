@@ -6,7 +6,8 @@ import uuid
 st.set_page_config(
     page_title="Genes from Space",
     page_icon="🌍",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 # Ensure a session ID exists for log correlation across all pages
@@ -23,8 +24,8 @@ else:
         st.session_state.height = 500
 st.image('images/logo.png')
 with st.sidebar:
-    with st.expander("Settings", expanded=False):
-        st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
+
+    st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
     # Display the session ID for user confirmation when debugging
     st.divider()
     st.caption(
@@ -59,7 +60,9 @@ col1, col2, col3 = st.columns([1,10,1])
 with col2:
     with st.expander(rtext("disclaimer_ti")):
         st.markdown(rtext("disclaimer_te"))
-    st.markdown(rtext("hello_1"))
+    st.markdown('# <a href="./Input_form" style="color:black; text-decoration:none;">Monitoring Tool</a>', unsafe_allow_html=True)
+    st.markdown(rtext("hello_1"),unsafe_allow_html=True)
+    
     st.image('images/EO_intro-2048x928.png', caption='Earth observation Intro', width=st.session_state.height*2)
     st.markdown(rtext("hello_2"))
 
