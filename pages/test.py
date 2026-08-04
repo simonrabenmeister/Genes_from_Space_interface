@@ -63,77 +63,27 @@ with st.expander("Column Descriptions"):
 
 
 
-st.session_state.api_link = "https://run.gfstool.com/"
-
-
-def _call_biab_pipeline(pipeline_name, data):
-    """
-    Post to a BiaB pipeline endpoint with robust error handling.
-    Returns parsed JSON on success. Raises BiaBError on failure.
-    """
-    url = f"{st.session_state.api_link}pipeline/GenesFromSpace>ToolComponents>Interface>{pipeline_name}.json/run"
-    headers = {"Content-Type": "application/json"}
-
-    logger.debug("Calling pipeline: %s", pipeline_name)
-    logger.debug("  URL: %s", url)
-    logger.debug("  Request data: %s", sanitize_json(data))
-
-    try:
-        response = requests.post(url, json=data, headers=headers, timeout=120)
-        logger.debug("Request sent, waiting for response...")
-    except requests.exceptions.ConnectionError as e:
-        logger.exception("Connection error calling %s", url)
-        raise BiaBError(
-            source="connection",
-            message="Connection error — could not reach the Bon-in-a-Box server",
-            detail=f"URL: {url}\nError: {str(e)}"
-        )
-    except requests.exceptions.Timeout as e:
-        logger.exception("Timeout calling %s", url)
-        raise BiaBError(
-            source="connection",
-            message="Connection error — request to Bon-in-a-Box timed out",
-            detail=f"URL: {url}\nError: {str(e)}"
-        )
-    except requests.exceptions.RequestException as e:
-        logger.exception("Request failed calling %s", url)
-        raise BiaBError(
-            source="connection",
-            message="Connection error — request to Bon-in-a-Box failed",
-            detail=str(e)
-        )
-
-    return _handle_biab_response(response, pipeline_name)
 
 
 
 
 pipeline = {}
-if len(st.session_state.table) > 0:
-    # use first row as example mapping
-    row = st.session_state.table.iloc[0]
-    pipeline = {
-        "pipeline@208": int(row["End year"]),
-        "pipeline@209": int(row["Start year"]),
-        "pipeline@210": row["Species"],
-        "pipeline@211": row["Countries list"],
-        "pipeline@214": int(row["Size of buffer"]),
-        "pipeline@215": int(row["Distance between populations"]),
-        "pipeline@217": row["Years of interest"],
-        "pipeline@218": row["Landcover classes"],
-        "pipeline@224": float(row["Ne:Nc ratio estimate"]),
-        "pipeline@225": float(row["Population density"]),
-        "pipeline@226": row["Title of the run"],
-    }
-
-st.write(pipeline)
-
-
-if st.button("Call GBIF_LC Pipeline"):
-    result = _call_biab_pipeline("GBIF_LC", pipeline)
-
-
-
+for index, row in st.session_state.table.iterrows():
+    if row["Landcover classes"] != "TC":
+        pipeline = {
+            "pipeline@208": int(row["End year"]),
+            "pipeline@209": int(row["Start year"]),
+            "pipeline@210": row["Species"],
+            "pipeline@211": row["Countries list"],
+            "pipeline@214": int(row["Size of buffer"]),
+            "pipeline@215": int(row["Distance between populations"]),
+            "pipeline@217": row["Years of interest"],
+            "pipeline@218": row["Landcover classes"],
+            "pipeline@224": float(row["Ne:Nc ratio estimate"]),
+            "pipeline@225": float(row["Population density"]),
+            "pipeline@226": row["Title of the run"],
+        }
+    st.write(pipeline)
 
 
 
