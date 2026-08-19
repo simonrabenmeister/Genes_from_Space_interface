@@ -66,6 +66,17 @@ if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
 
+# !! Hide a page
+st.markdown(
+    """
+    <style>
+    /* Hide the batch page from the sidebar nav; its URL still works */
+    [data-testid="stSidebarNav"] a[href$="/Batch_Processing"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Ensure biab_dir is available even when this page is opened directly
 # (it is normally set in Input_form.py, which may not have run yet).
 if "biab_dir" not in st.session_state:

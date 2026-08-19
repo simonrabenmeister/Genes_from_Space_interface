@@ -10,6 +10,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# !! Hide a page
+st.markdown(
+    """
+    <style>
+    /* Hide the batch page from the sidebar nav; its URL still works */
+    [data-testid="stSidebarNav"] a[href$="/Batch_Processing"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Ensure a session ID exists for log correlation across all pages
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())[:8]
@@ -72,6 +83,7 @@ with col2:
     st.markdown(rtext("hello_4"))
     st.image('images/PopPolygons-1536x641.png', caption='Population Polygons',width=st.session_state.height*2)
     st.markdown(rtext("hello_5"))
+
     st.image('images/AreaChange-1536x636.png', caption='Area change',width=st.session_state.height*2)
     st.markdown(rtext("hello_6"))
     st.image('images/PointsToPoly-2048x422.png', caption='Points to Polygons',width=st.session_state.height*2)

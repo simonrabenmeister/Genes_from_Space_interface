@@ -44,7 +44,7 @@ Note that the earliest possible baseline year depends on the temporal coverage o
 Tenga en cuenta que el año base más temprano posible depende de la cobertura temporal de los conjuntos de datos utilizados para describir el cambio de hábitat (en este momento, el monitoreo es posible hasta 2021)."
 1_2_plac,Baseline year,Año base
 1_2_2_ti,###### GBIF time period,###### Periodo de tiempo de GBIF
-1_2_2_te,"Next, you will choose the time period for retrieving species observations from GBIF.","A continuación, deberá elegir el período de tiempo para recuperar las observaciones de especies de GBIF."
+1_2_2_te,"Next, you will choose the time period for retrieving species observations from GBIF. Check the availability of data for the selected period on the [GBIF Website](https://www.gbif.org/).","A continuación, deberá elegir el período de tiempo para recuperar las observaciones de especies de GBIF."
 1_2_2_plac,GBIF time period,Periodo de tiempo de GBIF
 1_3_1_ti,###### Upload population polygons,###### Sube polígonos de población
 1_3_1_te,"Click below to upload a GeoJSON file describing the spatial distribution of the species' populations.",
