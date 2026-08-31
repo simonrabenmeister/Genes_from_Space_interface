@@ -13,7 +13,7 @@ from bulk_functions import (
     COL_TITLE, COL_SPECIES, COL_COUNTRIES, COL_BBOX, COL_BUFFER, COL_DISTANCE,
     COL_END, COL_START, COL_YEARS, COL_LC, COL_DENSITY, COL_NENC,
 )
-from functions import BiaBError, _show_biab_error
+from functions import BiaBError, _show_biab_error, read_occurrence_file
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -79,16 +79,6 @@ with st.sidebar:
 # ---------------------------------------------------------------
 # Output/file helpers
 # ---------------------------------------------------------------
-
-def read_occurrence_file(uploaded_file):
-    """Read an occurrence table as CSV or TSV, detecting the delimiter from content."""
-    raw = uploaded_file.getvalue().decode("utf-8-sig")
-    try:
-        dialect = csv.Sniffer().sniff(raw[:4096], delimiters=",\t;")
-        sep = dialect.delimiter
-    except csv.Error:
-        sep = ","  # single-column / ambiguous file
-    return pd.read_csv(io.StringIO(raw), sep=sep)
 
 def _disk_path(value):
     """Map a BiaB output value ('/output/…') to an absolute file/dir on disk, else None."""

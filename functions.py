@@ -15,7 +15,8 @@ import seaborn as sns
 import glasbey
 import geopandas as gpd
 import os
-
+import csv
+import io
 from logging_config import (
     get_logger,
     sanitize_headers,
@@ -34,6 +35,17 @@ def rtext(id):
 def _sid():
     """Get the current session ID for logging."""
     return st.session_state.get("session_id", "Unknown")
+
+# Define a function to read/parse the input file regardless of format
+def read_occurrence_file(uploaded_file):
+    """Read an occurrence table as CSV or TSV, detecting the delimiter from content."""
+    raw = uploaded_file.getvalue().decode("utf-8-sig")
+    try:
+        dialect = csv.Sniffer().sniff(raw[:4096], delimiters=",\t;")
+        sep = dialect.delimiter
+    except csv.Error:
+        sep = ","  # single-column / ambiguous file
+    return pd.read_csv(io.StringIO(raw), sep=sep)
 
 # ============================================================
 # Error Handling

@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-
 import numpy as np
 import geojson
 import json
@@ -27,7 +26,7 @@ import os
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
-from functions import manual_polygon_addition
+from functions import manual_polygon_addition, read_occurrence_file
 import csv
 import io
 
@@ -264,17 +263,6 @@ with st.sidebar:
     st.caption(
         f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
         )
-
-# Define a function to read/parse the input file regardless of format
-def read_occurrence_file(uploaded_file):
-    """Read an occurrence table as CSV or TSV, detecting the delimiter from content."""
-    raw = uploaded_file.getvalue().decode("utf-8-sig")
-    try:
-        dialect = csv.Sniffer().sniff(raw[:4096], delimiters=",\t;")
-        sep = dialect.delimiter
-    except csv.Error:
-        sep = ","  # single-column / ambiguous file
-    return pd.read_csv(io.StringIO(raw), sep=sep)
 
 def rtext(id):
     return texts.loc[id, st.session_state.lan].replace("\\n", "\n")
