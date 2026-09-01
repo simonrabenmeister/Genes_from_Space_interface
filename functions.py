@@ -326,17 +326,19 @@ if "polygons" not in st.session_state:
 
 @st.fragment
 def edit_points():
+    
     lat_col = "decimallatitude"
     lon_col = "decimallongitude"
     # Use edited version if it exists, otherwise fall back to original
     if st.session_state.get("obs_edit") is not None:
-        obs = st.session_state.obs_edit
+        obs_edit = st.session_state.obs_edit
     else:
-        obs = st.session_state.obs_original
-        obs = obs.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
-        st.session_state.obs_edit = obs.copy()
+        obs_edit = st.session_state.obs
+        st.session_state.obs_original = st.session_state.obs
+        obs_edit = obs_edit.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
+        st.session_state.obs_edit = obs_edit.copy()
 
-    obs_edit = st.session_state.obs_edit
+    
     # Remove duplicate points based on latitude and longitude
     
     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
@@ -415,30 +417,39 @@ def edit_points():
         st.session_state.obs_edit = obs_edit.drop(index)
         st.session_state.index = None
 
-    b1, b2 = st.columns([3, 1])
+    b1, b2, b3 = st.columns([1, 1, 1])
+    st.markdown(rtext("1_3_3_4_ti"))
+    st.markdown(rtext("1_3_3_4_te"))
     with b1:
         if st.session_state.index is not None and not st.session_state.index.empty:
             st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,), key="btn_remove_point") 
     with b2:
-        if st.button("reset points", key="btn_reset_points"):
-            st.session_state.obs_edit = st.session_state.obs_original
-            st.session_state.obs_csv = None
-            st.rerun(scope="fragment")
+        if st.session_state.index is not None and not st.session_state.index.empty:
+            if st.button("undo selection", key="btn_undo_selection"):
+                st.session_state.index = None
+                st.rerun(scope="fragment")
+    with b3:
 
-    st.markdown(rtext("1_3_3_4_te"))
+        if len(st.session_state.obs_original) != len(st.session_state.obs_edit):
+            if st.button("reset points", key="btn_reset_points"):
+                st.session_state.obs_edit = st.session_state.obs_original
+                st.session_state.obs_csv = None
+                st.rerun(scope="fragment")
+
     # Confirm points to be used
-    if st.session_state.obs is None or not st.session_state.obs.equals(st.session_state.obs_edit):
-        if st.button(rtext("1_3_3_4_bu1"), key="btn_confirm_points"):
-            st.session_state.obs = st.session_state.obs_edit
-            st.session_state.poly_creation = None
-            st.session_state.LC = {
-                "LC_type": None,
-                "LC_class": None,
-                "index": None
-            }  
-            st.session_state.area_table = None
-            st.session_state.cover_maps = None
-            st.rerun()
+    
+    if st.button(rtext("1_3_3_4_bu1"), key="btn_confirm_points"):
+        st.session_state.stage="polygon_clustering"
+        st.session_state.obs_final = st.session_state.obs_edit
+        st.session_state.poly_creation = None
+        st.session_state.LC = {
+            "LC_type": None,
+            "LC_class": None,
+            "index": None
+        }  
+        st.session_state.area_table = None
+        st.session_state.cover_maps = None
+        st.rerun()
 
     with st.expander("advanced options"):
         st.session_state.index 
@@ -462,32 +473,32 @@ def polygon_clustering():
     if st.session_state.polyinfo["polygons"] is not None:
         st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
     # Create a dummy DataFrame for point data
-    points_df = pd.DataFrame(st.session_state.obs)
+    points_df = pd.DataFrame(st.session_state.obs_final)
     # Convert the DataFrame to a GeoDataFrame
     points_gdf = gpd.GeoDataFrame(
         points_df,
         geometry=gpd.points_from_xy(points_df["decimallongitude"], points_df["decimallatitude"]),
         crs="EPSG:4326"
     )
-    obs = st.session_state.obs
-    
-    if st.session_state.buffer is None and st.session_state.poly_creation != rtext("1_4_opt2"):
-        # Display the points without edit functionality
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-        # Add the observations to the map
-        fg = folium.FeatureGroup(name="Markers")
-        for i, row in obs.iterrows():
-            corr = [row["decimallatitude"], row["decimallongitude"]]
-            folium.CircleMarker(
-                location=corr,
-                radius=6,
-                color="blue",
-                fill_opacity=1,
-                fill=True,
-                fill_color='lightblue'
-            ).add_to(fg)
-        st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
-    
+    obs = st.session_state.obs_final
+
+    # if st.session_state.buffer is None:
+    #     # Display the points without edit functionality
+    #     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+    #     # Add the observations to the map
+    #     fg = folium.FeatureGroup(name="Markers")
+    #     for i, row in obs.iterrows():
+    #         corr = [row["decimallatitude"], row["decimallongitude"]]
+    #         folium.CircleMarker(
+    #             location=corr,
+    #             radius=6,
+    #             color="blue",
+    #             fill_opacity=1,
+    #             fill=True,
+    #             fill_color='lightblue'
+    #         ).add_to(fg)
+    #     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
+    # st.write(st.session_state.buffer)
     if st.session_state.poly_creation == rtext("1_4_opt1"):
         if st.session_state.buffer is not None and st.session_state.distance:
             st.session_state.polyinfo["polygons"] = None
@@ -540,7 +551,7 @@ def polygon_clustering():
                 )
                 features.append(feature)
             st.session_state.original_polygons = geojson.FeatureCollection(features)
-            
+
             m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
             # Add the observations to the map
@@ -557,10 +568,10 @@ def polygon_clustering():
                 ).add_to(fg)
             fg2 = folium.FeatureGroup(name="Markers")
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
-            st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True)       
-
+            st.session_state.output = st_folium(m, feature_group_to_add=[fg2], use_container_width=True)       
+            
     if st.session_state.poly_creation == rtext("1_4_opt2"):
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]])
         fg = folium.FeatureGroup(name="Markers")
         for i, row in obs.iterrows():
             corr = [row["decimallatitude"], row["decimallongitude"]]
@@ -589,14 +600,19 @@ def polygon_clustering():
         if st.session_state.original_polygons is not None:
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
         st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True, height=st.session_state.height)
-
+        st.markdown(rtext("1_4_1_1_te"))
         obs['geometry'] = obs.apply(lambda row: Point((row["decimallongitude"], row["decimallatitude"])), axis=1)
         geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
         new_df = geo_df.set_crs(epsg=4326)
         new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
-
+        st.session_state.buffer=st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
+        with st.expander(rtext("1_4_1_exp_ti"), expanded=False):
+            st.markdown(rtext("1_4_1_exp_te"))
+        if st.session_state.buffer is not None:
+            setattr(st.session_state, 'buffer', st.session_state.buffer_input)
         if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None and st.session_state.buffer is not None:
             size = st.session_state.buffer * 1000
+
             if st.button("Group observations by polygon"):
                 
                 # Group the circles into clusters depending on drawn polygons
@@ -636,29 +652,11 @@ def polygon_clustering():
                     features.append(feature)
                 st.session_state.original_polygons = geojson.FeatureCollection(features)
                 st.rerun(scope="fragment")
-    
+
     if st.session_state.original_polygons is not None:
         st.write(f"{rtext('1_4_2_info')} {len(st.session_state.original_polygons['features'])}")
         st.session_state.zoom = st.session_state.output["zoom"]
-        st.write("You can edit the polygons by clicking on them, or add new polygons using the drawing tool. if you are happy with your pupulation selection,click on  button to save the polygons and proceed to the next step.")
-        bu1, bu2 = st.columns(2)
-        with bu1:
-            if st.button(rtext("1_4_2_bu2")):
-                st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
-                st.session_state.stage = "LC"
-                st.session_state.biab_dir
-                st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
-                with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
-                    geojson.dump(st.session_state.polyinfo["polygons"], f)
-                st.success("Polygons saved successfully.")
-                del st.session_state.original_polygons
-                st.rerun()
-        with bu2:
-            if st.button("add polygons to map"):
-                st.session_state.stage = "manual_polygon_creation"
-                st.session_state.polygon_addition = st.session_state.original_polygons
-                st.rerun()
+
 
 @st.fragment
 def manual_polygon_addition():
@@ -679,38 +677,42 @@ def manual_polygon_addition():
     if st.session_state.polygon_addition is not None:
         fg2.add_child(folium.GeoJson(st.session_state.polygon_addition, popup=folium.GeoJsonPopup(fields=["name"])))
     st.session_state.output = st_folium(m, feature_group_to_add=[fg2], key="add_polygons_map", use_container_width=True, height=st.session_state.height)
-    
-    if st.button("confirm polygons"):
-        # Append new drawings with placeholder properties
-        for i, drawing in enumerate(st.session_state.output["all_drawings"]):
-            next_index = len(st.session_state.polygon_addition["features"])
-            drawing["properties"] = {
-                "name": f"Pop {next_index + 1}",
-                "style": {"color": "gray"}
-            }
-            st.session_state.polygon_addition["features"].append(drawing)
+    bu1, bu2 = st.columns(2)
+    st.markdown("Draw additional polygons on the map and press 'add drawn polygons to map' to add them to the existing polygons. Press 'Confirm Polygons' to save all polygons."
+    )
 
-        # Reassign colors to all features
-        colors = glasbey.create_palette(
-            palette_size=len(st.session_state.polygon_addition["features"]),
-            colorblind_safe=True,
-            cvd_severity=100
-        )
-        for i, feature in enumerate(st.session_state.polygon_addition["features"]):
-            feature["properties"]["style"]["color"] = colors[i]
-        st.rerun(scope="fragment")
-    
-    if st.button(rtext("1_4_2_bu2")):
-        st.session_state.polyinfo["polygons"] = st.session_state.polygon_addition
-        st.session_state.stage = "LC"
-        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-        os.makedirs(os.path.dirname(st.session_state.poly_directory), exist_ok=True)
-        with open(st.session_state.poly_directory, "w") as f:
-            geojson.dump(st.session_state.polyinfo["polygons"], f)
-        st.success("Polygons saved successfully.")
-        del st.session_state.polygon_addition
-        del st.session_state.original_polygons
-        st.rerun()
+    with bu1:
+        if st.button("add drawn polygons to map"):
+            # Append new drawings with placeholder properties
+            for i, drawing in enumerate(st.session_state.output["all_drawings"]):
+                next_index = len(st.session_state.polygon_addition["features"])
+                drawing["properties"] = {
+                    "name": f"Pop {next_index + 1}",
+                    "style": {"color": "gray"}
+                }
+                st.session_state.polygon_addition["features"].append(drawing)
+
+            # Reassign colors to all features
+            colors = glasbey.create_palette(
+                palette_size=len(st.session_state.polygon_addition["features"]),
+                colorblind_safe=True,
+                cvd_severity=100
+            )
+            for i, feature in enumerate(st.session_state.polygon_addition["features"]):
+                feature["properties"]["style"]["color"] = colors[i]
+            st.rerun(scope="fragment")
+    with bu2:
+        if st.button(rtext("1_4_2_bu2")):
+            st.session_state.polyinfo["polygons"] = st.session_state.polygon_addition
+            st.session_state.stage = "LC"
+            st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+            st.write(f"Saving polygons to: {st.session_state.poly_directory}")
+            os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
+            with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
+                geojson.dump(st.session_state.polyinfo["polygons"], f)
+            st.success("Polygons saved successfully.")
+            del st.session_state.polygon_addition
+            st.rerun()
 
 @st.fragment
 def convert_df():

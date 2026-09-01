@@ -196,7 +196,12 @@ if input is not None or st.session_state.polyinfo is not None:
         # Calculate the middle of NCbbox
         middle_lat = (NCbbox[0][0] + NCbbox[1][0]) / 2
         middle_lon = (NCbbox[0][1] + NCbbox[1][1]) / 2
-        m = folium.Map(location=[middle_lat, middle_lon], zoom_start=7, tiles="CartoDB Positron")
+        m = folium.Map(
+            location=[middle_lat, middle_lon],
+            zoom_start=7,
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri"
+        )
 
 
         # Use ImageOverlay for raster overlays
@@ -242,7 +247,7 @@ if input is not None or st.session_state.polyinfo is not None:
             st.session_state.pop_polygons,
             popup=folium.GeoJsonPopup(fields=["name", "Population_Density", "nenc", "pop_size", "effective_size"]),
             style_function=lambda x: {
-                'fillOpacity': 0.5,
+                'fillOpacity': 0.4,
                 'fillColor': x['properties']['color'],
                 'color': x['properties']['color']
             }
