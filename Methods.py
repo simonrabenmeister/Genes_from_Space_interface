@@ -9,16 +9,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-st.markdown("""
+st.markdown(
+    """
     <style>
-           .block-container {
-            padding-top: 0rem;
-            padding-bottom: 0rem;
-            padding-left: 5rem;
-            padding-right: 5rem;
-        }
+    /* Hide the batch page from the sidebar nav; its URL still works */
+    [data-testid="stSidebarNav"] a[href$="/Batch_Processing"] { display: none; }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 # Ensure a session ID exists for log correlation across all pages
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())[:8]
