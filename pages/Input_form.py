@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-
 import numpy as np
 import geojson
 import json
@@ -27,8 +26,22 @@ import os
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
-from functions import manual_polygon_addition
+from functions import manual_polygon_addition, read_occurrence_file
+import csv
+import io
+
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
+
+# !! Hide a page
+st.markdown(
+    """
+    <style>
+    /* Hide the batch page from the sidebar nav; its URL still works */
+    [data-testid="stSidebarNav"] a[href$="/Batch_Processing"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Ensure a session ID exists for log correlation across all pages
 if "session_id" not in st.session_state:
@@ -228,6 +241,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
     
 
+
 st.image('images/logo.png')
 with st.sidebar:
 
@@ -237,7 +251,6 @@ with st.sidebar:
     st.caption(
         f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
         )
-
 
 def rtext(id):
     return texts.loc[id, st.session_state.lan].replace("\\n", "\n")
@@ -350,19 +363,19 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("1_3_2_ti"))
             st.markdown(rtext("1_3_2_te"))
         #Upload your own point file
-            obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv"], label_visibility="collapsed", key="point_source", 
+            obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv","tsv"], label_visibility="collapsed", key="point_source", 
                                         on_change=lambda: st.session_state.update({"stage": "Manipulate points", "obs": None}))
             if obs_link is not None and st.session_state.obs is None:
                 try:
-                    st.session_state.obs = pd.read_csv(obs_link, sep="\t")
+                    st.session_state.obs_edit = read_occurrence_file(obs_link)
                     # Check if the required columns are present
                     required_columns = ["decimallongitude", "decimallatitude"]
                     if not all(col in st.session_state.obs.columns for col in required_columns):
                         log_and_show(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
 
                 except Exception as e:
-                    log_and_show(f"Error reading the CSV file: {e}", exc_info=True)
-            if st.session_state.obs is not None:
+                    log_and_show(f"Error reading the file: {e}", exc_info=True)
+            if st.session_state.obs_edit is not None:
                 
                 # Calculate the center of all point observations in total
                 lats = st.session_state.obs["decimallatitude"].to_numpy()
@@ -387,9 +400,10 @@ with col1.container( border=False, key="image-container", height=st.session_stat
             st.markdown(rtext("1_3_3_ti")) 
             st.markdown(rtext("1_3_3_te")) 
  
-            name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"],  disabled=st.session_state["species"]!=None)
+            name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"])
             with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
                 st.markdown(rtext("1_3_3_1_exp_te"))
+
             if name_to_species:
 
                 if st.session_state["species"]==None: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 

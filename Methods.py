@@ -81,6 +81,7 @@ with col2:
     st.markdown(rtext("hello_4"))
     st.image('images/PopPolygons-1536x641.png', caption='Population Polygons',width=st.session_state.height*2)
     st.markdown(rtext("hello_5"))
+
     st.image('images/AreaChange-1536x636.png', caption='Area change',width=st.session_state.height*2)
     st.markdown(rtext("hello_6"))
     st.image('images/PointsToPoly-2048x422.png', caption='Points to Polygons',width=st.session_state.height*2)

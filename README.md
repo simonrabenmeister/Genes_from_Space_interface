@@ -2,10 +2,10 @@
 # Genes from Space Tool
 
 ## Overview
-The Genes from Space Interface is a tool designed to leverage public EO data and enable users to calculate genetic diversity indicators adopted by the Convention on Biological Diversity. To achieve this goal, it provides an intuitive interface for for Users to interact with the Data analysis Pipeline that we created on Bon in a Box. It also visualizes the data created by this datap ipeline in an intuitive and interactive way. You can find more information [here](https://www.geo.uzh.ch/en/units/sg/news/genes-from-space.html).
+The Genes from Space Interface is a tool designed to leverage public EO data and enable users to calculate genetic diversity indicators adopted by the Convention on Biological Diversity. To achieve this goal, it provides an intuitive interface for users to interact with the Data analysis Pipeline that we created on Bon in a Box. It also visualizes the data created by this data pipeline in an intuitive and interactive way. You can find more information [here](https://www.geo.uzh.ch/en/units/sg/news/genes-from-space.html).
 
 ## Contact
-For questions or support, please contact [info@genesfromspace.com](mailto:genesfromspace) or [file a GitHub issue](https://github.com/simonrabenmeister/Genes_from_Space_interface/issues).
+For questions or support, please contact [info@genesfromspace.com](mailto:info@genesfromspace.com) or [file a GitHub issue](https://github.com/simonrabenmeister/Genes_from_Space_interface/issues).
 
 ## Diagram
 This diagram shows how the code behind the Interface is structured, how the user interacts with it and how it is linked with bon in a box:
@@ -13,9 +13,9 @@ This diagram shows how the code behind the Interface is structured, how the user
 
 ## Developer Instructions: Installation and Deployment
 
-Here are detailed instructions on how to install the necessary software to run the tool then deploy the servers on a virtual machine. For addition technical information about the software and the repo, see the [relevant section below](#additional-technical-instructions-for-developers).
+Here are detailed instructions on how to install the necessary software to run the tool then deploy the servers on a virtual machine. For additional technical information about the software and the repo, see the [relevant section below](#additional-technical-instructions-for-developers).
 
-1.  Install Install MiniConda (for reference, [here](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install#installation-steps) are the official instructions):
+1.  Install Miniconda (for reference, [here](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install#installation-steps) are the official instructions):
 
 ```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -93,7 +93,7 @@ cd ~/BIAB/bon-in-a-box-pipelines/
 ./server-up.sh
 ```
 
-5. Start the StreamLit app in a screen session; optionally, log the server output (follow the log via `tail -Fn 0 screenlog.0`):
+5. Start the Streamlit app in a screen session; optionally, log the server output (follow the log via `tail -Fn 0 screenlog.0`):
 
 ```bash
 cd ~
@@ -106,7 +106,25 @@ conda activate gfs_env
 streamlit run Hello.py
 ```
 
-At this point, Check the server via the `ip_address:8000`. Make sure to open the VM ports if they have not already been opened.
+At this point, check the server via the `ip_address:8000`. Make sure to open the VM ports if they have not already been opened.
+
+6. (Recommended) Create a Docker cleanup `crontab` task to clean up disk space from unused images and stale build caches:
+
+```bash
+# From the repo root
+sudo install -m 755 ops/docker-cleanup.sh /usr/local/bin/docker-cleanup.sh
+
+# Test once
+sudo /usr/local/bin/docker-cleanup.sh && echo SUCCESS
+tail -n 20 /var/log/docker-cleanup.log
+```
+
+To schedule it in crontab (with `root` permissions) use `sudo crontab -e` and edit it to something like:
+
+```cron
+# Weekly Docker cleanup — Sundays 00:00 (on the server's time zone)
+0 0 * * 0 /usr/local/bin/docker-cleanup.sh
+```
 
 ### FAQ:
 
@@ -290,7 +308,7 @@ The population buffer size should be determined based on knowledge of the typica
 </details>
 
 <details closed>
-<summary>I can not import my .csv coordinate file.</summary>
+<summary>I can't import my .csv coordinate file.</summary>
 <br>
   
 The monitoring tool requires a .tsv file (tab separated).  
@@ -342,7 +360,7 @@ Caused by error in `dplyr::all_of()`:
   
 What do I do?</summary>
 <br>
-No GBIF data found for you selected region/country. Select a larger/different polygon, earlier baseline year or a different species of interest.
+No GBIF data found for your selected region/country. Select a larger/different polygon, earlier baseline year or a different species of interest.
 
 </details>
 
@@ -773,18 +791,18 @@ Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://d
 
 
 #### Content
-- **Hello.py**: This is the main streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
+- **Hello.py**: This is the main Streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
 - **/pages/Input_form.py**: This file is the main Input form. It is linked to and called by the "Homepage" Hello.py. The contents of this script generates all the relevant User inputs and executes the Bon in a Box scripts. It saves all relevant data in the session_state and finally redirects the User to the Output_display.py when all the Information is provided.
-- **/pages/Output_display.py**: This file uses the Output data created in Input_form.py to create interactive maps and plots to visualize the data. It also allows you to download created runs or upload previos runs as GeoJSON files.
+- **/pages/Output_display.py**: This file uses the Output data created in Input_form.py to create interactive maps and plots to visualize the data. It also allows you to download created runs or upload previous runs as GeoJSON files.
 - **/temp_tiles**: This folder is used to save Images created in the Output_display.py and are used in the Map display. These Files must be kept as long as we want to give the User the option to view previously created runs
 - **countries.txt**: This file contains a list of country names that is used in the Input_form.py as a preselection of Countries compatible with rnaturalearth
-- **functions.py**: This file contains all custom functions used ind Input_form.py or Output_display.py. This includes f.e API call functions from Bon in a Box or interactive Map functions
-- **points_example.csv**: This is a example csv file with correct formatting for the function to upload custom point observations
+- **functions.py**: This file contains all custom functions used in Input_form.py or Output_display.py. This includes e.g., API call functions from Bon in a Box or interactive Map functions
+- **points_example.csv**: This is an example csv file with correct formatting for the function to upload custom point observations
 - **polygon_example.geojson**: This is an example GeoJSON file to demonstrate the required formatting for polygon data that can be uploaded in the Input_form.py file.
 - **text.csv**: This file contains all the Text displayed in Input_form.py and Output_display.py. It also contains the translations into other languages, which makes language selection possible
-- **/images**: This folder contains all the images displayed in the diffrent Interface pages.
+- **/images**: This folder contains all the images displayed in the different Interface pages.
 #### Additional Files
-- **conda_environment.yml**: This file contains the specifications for the conda environment used to run the Streamlit application. It ensures that all necessary dependencies and packages are installed for the tool to function correctly.
+- **environment.yml**: This file contains the specifications for the conda environment used to run the Streamlit application. It ensures that all necessary dependencies and packages are installed for the tool to function correctly.
 - **directories.txt**: This file lists the directory structure of the project, providing an overview of the organization of files and folders within the repository. 
 
 ### Bon in a Box Pipelines
@@ -792,11 +810,11 @@ This section documents all Subfolders of the folder bon-in-a-box-pipelines/pipel
 #### Tool
 - This Folder contains all Pipelines which execute the complete Genes from Space Workflow. The title of each Pipeline describes the Landcover used, source of Point observations (GBIF or userdata) and method of area selection. These are used by the Interface_V1 and thus all the runs conducted during the Genes from Space Workshop(Feb 2025).
 Example: Forest_cover_v_GBIF_bbox.json
-- For the _obs.json Pipeline there is a obs_server.json version which requires the observation data Input to be a string with the format: [('ID', 'Value'), (1, 'a'), (2, 'b'), (3, 'c')], transforms it into a tsv for further use. This version is used by the Interface on the server, since users cant upload data to the user folder.
+- For the _obs.json Pipeline there is a obs_server.json version which requires the observation data Input to be a string with the format: [('ID', 'Value'), (1, 'a'), (2, 'b'), (3, 'c')], transforms it into a tsv for further use. This version is used by the Interface on the server, since users can't upload data to the user folder.
 The normal _obs.json version the observation data input is a directory to a file in the user data folder. This script should be used if Users run Biab on their own machine and can upload files into the userdata folder.
 #### ToolComponents
 - This Folder contains sub pipelines which are used within the main /Tool Pipelines.
 #### ToolComponents/Interface
 -This Folder contains Pipelines which are used by the Interface_V2
--The Pipelines are mostly single scripts contained in a Pipeline framework, since (to the knowlege of the developers) API calls are only possible with pipelines. So for the Tool to be able to run specific parts of the bigger Genes from Space Workflow, each step has to be a pipeline.
+-The Pipelines are mostly single scripts contained in a Pipeline framework, since (to the knowledge of the developers) API calls are only possible with pipelines. So for the Tool to be able to run specific parts of the bigger Genes from Space Workflow, each step has to be a pipeline.
 
