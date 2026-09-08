@@ -350,21 +350,21 @@ def edit_points():
         st.session_state.obs_original = st.session_state.obs
         obs_edit = obs_edit.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
         st.session_state.obs_edit = obs_edit.copy()
-    
+    st.write(obs_edit)
     # Show a histogram of GBIF observations grouped by occurrence year.
-    # if "year" in obs_edit.columns:
-    #     years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
-    #     if not years.empty:
-    #         years.columns
-    #         year_histogram = (
-    #             years.astype(int)
-    #             .value_counts()
-    #             .sort_index()
-    #             .rename_axis("year")
-    #             .to_frame("observations")
-    #         )
-    #         st.subheader("GBIF observations by year")
-    #         st.bar_chart(year_histogram, x="year", y="observations")
+    if "year" in obs_edit.columns:
+        years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
+        if not years.empty:
+            years.columns
+            year_histogram = (
+                years.astype(int)
+                .value_counts()
+                .sort_index()
+                .rename_axis("year")
+                .to_frame("observations")
+            )
+            st.subheader("GBIF observations by year")
+            st.bar_chart(year_histogram, x="year", y="observations")
 
     
     # Remove duplicate points based on latitude and longitude

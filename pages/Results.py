@@ -284,6 +284,10 @@ if input is not None or st.session_state.polyinfo is not None:
         rel_change["year"] = rel_change["year"].str.replace("y", "").astype(int)
 
         # Plot using Plotly
+# Determine y-axis range: at least ±20%, wider if the data needs it
+        max_abs_change = rel_change["habitat_area"].abs().max()
+        y_bound = max(20, max_abs_change * 1.1)  # 10% padding beyond the largest value
+
         rel_change_fig = px.line(
             rel_change,
             x="year",
@@ -297,6 +301,7 @@ if input is not None or st.session_state.polyinfo is not None:
                 for feature in st.session_state.pop_polygons["features"]
             }
         )
+        rel_change_fig.update_yaxes(range=[-y_bound, y_bound])
 
     ## Create area plot
         area_df = pd.DataFrame(area_table)
@@ -318,13 +323,13 @@ if input is not None or st.session_state.polyinfo is not None:
 
         plot1, plot2 = st.columns(2)
         with plot1:
+            areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
+        with plot2:
             endangered_pop= rel_change[rel_change["habitat_area"] < -50]["name"].unique()
             relareaplot = st.plotly_chart(rel_change_fig, use_container_width=True, on_select="rerun")
             if len(endangered_pop)>0:
                 st.error(f"Populations {endangered_pop} have experienced a habitat loss of more than 50%. This population is at high risk of extinction")
 
-        with plot2:
-            areaplot = st.plotly_chart(area_fig, use_container_width=True, on_select="rerun")
     
     
     ##Input form for population density and Ne:Nc

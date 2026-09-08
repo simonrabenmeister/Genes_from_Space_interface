@@ -409,13 +409,23 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 
 
         #Download example file
-            st.download_button(
-                label=rtext("1_3_1_ex_file"),
-                data=open("points_example.csv", "rb").read(),
-                file_name="points_example.csv",
-                mime="text/csv"
-            )
-
+            b1, b2 = st.columns(2)
+            with b1:
+                st.download_button(
+                    label=rtext("1_3_1_ex_file"),
+                    data=open("points_example.csv", "rb").read(),
+                    file_name="points_example.csv",
+                    mime="text/csv"
+                )
+            with b2:
+                if (st.session_state.obs_final is not None
+                    and not st.session_state.obs.equals(st.session_state.obs_final)):
+                    st.download_button(
+                        label="Download Curated Points",
+                        data=st.session_state.obs_final.to_csv(index=False).encode('utf-8'),
+                        file_name="curated_points.csv",
+                        mime="text/csv"
+                    )
         if st.session_state["data_source"]==rtext("1_1_opt2"): # Search species in GBIF
             
             st.markdown(rtext("1_3_3_ti")) 
@@ -493,103 +503,111 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                         st.markdown(rtext("1_3_3_3_te1"))
                         st.session_state.countries = []
             if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
-                
-                if st.button(rtext("1_3_3_bu")):
-                    
-                    st.session_state.polyinfo = {
-                            "buffer": None,
-                            "distance": None,
-                            "polygons": None
-                        }
-                    st.session_state.LC = {
-                            "LC_type": None,
-                            "LC_class": None,
-                            "index": None
-                        }  
+                b1, b2 = st.columns(2)
+                with b1:
+                    if st.button(rtext("1_3_3_bu")):
+                        
+                        st.session_state.polyinfo = {
+                                "buffer": None,
+                                "distance": None,
+                                "polygons": None
+                            }
+                        st.session_state.LC = {
+                                "LC_type": None,
+                                "LC_class": None,
+                                "index": None
+                            }  
 
-                    st.session_state.obs = None
-                    with st.spinner(rtext("1_3_3_load")):
-                        data = {
-                            "pipeline@52": st.session_state.species,
-                            "pipeline@60": st.session_state.countries, 
-                            "pipeline@54": [st.session_state.GBIF_data["start_y"]],
-                            "pipeline@55": [st.session_state.GBIF_data["end_y"]],
-                            "pipeline@56": [0.1],  # Example value for coordinate precision
-                            "pipeline@57": [0.1],  # Example value for coordinate uncertainty
-                            "pipeline@58": st.session_state.GBIF_data["bbox"]
-                        }
-                        if data["pipeline@58"] is None:
-                            data["pipeline@58"] = []
-                        # st.write('data',data)
-                        try:
-                            # 1. Call the pipeline
-                            initial_response = GBIF(data)
-    
-                            output_GBIF = None
+                        st.session_state.obs = None
+                        with st.spinner(rtext("1_3_3_load")):
+                            data = {
+                                "pipeline@52": st.session_state.species,
+                                "pipeline@60": st.session_state.countries, 
+                                "pipeline@54": [st.session_state.GBIF_data["start_y"]],
+                                "pipeline@55": [st.session_state.GBIF_data["end_y"]],
+                                "pipeline@56": [0.1],  # Example value for coordinate precision
+                                "pipeline@57": [0.1],  # Example value for coordinate uncertainty
+                                "pipeline@58": st.session_state.GBIF_data["bbox"]
+                            }
+                            if data["pipeline@58"] is None:
+                                data["pipeline@58"] = []
+                            # st.write('data',data)
+                            try:
+                                # 1. Call the pipeline
+                                initial_response = GBIF(data)
+        
+                                output_GBIF = None
 
-                            # 2. Determine if we have a Job ID or Immediate Results
-                            # NEW LOGIC: Check if it's a dict with ONLY a runId (Job Submission)
-                            if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
-                                # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
-                                run_id = initial_response["runId"]
-                                st.info(f"Job submitted: {run_id}. Waiting for results...")
-        
-                                # Poll for the result
-                                output_GBIF = get_output(run_id)
-                                st.success("Analysis complete!")
-        
-                            elif isinstance(initial_response, str):
-                                # Case B: Server returned a raw string Job ID (Legacy support)
-                                run_id = initial_response
-                                st.info(f"Job submitted: {run_id}. Waiting for results...")
-                                output_GBIF = get_output(run_id)
-                                st.success("Analysis complete!")
-        
-                            elif isinstance(initial_response, dict):
-                                # Case C: Server returned immediate JSON results (Full data, not just runId)
-                                output_GBIF = initial_response
-                                st.success("Analysis complete (immediate)!")
-        
-                            else:
-                                log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
-                                raise ValueError("Invalid response type")
-
-                            # 3. Process the result (Only runs if no exception occurred above)
-                            if output_GBIF is not None:
-                                # Check for errors in the result structure
-                                if isinstance(output_GBIF, dict) and "error" in output_GBIF:
-                                    log_and_show(f"Pipeline error: {output_GBIF['error']}")
+                                # 2. Determine if we have a Job ID or Immediate Results
+                                # NEW LOGIC: Check if it's a dict with ONLY a runId (Job Submission)
+                                if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
+                                    # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
+                                    run_id = initial_response["runId"]
+                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
+            
+                                    # Poll for the result
+                                    output_GBIF = get_output(run_id)
+                                    st.success("Pipeline ran successfully!")
+            
+                                elif isinstance(initial_response, str):
+                                    # Case B: Server returned a raw string Job ID (Legacy support)
+                                    run_id = initial_response
+                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
+                                    output_GBIF = get_output(run_id)
+                                    st.success("Pipeline ran successfully!")
+            
+                                elif isinstance(initial_response, dict):
+                                    # Case C: Server returned immediate JSON results (Full data, not just runId)
+                                    output_GBIF = initial_response
+                                    st.success("Pipeline ran successfully (immediate)!")
+            
                                 else:
-                                    # Extract the specific code you need
-                                    target_key = "GFS_IndicatorsTool>GBIF_obs.yml@51"
-                                    if isinstance(output_GBIF, dict) and target_key in output_GBIF:
-                                        GBIF_output_code = output_GBIF[target_key]
-                
-                                        # Construct the file path
-                                        file_path = f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv"
-                
-                                        # Read the file
-                                        try:
-                                            with open(file_path, "r") as obs_file:
-                                                obs = pd.read_csv(obs_file, sep='\t')
-                                            st.session_state.obs = obs
-                                            st.session_state.stage = "Manipulate points"
-                                            st.success("Data loaded successfully!")
-                                        except FileNotFoundError:
-                                            log_and_show(f"Output file not found: {file_path}")
-                                        except Exception as e:
-                                            log_and_show(f"Error reading output file: {e}", exc_info=True)
-                                    else:
-                                        # This should now only happen if the pipeline returned valid JSON but missing the key
-                                        log_and_show(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
-                                        # Optional: Debug print to see what we actually got
-                                        # st.code(f"Received: {output_GBIF}")
+                                    log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
+                                    raise ValueError("Invalid response type")
 
-                        except BiaBError as e:
-                            _show_biab_error(e)
-                        except Exception as e:
-                            log_and_show(f"Unexpected app error: {e}", exc_info=True)
-    
+                                # 3. Process the result (Only runs if no exception occurred above)
+                                if output_GBIF is not None:
+                                    # Check for errors in the result structure
+                                    if isinstance(output_GBIF, dict) and "error" in output_GBIF:
+                                        log_and_show(f"Pipeline error: {output_GBIF['error']}")
+                                    else:
+                                        # Extract the specific code you need
+                                        target_key = "GFS_IndicatorsTool>GBIF_obs.yml@51"
+                                        if isinstance(output_GBIF, dict) and target_key in output_GBIF:
+                                            GBIF_output_code = output_GBIF[target_key]
+                    
+                                            # Construct the file path
+                                            file_path = f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv"
+                    
+                                            # Read the file
+                                            try:
+                                                with open(file_path, "r") as obs_file:
+                                                    obs = pd.read_csv(obs_file, sep='\t')
+                                                st.session_state.obs = obs
+                                                st.session_state.stage = "Manipulate points"
+                                                st.success("Data loaded successfully!")
+                                            except FileNotFoundError:
+                                                log_and_show(f"Output file not found: {file_path}")
+                                            except Exception as e:
+                                                log_and_show(f"Error reading output file: {e}", exc_info=True)
+                                        else:
+                                            # This should now only happen if the pipeline returned valid JSON but missing the key
+                                            log_and_show(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
+                                            # Optional: Debug print to see what we actually got
+                                            # st.code(f"Received: {output_GBIF}")
+
+                            except BiaBError as e:
+                                _show_biab_error(e)
+                            except Exception as e:
+                                log_and_show(f"Unexpected app error: {e}", exc_info=True)
+                with b2:
+                    if st.session_state.obs_final is not None:
+                        st.download_button(
+                            label="Download Curated Points",
+                            data=st.session_state.obs_final.to_csv(index=False).encode('utf-8'),
+                            file_name="curated_points.csv",
+                            mime="text/csv"
+                        )
     if st.session_state.obs is not None:
         if st.session_state.obs.empty:
             log_and_warn("No observations available.")
@@ -649,7 +667,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.session_state.index_poly=0
 
             with st.form(key='parameters', enter_to_submit=False):
-                st.number_input(rtext("1_4_2_plac1"), key="buffer_input")
+                st.number_input(rtext("1_4_2_plac1"),max_value=0.5,  key="buffer_input")
                 st.number_input(rtext("1_4_2_plac2"), key="distance_input")
                 with st.expander(rtext("1_4_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_4_2_exp_te"))
