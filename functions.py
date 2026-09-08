@@ -25,6 +25,7 @@ from logging_config import (
     truncate_text,
 )
 import math
+
 logger = get_logger(__name__)
 
 texts = pd.read_csv("texts.csv").set_index("id")
@@ -889,19 +890,15 @@ def mapbbox():
 
 
 
-def compute_fit_zoom(lats, lngs, map_width_px=800, map_height_px=500, padding=1.15, max_zoom=18, min_zoom=1):
-    """
-    Return the largest integer zoom level at which a Leaflet-style map
-    (256px tiles) of size map_width_px x map_height_px can show every
-    point in (lats, lngs) without clipping.
 
-    padding > 1.0 shrinks the effective viewport slightly so points near
-    the edge aren't flush against the map border.
+def compute_fit_zoom_from_bounds(lat_min, lat_max, lng_min, lng_max,
+                                  map_width_px=800, map_height_px=500,
+                                  padding=1.15, max_zoom=18, min_zoom=1):
     """
-    lat_min, lat_max = float(np.min(lats)), float(np.max(lats))
-    lng_min, lng_max = float(np.min(lngs)), float(np.max(lngs))
-
-    # Single point (or all points identical) -> no spread to fit, just zoom in close
+    Largest integer zoom level at which a Leaflet-style map (256px tiles)
+    of size map_width_px x map_height_px can show the given lat/lng
+    bounding box without clipping.
+    """
     if lat_min == lat_max and lng_min == lng_max:
         return max_zoom
 
@@ -926,3 +923,37 @@ def compute_fit_zoom(lats, lngs, map_width_px=800, map_height_px=500, padding=1.
     lng_zoom = zoom_for_fraction(map_width_px, lng_fraction)
 
     return int(max(min_zoom, min(lat_zoom, lng_zoom, max_zoom)))
+
+
+def compute_fit_zoom(lats, lngs, map_width_px=800, map_height_px=500,
+                      padding=1.15, max_zoom=18, min_zoom=1):
+    """Point-array convenience wrapper around compute_fit_zoom_from_bounds."""
+    lat_min, lat_max = float(np.min(lats)), float(np.max(lats))
+    lng_min, lng_max = float(np.min(lngs)), float(np.max(lngs))
+    return compute_fit_zoom_from_bounds(
+        lat_min, lat_max, lng_min, lng_max,
+        map_width_px=map_width_px, map_height_px=map_height_px,
+        padding=padding, max_zoom=max_zoom, min_zoom=min_zoom,
+    )
+
+
+def polygon_bounds(feature_collection):
+    """
+    Return (lat_min, lat_max, lng_min, lng_max) covering every geometry
+    in a GeoJSON FeatureCollection (dict or geojson.FeatureCollection).
+    Raises ValueError if the collection has no features.
+    """
+    features = feature_collection["features"]
+    if not features:
+        raise ValueError("polygon_bounds: FeatureCollection has no features")
+
+    lng_min = lat_min = float("inf")
+    lng_max = lat_max = float("-inf")
+    for feature in features:
+        geom = shape(feature["geometry"])
+        minx, miny, maxx, maxy = geom.bounds  # (lng_min, lat_min, lng_max, lat_max)
+        lng_min = min(lng_min, minx)
+        lng_max = max(lng_max, maxx)
+        lat_min = min(lat_min, miny)
+        lat_max = max(lat_max, maxy)
+    return lat_min, lat_max, lng_min, lng_max

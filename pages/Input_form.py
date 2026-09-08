@@ -18,7 +18,9 @@ from functions import (
     TC_area, 
     LC_info, 
     BiaBError, 
-    _show_biab_error
+    _show_biab_error,
+    polygon_bounds,
+    compute_fit_zoom_from_bounds
 )
 from logging_config import log_and_show, log_and_warn
 import uuid
@@ -323,6 +325,12 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.markdown(rtext("1_3_1_exp_te"))
         #Upload your own Polygon file
             poly_link= st.file_uploader(rtext("1_3_1_plac"), type=["geojson"], label_visibility="collapsed", key="point_source")
+            st.download_button(
+                    label=rtext("1_3_1_ex_file"),
+                    data=open("polygon_example.geojson", "rb").read(),
+                    file_name="polygon_example.geojson",
+                    mime="application/geo+json",
+                )
             if poly_link is not None and poly_link.file_id != st.session_state.get("last_poly_file_id"):
                 st.session_state["last_poly_file_id"] = poly_link.file_id
 
@@ -333,14 +341,23 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
 
                 # Download example file
-                st.download_button(
-                    label=rtext("1_3_1_ex_file"),
-                    data=open("polygon_example.geojson", "rb").read(),
-                    file_name="polygon_example.geojson",
-                    mime="application/geo+json",
-                )
+
 
                 if st.session_state.polyinfo["polygons"] is not None:
+                    if st.session_state.polyinfo["polygons"] is not None:
+                        lat_min, lat_max, lng_min, lng_max = polygon_bounds(st.session_state.polyinfo["polygons"])
+
+                        # Center on the bounding box of all polygons
+                        center_lat = (lat_min + lat_max) / 2
+                        center_lng = (lng_min + lng_max) / 2
+                        st.session_state.center = {"lat": center_lat, "lng": center_lng}
+
+                        # Zoom level that fits every polygon on screen
+                        st.session_state.zoom = compute_fit_zoom_from_bounds(
+                            lat_min, lat_max, lng_min, lng_max,
+                            map_width_px=st.session_state.get("map_width", 800),
+                            map_height_px=st.session_state.get("height", 500),
+                        )
                     run = os.path.join(st.session_state.run_dir, "updated_polygons.geojson")
                     os.makedirs(os.path.dirname(run), exist_ok=True)  # Ensure the directory exists
                     with open(run, "w") as f:
@@ -366,7 +383,9 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                                                                    "obs_edit": None,
                                                                                    "obs_final": None,
                                                                                    "obs_csv": None,
-                                                                                   "index": None}))
+                                                                                   "index": None,
+                                                                                   "poly_creation": None
+                                                                                   }))
             if obs_link is not None and st.session_state.obs is None:
                 try:
                     st.session_state.obs = read_occurrence_file(obs_link)
