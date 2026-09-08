@@ -144,7 +144,7 @@ out_1_ti, #### The land cover classes used where:, #### Las clases de cobertura 
 out_1_exp_ti,**-> Land cover classes used for habitat definition**,**-> Clases de cobertura terrestre utilizadas para la definición del hábitat**
 out_1_plot1_ti,Relative change of populations' habitat size over time,Cambio en el área del hábitat a lo largo del tiempo
 out_1_plot1_xax,year,Año
-out_1_plot1_yax,relative change,Cambio en el área del hábitat (Km²)
+out_1_plot1_yax,relative change %,Cambio en el área del hábitat (Km²)
 out_1_plot1_index,Population,Población
 out_1_plot2_ti,Change of populations' habitat size over time, Tendencias del área a lo largo del tiempo
 out_1_plot2_xax,year,Año

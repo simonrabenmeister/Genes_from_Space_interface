@@ -26,10 +26,9 @@ import os
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
-from functions import manual_polygon_addition, read_occurrence_file
+from functions import manual_polygon_addition, read_occurrence_file, compute_fit_zoom
 import csv
 import io
-
 st.set_page_config(page_title="Genes From Space", page_icon="🌍", layout="wide")
 
 # !! Hide a page
@@ -278,9 +277,7 @@ def render_scroll_image_container():
     )
 col1, col2= st.columns(2)
 
-
-with col1.container( border=False, key="image-container", height=st.session_state.height):
-
+with col1.container( border=False, key="container1", height=st.session_state.height):
 ### 1st step: Set how to provide species input data
 
     st.markdown(rtext("1_ti"))
@@ -431,7 +428,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 st.markdown(rtext("1_2_2_ti"))
                 st.markdown(rtext("1_2_2_te"))
                 with st.form(key='GBIF_parameters', enter_to_submit=False):
-                    st.slider("Select a range of values", 1900, 2020, (1970, 2020), key="GBIF_year_range")
+                    st.slider("Select a range of values", 1900, 2026, (1970, 2026), key="GBIF_year_range")
                     st.form_submit_button(
                         "Select GBIF Range",
                         on_click=lambda: (
@@ -581,6 +578,12 @@ with col1.container( border=False, key="image-container", height=st.session_stat
 
         # Update session state with the center coordinates
         st.session_state.center = {"lat": center_lat, "lng": center_lng}
+        # Update session state with a zoom level that fits all points on screen
+        st.session_state.zoom = compute_fit_zoom(
+            lats, lngs,
+            map_width_px=st.session_state.get("map_width", 800),
+            map_height_px=st.session_state.get("height", 500),
+            )
 
         if st.session_state.obs is None:
 
@@ -602,7 +605,11 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                 index=st.session_state.index_poly,
                 on_change=lambda: (
                     setattr(st.session_state, 'index_poly', buffer_selection.index(st.session_state.index_poly_key)),
-                    setattr(st.session_state, "polyinfo", {"buffer": None, "distance": None, "polygons": None})
+                    setattr(st.session_state, "polyinfo", {"buffer": None, "distance": None, "polygons": None}),
+                    setattr(st.session_state, "original_polygons", None),
+                    setattr(st.session_state, "buffer", None),
+                    setattr(st.session_state, "distance", None),
+                    setattr(st.session_state, "stage","polygon_clustering"),
                 ),
                 key="index_poly_key"
             )
@@ -636,40 +643,38 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     st.session_state.cover_maps = None
                     setattr(st.session_state, 'buffer', st.session_state.buffer_input)
                     setattr(st.session_state, 'distance', st.session_state.distance_input)
-        
-            if st.button("add polygons to map"):
-                st.session_state.stage = "manual_polygon_creation"
-                st.session_state.polygon_addition = st.session_state.original_polygons
-                st.rerun()
+                    
+                    
+            
+            
+            
+            if st.session_state.original_polygons is not None:
+                st.write("If you are satisfied with the polygons, Press Confirm Polygons. If you want to add manually drawn Polygons to the map, Press Add Polygons to Map.")
+                bu1, bu2 = st.columns(2)
+                with bu1:
+                    if st.button(rtext("1_4_2_bu2")):
+                        st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
+                        st.session_state.stage = "LC"
+                        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+                        st.write(f"Saving polygons to: {st.session_state.poly_directory}")
+                        os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
+                        with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
+                            geojson.dump(st.session_state.polyinfo["polygons"], f)
+                        st.success("Polygons saved successfully.")
+                        del st.session_state.polygon_addition
+                        st.rerun()
+
+                with bu2:
+                    if st.button("add polygons to map"):
+                        st.session_state.stage = "manual_polygon_creation"
+                        st.session_state.polygon_addition = st.session_state.original_polygons
+                        st.rerun()
+                
         if st.session_state.poly_creation==rtext("1_4_opt2"):
             st.session_state.index_poly=1
             st.markdown(rtext("1_4_1_ti"))
             st.markdown(rtext("1_4_1_te"))
             st.session_state.original_polygons=None
-            
-            st.write("If you are satisfied with the polygons, Press Confirm Polygons. If you want to add manually drawn Polygons to the map, Press Add Polygons to Map.")
-            bu1, bu2 = st.columns(2)
-            with bu1:
-                if st.button(rtext("1_4_2_bu2")):
-                    st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
-                    st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
-                    st.session_state.stage = "LC"
-                    st.session_state.biab_dir
-                    st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                    os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
-                    with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
-                        geojson.dump(st.session_state.polyinfo["polygons"], f)
-                    st.success("Polygons saved successfully.")
-                    del st.session_state.original_polygons
-                    st.rerun()
-            with bu2:
-                if st.button("add polygons to map"):
-                    st.session_state.stage = "manual_polygon_creation"
-                    st.session_state.polygon_addition = st.session_state.original_polygons
-                    st.rerun()
-
-
-
             
 
             # Reset subsequent session states
@@ -686,7 +691,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state["data_source"]==rtext("1_1_opt3"):
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
-                st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2025, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2025, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
@@ -694,7 +699,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state["data_source"]==rtext("1_1_opt2") or st.session_state["data_source"]==rtext("1_1_opt1"):
             st.markdown(rtext("1_2_ti"))
             st.markdown(rtext("1_2_te"))
-            st.number_input(rtext("1_2_plac"), step=1, min_value=1900, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+            st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
             with st.expander(rtext("1_2_exp_ti"), expanded=False):
                 st.markdown(rtext("1_2_exp_te"))
@@ -702,7 +707,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
         if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
-            LC_selection = [rtext("2_opt2"), rtext("2_opt3"), rtext("2_opt4")]#removed rtext("2_opt1") since get_TCY is not working properly.
+            LC_selection = [ rtext("2_opt4"), rtext("2_opt2")]#removed rtext("2_opt1") since get_TCY is not working properly.
             
             st.session_state.LC_selection = st.selectbox(
                 rtext("2_plac"),
@@ -854,7 +859,7 @@ with col1.container( border=False, key="image-container", height=st.session_stat
                     line=dict(color="red", width=2, dash="solid"),
                     layer="above",  # draw *behind* bars
                     annotation_position="top",
-                    annotation_text="50% cutoff"
+                    annotation_text="50%"
                 )
                 fig.update_layout(
                     barmode='stack',

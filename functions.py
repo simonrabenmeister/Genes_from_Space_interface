@@ -1,20 +1,20 @@
-import streamlit as st
-import pandas as pd
-import requests
-import time
+import os
 import numpy as np
+import pandas as pd
+import geopandas as gpd
 import geojson
+import glasbey
+import seaborn as sns
 import folium
-from streamlit_folium import st_folium
 from folium.plugins import Draw
-from scipy.cluster.hierarchy import linkage, fcluster
-from scipy.spatial.distance import squareform
+from streamlit_folium import st_folium
 from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection, shape
 from shapely.ops import unary_union
-import seaborn as sns
-import glasbey
-import geopandas as gpd
-import os
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import linkage, fcluster
+import streamlit as st
+import requests
+import time
 import csv
 import io
 from logging_config import (
@@ -24,7 +24,7 @@ from logging_config import (
     safe_response_preview,
     truncate_text,
 )
-
+import math
 logger = get_logger(__name__)
 
 texts = pd.read_csv("texts.csv").set_index("id")
@@ -349,6 +349,21 @@ def edit_points():
         st.session_state.obs_original = st.session_state.obs
         obs_edit = obs_edit.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
         st.session_state.obs_edit = obs_edit.copy()
+    
+    # Show a histogram of GBIF observations grouped by occurrence year.
+    # if "year" in obs_edit.columns:
+    #     years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
+    #     if not years.empty:
+    #         years.columns
+    #         year_histogram = (
+    #             years.astype(int)
+    #             .value_counts()
+    #             .sort_index()
+    #             .rename_axis("year")
+    #             .to_frame("observations")
+    #         )
+    #         st.subheader("GBIF observations by year")
+    #         st.bar_chart(year_histogram, x="year", y="observations")
 
     
     # Remove duplicate points based on latitude and longitude
@@ -380,6 +395,8 @@ def edit_points():
     })
     draw.add_to(m)
     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
+
+
     
     # Get the index of the clicked point
     if "all_drawings" in st.session_state.output and st.session_state.output["all_drawings"] != None:
@@ -464,6 +481,7 @@ def edit_points():
         st.rerun()
 
     with st.expander("advanced options"):
+        
         st.session_state.index 
         def load_csv():
             try:
@@ -480,94 +498,113 @@ def edit_points():
             
         st.file_uploader(rtext("1_3_3_4_bu3"), key="csv_link", type=["csv"], on_change=lambda: load_csv())
 
+def resolve_overlaps(ordered_geoms):
+    """
+    Given a list of (possibly overlapping) shapely geometries in a fixed
+    order, return a same-length list of geometries where each one has had
+    the union of all *earlier* geometries in the list subtracted from it.
+ 
+    This is deterministic (result never depends on iteration order of a
+    nested loop) and guarantees no two output geometries overlap, which
+    is what actually eliminates the slivers / double-covered artifacts
+    the pairwise intersect-then-union-then-difference approach produced.
+    """
+    claimed = None
+    resolved = []
+    for geom in ordered_geoms:
+        geom = geom.buffer(0)  # fix self-intersections first
+        if claimed is not None:
+            geom = geom.difference(claimed)
+        resolved.append(geom)
+        claimed = geom if claimed is None else unary_union([claimed, geom])
+    return resolved
+ 
+ 
+def build_colored_features(geoms, names):
+    """Zip geometries + names into glasbey-colored geojson Features."""
+    colors = glasbey.create_palette(
+        palette_size=max(len(geoms), 1), colorblind_safe=True, cvd_severity=100
+    )
+    features = []
+    for i, (geom, name) in enumerate(zip(geoms, names)):
+        features.append(
+            geojson.Feature(
+                geometry=geom,
+                properties={"name": name, "style": {"color": colors[i % len(colors)]}},
+            )
+        )
+    return features
+ 
+ 
 @st.fragment
 def polygon_clustering():
     if st.session_state.polyinfo["polygons"] is not None:
         st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
-    # Create a dummy DataFrame for point data
+ 
+    # Create a GeoDataFrame from the point data
     points_df = pd.DataFrame(st.session_state.obs_final)
-    # Convert the DataFrame to a GeoDataFrame
     points_gdf = gpd.GeoDataFrame(
         points_df,
         geometry=gpd.points_from_xy(points_df["decimallongitude"], points_df["decimallatitude"]),
-        crs="EPSG:4326"
+        crs="EPSG:4326",
     )
     obs = st.session_state.obs_final
-
-    # if st.session_state.buffer is None:
-    #     # Display the points without edit functionality
-    #     m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-    #     # Add the observations to the map
-    #     fg = folium.FeatureGroup(name="Markers")
-    #     for i, row in obs.iterrows():
-    #         corr = [row["decimallatitude"], row["decimallongitude"]]
-    #         folium.CircleMarker(
-    #             location=corr,
-    #             radius=6,
-    #             color="blue",
-    #             fill_opacity=1,
-    #             fill=True,
-    #             fill_color='lightblue'
-    #         ).add_to(fg)
-    #     st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)
-    # st.write(st.session_state.buffer)
+ 
+    # =====================================================================
+    # Option 1: automatic clustering by buffer radius + linkage distance
+    # =====================================================================
     if st.session_state.poly_creation == rtext("1_4_opt1"):
+ 
         if st.session_state.buffer is not None and st.session_state.distance:
-            st.session_state.polyinfo["polygons"] = None
-            # Define the buffer radius in kilometers
-            radius = st.session_state.buffer # Example: 10 km
-            # Create circular buffers around each point
-            circles_gdf = points_gdf.copy()
-            circles_gdf["geometry"] = points_gdf["geometry"].to_crs(epsg=3857).buffer(radius*1000).to_crs(epsg=4326)
-            # Project geometries to a metric CRS for accurate distance calculations
-            points_gdf_metric = points_gdf.to_crs(epsg=3857)
-            # Calculate the distance matrix between points in meters
-            distances = points_gdf_metric.geometry.apply(
-                lambda geom: points_gdf_metric.geometry.distance(geom)
-            ).to_numpy()
-            # Perform hierarchical clustering
-            linkage_matrix = linkage(squareform(distances), method="average")
-            # Assign population clusters
-            pop_distance = st.session_state.distance * 1000
-            # Melt all circles from the same population into a MultiPolygon
-            circles_gdf["pop"] = ["pop_" + str(cluster) for cluster in fcluster(linkage_matrix, t=pop_distance, criterion="distance")]
-            melted_clusters = circles_gdf.dissolve(by="pop").reset_index()
-            # Resolve overlaps by assigning the overlap to the population with the lower number
-            for i, row1 in melted_clusters.iterrows():
-                for j, row2 in melted_clusters.iterrows():
-                    if i >= j:
-                        continue
-                    if melted_clusters.iloc[i]["geometry"].intersects(melted_clusters.iloc[j]["geometry"]):
-                        intersection = melted_clusters.iloc[i]["geometry"].intersection(melted_clusters.iloc[j]["geometry"])
-                        if not intersection.is_empty:
-                            # Assign the overlap to the population with the lower number
+ 
+            current_params = (len(points_gdf), st.session_state.buffer, st.session_state.distance)
 
-                            if int(i) < int(j):
-                                melted_clusters.at[i, "geometry"] = melted_clusters.iloc[i]["geometry"].union(intersection)
-                                melted_clusters.at[j, "geometry"] = melted_clusters.iloc[j]["geometry"].difference(intersection)
-                            else:
-                                melted_clusters.at[j, "geometry"] = melted_clusters.iloc[j]["geometry"].union(intersection)
-                                melted_clusters.at[i, "geometry"] = melted_clusters.iloc[i]["geometry"].difference(intersection)
-            
-            # Create a feature collection from melted_clusters
-            # Clean geometries to remove any linestrings from geometry collections
-            melted_clusters["geometry"] = melted_clusters["geometry"].apply(clean_geometry)
-            # Generate a color palette for the clusters
-            colors = glasbey.create_palette(palette_size=len(melted_clusters), colorblind_safe=True, cvd_severity=100)
-            features = []
-            for i, row in melted_clusters.iterrows():
-                color = colors[i % len(colors)]
-                feature = geojson.Feature(
-                    geometry=row["geometry"],
-                    properties={"name": row["pop"], "style": {"color": color}}
-                )
-                features.append(feature)
-            st.session_state.original_polygons = geojson.FeatureCollection(features)
-
-            m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
-
-            # Add the observations to the map
-            fg = folium.FeatureGroup(name="Markers")
+            needs_compute = (
+                st.session_state.get("_poly_params_computed") != current_params
+                or st.session_state.get("original_polygons") is None
+            )
+ 
+            if needs_compute:
+                # --- only runs when buffer/distance/reset actually changed ---
+                st.session_state.polyinfo["polygons"] = None
+                radius_m = st.session_state.buffer * 1000
+                dist_m = st.session_state.distance * 1000
+ 
+                metric = points_gdf.to_crs(epsg=3857)
+                circles_gdf = metric.copy()
+                circles_gdf["geometry"] = metric.geometry.buffer(radius_m)
+ 
+                coords = np.column_stack([metric.geometry.x, metric.geometry.y])
+                linkage_matrix = linkage(pdist(coords), method="average")
+                labels = fcluster(linkage_matrix, t=dist_m, criterion="distance")
+                circles_gdf["pop"] = ["pop_" + str(c) for c in labels]
+ 
+                melted_clusters = circles_gdf.dissolve(by="pop").reset_index()
+                # fixed, stable order -> deterministic result
+                melted_clusters = melted_clusters.sort_values("pop").reset_index(drop=True)
+ 
+                resolved = resolve_overlaps(list(melted_clusters["geometry"]))
+                melted_clusters["geometry"] = resolved
+ 
+                # drop empties/slivers left over from differencing
+                melted_clusters["geometry"] = melted_clusters.geometry.apply(lambda g: g.buffer(0))
+                melted_clusters = melted_clusters[~melted_clusters.geometry.is_empty]
+                melted_clusters = melted_clusters[melted_clusters.geometry.area > 0]
+                melted_clusters = melted_clusters.set_geometry("geometry", crs=3857).to_crs(epsg=4326)
+                melted_clusters = melted_clusters.reset_index(drop=True)
+ 
+                features = build_colored_features(melted_clusters["geometry"], melted_clusters["pop"])
+ 
+                st.session_state.original_polygons = geojson.FeatureCollection(features)
+                st.session_state._poly_params_computed = current_params
+ 
+                st.rerun()  # fires once per new buffer/distance submission (or reset)
+ 
+            # This runs on every pass (including the rerun above), using
+            # whatever original_polygons currently holds.
+            m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]],   zoom_start=st.session_state.zoom)
+ 
+            fg = folium.FeatureGroup(name="Points")
             for i, row in obs.iterrows():
                 corr = [row["decimallatitude"], row["decimallongitude"]]
                 folium.CircleMarker(
@@ -578,13 +615,17 @@ def polygon_clustering():
                     fill=True,
                     fill_color='lightblue'
                 ).add_to(fg)
-            fg2 = folium.FeatureGroup(name="Markers")
+ 
+            fg2 = folium.FeatureGroup(name="Cluster polygons")
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
-            st.session_state.output = st_folium(m, feature_group_to_add=[fg2], use_container_width=True)       
-            
+            st.session_state.output = st_folium(m, feature_group_to_add=[fg2], use_container_width=True)
+ 
+    # =====================================================================
+    # Option 2: manually drawn polygons used to group points into clusters
+    # =====================================================================
     if st.session_state.poly_creation == rtext("1_4_opt2"):
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]])
-        fg = folium.FeatureGroup(name="Markers")
+        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        fg = folium.FeatureGroup(name="Points")
         for i, row in obs.iterrows():
             corr = [row["decimallatitude"], row["decimallongitude"]]
             folium.CircleMarker(
@@ -593,7 +634,6 @@ def polygon_clustering():
                 color="blue",
                 fill_opacity=1,
                 fill=True,
-                # Add the Draw tool to the map
                 fill_color='lightblue'
             ).add_to(fg)
         draw = Draw(export=False, draw_options={
@@ -608,7 +648,7 @@ def polygon_clustering():
             'remove': True
         })
         draw.add_to(m)
-        fg2 = folium.FeatureGroup(name="Markers")
+        fg2 = folium.FeatureGroup(name="Drawn polygons")
         if st.session_state.original_polygons is not None:
             fg2.add_child(folium.GeoJson(st.session_state.original_polygons, popup=folium.GeoJsonPopup(fields=["name"])))
         st.session_state.output = st_folium(m, feature_group_to_add=[fg, fg2], use_container_width=True, height=st.session_state.height)
@@ -617,58 +657,66 @@ def polygon_clustering():
         geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
         new_df = geo_df.set_crs(epsg=4326)
         new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
-        st.session_state.buffer=st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
+        st.session_state.buffer = st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
         with st.expander(rtext("1_4_1_exp_ti"), expanded=False):
             st.markdown(rtext("1_4_1_exp_te"))
         if st.session_state.buffer is not None:
             setattr(st.session_state, 'buffer', st.session_state.buffer_input)
         if st.session_state.output["all_drawings"] != [] and st.session_state.output["last_active_drawing"] is not None and st.session_state.buffer is not None:
             size = st.session_state.buffer * 1000
-
-            if st.button("Group observations by polygon"):
-                
-                # Group the circles into clusters depending on drawn polygons
-                circles = new_df['geometry'].buffer(size)
-                obs['circles'] = circles.to_crs(epsg=4326)
-                clusters = pd.DataFrame()
-                for i in range(0, len(st.session_state.output["all_drawings"])):
-                    polygon_coords = st.session_state.output["all_drawings"][i]["geometry"]["coordinates"][0]
-                    polygon = Polygon(polygon_coords)
-                    obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimallongitude"], row["decimallatitude"])), axis=1)
-                    if obs[f"Pop{i+1}"].any():
-                        polys = obs[obs[f"Pop{i+1}"]]['circles']
-                        clusters = pd.concat([clusters, gpd.GeoDataFrame(geometry=[unary_union(polys)])], ignore_index=True)
-
-                for i, row1 in clusters.iterrows():
-                    for j, row2 in clusters.iterrows():
-                        if i >= j:
-                            continue
-                        # Assign the overlap to the population with the lower number
-                        if clusters.iloc[i]["geometry"].intersects(clusters.iloc[j]["geometry"]):
-                            intersection = clusters.iloc[i]["geometry"].intersection(clusters.iloc[j]["geometry"])
-                            if not intersection.is_empty:
-                                if int(i) < int(j):
-                                    clusters.iloc[i]["geometry"] = clusters.iloc[i]["geometry"].union(intersection)
-                                    clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].difference(intersection)
-                                else:
-                                    clusters.iloc[j]["geometry"] = clusters.iloc[j]["geometry"].union(intersection)
-                                    clusters.iloc[i]["geometry"] = clusters.iloc[i]["geometry"].difference(intersection)
-                # Create a color palette for the clusters
-                colors = glasbey.create_palette(palette_size=len(clusters), colorblind_safe=True, cvd_severity=100)
-                sns.palplot(colors)
-                # Create features to plot
-                features = []
-                for i, poly in clusters.iterrows():
-                    color = colors[i % len(colors)]
-                    feature = geojson.Feature(geometry=poly["geometry"], properties={"name": f"Pop {i+1}", "style": {"color": color}, "population_density": None})
-                    features.append(feature)
-                st.session_state.original_polygons = geojson.FeatureCollection(features)
-                st.rerun(scope="fragment")
-
+            bu1, bu2 = st.columns(2)
+            with bu1:
+                if st.button("Group observations by polygon"):
+ 
+                    # Group the circles into clusters depending on drawn polygons
+                    circles = new_df['geometry'].buffer(size)
+                    obs['circles'] = circles.to_crs(epsg=4326)
+                    cluster_geoms = []
+                    cluster_names = []
+                    for i in range(0, len(st.session_state.output["all_drawings"])):
+                        polygon_coords = st.session_state.output["all_drawings"][i]["geometry"]["coordinates"][0]
+                        polygon = Polygon(polygon_coords)
+                        obs[f"Pop{i+1}"] = obs.apply(lambda row: polygon.contains(Point(row["decimallongitude"], row["decimallatitude"])), axis=1)
+                        if obs[f"Pop{i+1}"].any():
+                            polys = obs[obs[f"Pop{i+1}"]]['circles']
+                            cluster_geoms.append(unary_union(polys))
+                            cluster_names.append(f"Pop {i+1}")
+ 
+                    # Deterministic overlap resolution (fixed draw order),
+                    # same helper used by the automatic clustering path.
+                    resolved = resolve_overlaps(cluster_geoms)
+                    clusters = gpd.GeoDataFrame({"name": cluster_names, "geometry": resolved})
+                    clusters["geometry"] = clusters.geometry.apply(lambda g: g.buffer(0))
+                    clusters = clusters[~clusters.geometry.is_empty]
+                    clusters = clusters[clusters.geometry.area > 0].reset_index(drop=True)
+ 
+                    features = build_colored_features(clusters["geometry"], clusters["name"])
+                    st.session_state.original_polygons = geojson.FeatureCollection(features)
+                    st.rerun(scope="fragment")
+            if st.session_state.original_polygons is not None:
+                with bu2:
+                    if st.button(rtext("1_4_2_bu2")):
+                        st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
+                        st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
+                        st.session_state.stage = "LC"
+                        st.session_state.biab_dir
+                        st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
+                        os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
+                        with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
+                            geojson.dump(st.session_state.polyinfo["polygons"], f)
+                        st.success("Polygons saved successfully.")
+                        del st.session_state.original_polygons
+                        st.rerun()
+                st.write("If you are satisfied with the polygons, Press Confirm Polygons. If you want to add manually drawn Polygons to the map, Press Add Polygons to Map.")
+                if st.button("add polygons to map"):
+                    st.session_state.stage = "manual_polygon_creation"
+                    st.session_state.polygon_addition = st.session_state.original_polygons
+                    st.rerun()
+ 
     if st.session_state.original_polygons is not None:
         st.write(f"{rtext('1_4_2_info')} {len(st.session_state.original_polygons['features'])}")
-        st.session_state.zoom = st.session_state.output["zoom"]
 
+ 
 
 @st.fragment
 def manual_polygon_addition():
@@ -735,11 +783,12 @@ def convert_df():
             st.session_state.polygons["features"][i]["properties"].update({"population_density": "", "nenc": "", "size": ""})
     
     # Add the polygons to the map
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lon"]], zoom_start=2)
+    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lon"]], zoom_start=st.session_state.zoom)
     fg = folium.FeatureGroup(name="Polygons")
     # Display the map
     fg.add_child(folium.GeoJson(polygons, popup=folium.GeoJsonPopup(fields=["name", "population_density", "nenc", "size"])))
     st.session_state.output2 = st_folium(m, feature_group_to_add=fg, use_container_width=True)
+
 
     with st.form(key='polygon', enter_to_submit=False):
         properties = pd.DataFrame(
@@ -834,9 +883,46 @@ def mapbbox():
             return [coords[:, 0].min(), coords[:, 1].min(), coords[:, 0].max(), coords[:, 1].max()]
         st.session_state.GBIF_data["bbox"] = [float(coord) for coord in get_bounding_box(geometry)]
 
-        # Update map center and zoom
-        st.session_state.zoom = output["zoom"]
-        st.session_state.center = output["center"]
 
         # Trigger a rerun to refresh the map with the new shape
         st.rerun()
+
+
+
+def compute_fit_zoom(lats, lngs, map_width_px=800, map_height_px=500, padding=1.15, max_zoom=18, min_zoom=1):
+    """
+    Return the largest integer zoom level at which a Leaflet-style map
+    (256px tiles) of size map_width_px x map_height_px can show every
+    point in (lats, lngs) without clipping.
+
+    padding > 1.0 shrinks the effective viewport slightly so points near
+    the edge aren't flush against the map border.
+    """
+    lat_min, lat_max = float(np.min(lats)), float(np.max(lats))
+    lng_min, lng_max = float(np.min(lngs)), float(np.max(lngs))
+
+    # Single point (or all points identical) -> no spread to fit, just zoom in close
+    if lat_min == lat_max and lng_min == lng_max:
+        return max_zoom
+
+    def lat_rad(lat):
+        sin = math.sin(lat * math.pi / 180)
+        rad_x2 = math.log((1 + sin) / (1 - sin)) / 2
+        return max(min(rad_x2, math.pi), -math.pi) / 2
+
+    lat_fraction = (lat_rad(lat_max) - lat_rad(lat_min)) / math.pi
+
+    lng_diff = lng_max - lng_min
+    lng_fraction = (lng_diff if lng_diff >= 0 else lng_diff + 360) / 360
+
+    world_dim = 256  # tile size in px at zoom 0
+
+    def zoom_for_fraction(map_px, fraction):
+        if fraction <= 0:
+            return max_zoom
+        return math.floor(math.log((map_px / padding) / world_dim / fraction, 2))
+
+    lat_zoom = zoom_for_fraction(map_height_px, lat_fraction)
+    lng_zoom = zoom_for_fraction(map_width_px, lng_fraction)
+
+    return int(max(min_zoom, min(lat_zoom, lng_zoom, max_zoom)))
