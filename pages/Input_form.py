@@ -361,10 +361,15 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.markdown(rtext("1_3_2_te"))
         #Upload your own point file
             obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv","tsv"], label_visibility="collapsed", key="point_source", 
-                                        on_change=lambda: st.session_state.update({"stage": "Manipulate points", "obs": None}))
+                                        on_change=lambda: st.session_state.update({"stage": "Manipulate points",
+                                                                                   "obs": None,
+                                                                                   "obs_edit": None,
+                                                                                   "obs_final": None,
+                                                                                   "obs_csv": None,
+                                                                                   "index": None}))
             if obs_link is not None and st.session_state.obs is None:
                 try:
-                    st.session_state.obs_edit = read_occurrence_file(obs_link)
+                    st.session_state.obs = read_occurrence_file(obs_link)
                     # Check if the required columns are present
                     required_columns = ["decimallongitude", "decimallatitude"]
                     if not all(col in st.session_state.obs.columns for col in required_columns):
@@ -372,7 +377,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
                 except Exception as e:
                     log_and_show(f"Error reading the file: {e}", exc_info=True)
-            if st.session_state.obs_edit is not None:
+            if st.session_state.obs is not None:
                 
                 # Calculate the center of all point observations in total
                 lats = st.session_state.obs["decimallatitude"].to_numpy()
@@ -1005,7 +1010,7 @@ with col2.container( border=False, key="container", height=st.session_state.heig
         
         
         mapbbox()
-    if st.session_state.stage=="Manipulate points":
+    if st.session_state.stage=="Manipulate points" and st.session_state.obs is not None:
         edit_points()
     if st.session_state.stage=="polygon_clustering":
         polygon_clustering()
