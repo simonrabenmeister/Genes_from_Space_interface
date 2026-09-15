@@ -151,7 +151,7 @@ if not st.session_state.upload:
     if st.session_state.polyinfo is not None:
         st.session_state.pop_polygons = st.session_state.polyinfo["polygons"]
     st.session_state.default_nenc = 0.1
-    st.session_state.default_dens = 0
+    st.session_state.default_dens = None
     
 default_dens = st.session_state.default_dens
 default_nenc = st.session_state.default_nenc
@@ -457,6 +457,13 @@ if input is not None or st.session_state.polyinfo is not None:
                         step=0.01, 
 
                         key="pop_density"
+                    )
+                    default_nenc = st.number_input(
+                        "Default nenc",
+                        value=st.session_state.default_nenc,
+                        min_value=0.0, 
+                        step=0.01, 
+                        key="nenc"
                     )
                     if st.form_submit_button("Apply to all populations"):
                         st.session_state.default_dens = default_dens

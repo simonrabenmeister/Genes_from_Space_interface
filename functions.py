@@ -13,10 +13,14 @@ from shapely.ops import unary_union
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, fcluster
 import streamlit as st
+import tempfile
+import zipfile
 import requests
 import time
 import csv
 import io
+import json
+import altair as alt
 from logging_config import (
     get_logger,
     sanitize_headers,
@@ -25,6 +29,7 @@ from logging_config import (
     truncate_text,
 )
 import math
+import pyogrio
 
 logger = get_logger(__name__)
 
@@ -350,21 +355,7 @@ def edit_points():
         st.session_state.obs_original = st.session_state.obs
         obs_edit = obs_edit.drop_duplicates(subset=[lat_col, lon_col]).reset_index(drop=True)
         st.session_state.obs_edit = obs_edit.copy()
-    st.write(obs_edit)
-    # Show a histogram of GBIF observations grouped by occurrence year.
-    if "year" in obs_edit.columns:
-        years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
-        if not years.empty:
-            years.columns
-            year_histogram = (
-                years.astype(int)
-                .value_counts()
-                .sort_index()
-                .rename_axis("year")
-                .to_frame("observations")
-            )
-            st.subheader("GBIF observations by year")
-            st.bar_chart(year_histogram, x="year", y="observations")
+
 
     
     # Remove duplicate points based on latitude and longitude
@@ -395,7 +386,7 @@ def edit_points():
         'remove': True
     })
     draw.add_to(m)
-    st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)      
+    st.session_state.output = st_folium(m, feature_group_to_add=fg, use_container_width=True)   
 
 
     
@@ -480,7 +471,29 @@ def edit_points():
         st.session_state.area_table = None
         st.session_state.cover_maps = None
         st.rerun()
+    # Show a histogram of GBIF observations grouped by occurrence year.
+    if "year" in obs_edit.columns:
+        years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
+        if not years.empty:
+            year_histogram = (
+                years.astype(int)
+                .value_counts()
+                .sort_index()
+                .rename_axis("year")
+                .to_frame("observations")
+                .reset_index()
+            )
+            st.subheader("GBIF observations by year")
 
+            chart = (
+                alt.Chart(year_histogram)
+                .mark_bar()
+                .encode(
+                    x=alt.X("year:O", title="Year"),
+                    y=alt.Y("observations:Q", title="Observations"),
+                )
+            )
+            st.altair_chart(chart, use_container_width=True)
     with st.expander("advanced options"):
         
         st.session_state.index 
@@ -658,7 +671,7 @@ def polygon_clustering():
         geo_df = gpd.GeoDataFrame(obs, geometry=obs.geometry)
         new_df = geo_df.set_crs(epsg=4326)
         new_df['geometry'] = new_df['geometry'].to_crs(epsg=3857)
-        st.session_state.buffer = st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input", on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
+        st.session_state.buffer = st.number_input(rtext("1_4_2_plac1"), value=st.session_state.buffer, key="buffer_input", min_value=0.5, on_change=lambda: setattr(st.session_state, 'buffer', st.session_state.buffer_input))
         with st.expander(rtext("1_4_1_exp_ti"), expanded=False):
             st.markdown(rtext("1_4_1_exp_te"))
         if st.session_state.buffer is not None:
@@ -957,3 +970,70 @@ def polygon_bounds(feature_collection):
         lat_min = min(lat_min, miny)
         lat_max = max(lat_max, maxy)
     return lat_min, lat_max, lng_min, lng_max
+
+
+def load_shapefile_zip(poly_link):
+    """
+    poly_link: an uploaded .zip file (e.g. from st.file_uploader) containing
+    a shapefile's .shp/.shx/.dbf/.prj components — possibly nested inside a
+    subfolder within the zip (searched recursively). Returns a
+    geojson.FeatureCollection in EPSG:4326, reusing existing 'name'/'style'
+    color attributes when present. Rebuilds a missing/corrupt .shx if needed.
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        zip_path = os.path.join(tmp_dir, "upload.zip")
+        with open(zip_path, "wb") as f:
+            f.write(poly_link.getbuffer())
+
+        with zipfile.ZipFile(zip_path, "r") as z:
+            z.extractall(tmp_dir)
+
+        shp_path = None
+        for root, _, files in os.walk(tmp_dir):
+            for fname in files:
+                if fname.lower().endswith(".shp"):
+                    shp_path = os.path.join(root, fname)
+                    break
+            if shp_path:
+                break
+        if shp_path is None:
+            raise ValueError("No .shp file found inside the uploaded zip.")
+
+        # Allow GDAL to rebuild a missing/corrupt .shx instead of erroring out
+        pyogrio.set_gdal_config_options({"SHAPE_RESTORE_SHX": "YES"})
+        gdf = gpd.read_file(shp_path)
+
+    if gdf.crs is None:
+        st.warning("Shapefile has no .prj / CRS defined — assuming EPSG:4326.")
+        gdf = gdf.set_crs(epsg=4326)
+    elif gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
+
+    if "name" not in gdf.columns:
+        gdf["name"] = [f"Pop {i+1}" for i in range(len(gdf))]
+
+    def existing_color(row):
+        val = row.get("style")
+        if isinstance(val, str):
+            try:
+                parsed = json.loads(val)
+                if isinstance(parsed, dict) and "color" in parsed:
+                    return parsed["color"]
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return None
+
+    colors = glasbey.create_palette(
+        palette_size=max(len(gdf), 1), colorblind_safe=True, cvd_severity=100
+    )
+
+    features = []
+    for i, row in gdf.iterrows():
+        color = existing_color(row) or colors[i % len(colors)]
+        features.append(
+            geojson.Feature(
+                geometry=row["geometry"].__geo_interface__,
+                properties={"name": row["name"], "style": {"color": color}},
+            )
+        )
+    return geojson.FeatureCollection(features)

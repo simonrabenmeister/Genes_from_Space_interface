@@ -20,7 +20,8 @@ from functions import (
     BiaBError, 
     _show_biab_error,
     polygon_bounds,
-    compute_fit_zoom_from_bounds
+    compute_fit_zoom_from_bounds,
+    load_shapefile_zip
 )
 from logging_config import log_and_show, log_and_warn
 import uuid
@@ -324,7 +325,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             with st.expander(rtext("1_3_1_exp_ti"), expanded=False):
                 st.markdown(rtext("1_3_1_exp_te"))
         #Upload your own Polygon file
-            poly_link= st.file_uploader(rtext("1_3_1_plac"), type=["geojson"], label_visibility="collapsed", key="point_source")
+            poly_link= st.file_uploader(rtext("1_3_1_plac"), type=["geojson", "zip"], label_visibility="collapsed", key="point_source")
             st.download_button(
                     label=rtext("1_3_1_ex_file"),
                     data=open("polygon_example.geojson", "rb").read(),
@@ -333,13 +334,19 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 )
             if poly_link is not None and poly_link.file_id != st.session_state.get("last_poly_file_id"):
                 st.session_state["last_poly_file_id"] = poly_link.file_id
-
-                try:
-                    st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
-                    st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
-                except Exception as e:
-                    log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
-
+                if poly_link.type == "application/geo+json":
+                    st.write("GeoJSON file uploaded successfully.")
+                    try:
+                        st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
+                        st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
+                    except Exception as e:
+                        log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
+                elif poly_link.type == "application/zip":
+                    try:
+                        st.session_state.polyinfo["polygons"] = load_shapefile_zip(poly_link)
+                        st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
+                    except Exception as e:
+                        log_and_show(f"Error reading the ZIP file: {e}", exc_info=True)
                 # Download example file
 
 
@@ -667,7 +674,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.session_state.index_poly=0
 
             with st.form(key='parameters', enter_to_submit=False):
-                st.number_input(rtext("1_4_2_plac1"),max_value=0.5,  key="buffer_input")
+                st.number_input(rtext("1_4_2_plac1"),min_value=0.5,  key="buffer_input")
                 st.number_input(rtext("1_4_2_plac2"), key="distance_input")
                 with st.expander(rtext("1_4_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_4_2_exp_te"))
@@ -685,6 +692,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     st.session_state.cover_maps = None
                     setattr(st.session_state, 'buffer', st.session_state.buffer_input)
                     setattr(st.session_state, 'distance', st.session_state.distance_input)
+                    st.session_state.stage="polygon_clustering"
                     
                     
             
@@ -910,12 +918,24 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     showlegend=False,
                     height=300
                 )
-                st.plotly_chart(fig, use_container_width=True)
-                LC_class=st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=dominant_class_names)
+                int_plot=st.plotly_chart(fig, width="stretch", on_select="rerun", selection_mode="points", )
+                points = int_plot["selection"]["points"]
+                class_selection = [p["curve_number"] for p in points]
+                st.session_state.LC_class=[grouped_percentages[i][0] for i in class_selection]
+
+                if st.session_state.LC_class:
+                    table_data = [
+                        {"Land cover class": lc, "Codes": ", ".join(str(c) for c in LC_dict[lc])}
+                        for lc in st.session_state.LC_class
+                    ]
+                    st.table(table_data)
+                else:
+                    st.info("Please select land cover classes from the plot above to see their corresponding codes.") 
                 
                 
-                st.session_state.LC["LC_class"] = [item for lc in LC_class for item in LC_dict[lc]]
-                st.session_state.LC["LC_classnames"]=LC_class
+                st.session_state.LC["LC_class"] = [item for lc in st.session_state.LC_class for item in LC_dict[lc]]
+                st.session_state.LC["LC_classnames"]=st.session_state.LC_class
+
 
                 if 2020-st.session_state.baseyear < 5:
                     st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
@@ -934,7 +954,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         
         
     
-        if st.session_state.LC["LC_class"] !=None:
+        if st.session_state.LC["LC_class"] is not None and st.session_state.LC["LC_class"] != []:
 
             if st.button(rtext("3_bu1")):
                 st.session_state.run_id = str(uuid.uuid4())
@@ -1060,5 +1080,5 @@ with col2.container( border=False, key="container", height=st.session_state.heig
         fg = folium.FeatureGroup(name="Polygons")
         fg.add_child(folium.GeoJson(st.session_state.polyinfo["polygons"], popup=folium.GeoJsonPopup(fields=["name"])))
         # Display the map
-        st.session_state.output2 = st_folium(m, feature_group_to_add=fg, use_container_width=True)
+        st.session_state.output2 = st_folium(m, feature_group_to_add=fg, width="stretch")
 
