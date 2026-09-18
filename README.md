@@ -106,7 +106,7 @@ conda activate gfs_env
 streamlit run Hello.py
 ```
 
-At this point, check the server via the `ip_address:8000`. Make sure to open the VM ports if they have not already been opened.
+At this point, check the server via `ip_address:8501` (or via `localhost:8501` if serving the application locally). Make sure to open the VM ports if they have not already been opened.
 
 6. (Recommended) Create a Docker cleanup `crontab` task to clean up disk space from unused images and stale build caches:
 
