@@ -438,7 +438,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.markdown(rtext("1_3_3_ti")) 
             st.markdown(rtext("1_3_3_te")) 
  
-            name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"])
+            name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"], on_change=lambda: setattr(st.session_state, 'species', None))
             with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
                 st.markdown(rtext("1_3_3_1_exp_te"))
 
@@ -619,6 +619,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         if st.session_state.obs.empty:
             log_and_warn("No observations available.")
             st.stop()
+        
         # Calculate the center of all point observations in total
         lats = st.session_state.obs["decimallatitude"].to_numpy()
         lngs = st.session_state.obs["decimallongitude"].to_numpy()
@@ -645,6 +646,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             
 
         if st.session_state.obs_final is not None:
+            
             st.markdown(rtext("1_4_ti"))
             st.markdown(rtext("1_4_te"))
             buffer_selection= [rtext("1_4_opt1"),rtext("1_4_opt2")]
@@ -798,10 +800,33 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
         if st.session_state.LC_selection==rtext("2_opt2"):
-            st.markdown(rtext("3_1_ti"))
-            st.markdown(rtext("3_1_te"))
-            LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)
-            st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
+
+            lc_table = pd.DataFrame({
+                "Class": LC_names_simple,
+                "Include": [None for name in LC_names_simple],
+            })
+
+            edited_lc_table = st.data_editor(
+                lc_table,
+                column_config={
+                    "Class": st.column_config.TextColumn(disabled=True),
+                    "Include": st.column_config.CheckboxColumn(default=False),
+                },
+                width="content",
+                hide_index=True,
+                key="LC_class_editor",
+            )
+
+            # Get selected class names, then map back to underlying values
+            
+            if edited_lc_table["Include"].any():
+                edited_lc_table["Include"] = edited_lc_table["Include"].astype(bool)
+
+                LC_class = edited_lc_table.loc[edited_lc_table["Include"] == True, "Class"].tolist()
+                st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
+
+                # Persist current selection so next rerun starts from it, not the original default
+                st.session_state.LC["LC_class_names_current"] = LC_class
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
