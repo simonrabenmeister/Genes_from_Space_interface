@@ -77,16 +77,28 @@ mkdir BIAB
 cd BIAB
 git clone git@github.com:GEO-BON/bon-in-a-box-pipelines.git
 cd bon-in-a-box-pipelines/
+git checkout genes-from-space--update
 cp runner-sample.env runner.env
 ```
 **Note**: Fill the properties of the `runner.env` depending on what you intend to run. Include any API keys that you need to access data (e.g. GBIF or IUCN).
 
-Moreover, as the default port `81` can conflict with default ports, change the `runner.env` file to have the following variable `HTTP_PORT=8000`. Then continue:
+Moreover, as the default port `81` can conflict with default ports, change the `runner.env` file to have the following variable `HTTP_PORT=8000`.
+
+This port location must also be matched in the `directories.txt` file (on the third line); e.g., for `HTTP_PORT=8000` the third line of `directories.txt` would be `http://localhost:8000/` when deploying the application locally. Additionally, make sure to edit the first two lines of `directories.txt` to be the local absolute paths of the listed directories; for convenience, you can run the following command from the repo root:
+
+```bash
+sed -E "s|^/Users/[^/]*|${HOME}|; s|^/home/[^/]*|${HOME}|" directories.txt > tmp && mv tmp directories.txt
+```
+
+Once these edits have been made, continue on Linux by adding your user to the `docker` group:
 
 ```bash
 sudo usermod -aG docker $USER
 ```
-Exit the VM then reconnect to fully refresh the session (sourcing .bashrc is not sufficient):
+
+And fully refresh the terminal session (sourcing .bashrc is not sufficient).
+
+At this point, you should be able to start the server:
 
 ```bash
 cd ~/BIAB/bon-in-a-box-pipelines/
