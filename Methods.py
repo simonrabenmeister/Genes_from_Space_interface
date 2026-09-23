@@ -91,8 +91,8 @@ with col2:
     st.markdown(rtext("thanks_te"))
 # Define custom CSS for consistent spacing
     # Encode the images to base64
-    nomis_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/Nomis_Logo.png"
-    uzh_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/uzh_logo.png"
+    nomis_logo_path = "./images/Nomis_Logo.png"
+    uzh_logo_path = "./images/uzh_logo.png"
 
     nomis_logo_base64 = base64.b64encode(open(nomis_logo_path, "rb").read()).decode()
     uzh_logo_base64 = base64.b64encode(open(uzh_logo_path, "rb").read()).decode()
