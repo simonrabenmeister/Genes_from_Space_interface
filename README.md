@@ -26,7 +26,7 @@ conda config --set auto_activate_base false
 conda deactivate
 ```
 
-2. Install Docker (for reference, [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) are the official instructions):
+2. Install Docker; please note: installations differs according to your [operating system](https://geo-bon.github.io/bon-in-a-box-pipeline-engine/how_to_install.html#step-1-install-docker). For reference, [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) are the official instructions, and pasted below are the commands that work on Ubuntu 26:
 
 ```bash
 sudo apt update
