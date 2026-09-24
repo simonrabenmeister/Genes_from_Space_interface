@@ -314,8 +314,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         setattr(st.session_state, "baseyear", None)
         )
     )
-    with st.expander(rtext("1_1_exp_ti"), expanded=False):
-        st.markdown(rtext("1_1_exp_te"))
+
     if st.session_state["data_source"] is not None:
         
         if st.session_state["data_source"]==rtext("1_1_opt3"): # Upload your own polygons
@@ -439,8 +438,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.markdown(rtext("1_3_3_te")) 
  
             name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"], on_change=lambda: setattr(st.session_state, 'species', None))
-            with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
-                st.markdown(rtext("1_3_3_1_exp_te"))
+
 
             if name_to_species:
 
@@ -497,8 +495,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == rtext("1_3_3_2_op2") else "bbox_draw"),
                     )
                 )
-                with st.expander(rtext("1_3_3_2_exp_ti"), expanded=False):
-                    st.markdown(rtext("1_3_3_2_exp_te"))
                 if region== rtext("1_3_3_2_op2"): 
                     st.markdown(rtext("1_3_3_3_ti2"))
                     st.markdown(rtext("1_3_3_3_te2"))
@@ -550,23 +546,23 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                 if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
                                     # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
                                     run_id = initial_response["runId"]
-                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
+                                    st.info(f"Job submitted, waiting for loading GBIF data...")
             
                                     # Poll for the result
                                     output_GBIF = get_output(run_id)
-                                    st.success("Pipeline ran successfully!")
+                                    # st.success("Pipeline ran successfully!")
             
                                 elif isinstance(initial_response, str):
                                     # Case B: Server returned a raw string Job ID (Legacy support)
                                     run_id = initial_response
-                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
+                                    st.info(f"Job submitted, waiting for loading GBIF data...")
                                     output_GBIF = get_output(run_id)
-                                    st.success("Pipeline ran successfully!")
+                                    # st.success("Pipeline ran successfully!")
             
                                 elif isinstance(initial_response, dict):
                                     # Case C: Server returned immediate JSON results (Full data, not just runId)
                                     output_GBIF = initial_response
-                                    st.success("Pipeline ran successfully (immediate)!")
+                                    # st.success("Pipeline ran successfully (immediate)!")
             
                                 else:
                                     log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
@@ -593,6 +589,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                                 st.session_state.obs = obs
                                                 st.session_state.stage = "Manipulate points"
                                                 st.success("Data loaded successfully!")
+                                                st.success("Go to the interactive map on the right to check and confirm species observation points.")
                                             except FileNotFoundError:
                                                 log_and_show(f"Output file not found: {file_path}")
                                             except Exception as e:
@@ -638,7 +635,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         if st.session_state.obs is None:
 
             # Confirm points to be used
-
+            
             st.markdown(rtext("1_3_3_4_ti"))
             st.markdown(rtext("1_3_3_4_te"))
 
@@ -664,9 +661,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 ),
                 key="index_poly_key"
             )
-            with st.expander(rtext("1_4_exp_ti"), expanded=False):
-                st.markdown(rtext("1_4_exp_te1"))
-                st.markdown(rtext("1_4_exp_te2"))
 
         if st.session_state.poly_creation==rtext("1_4_opt1"):
             st.markdown(rtext("1_4_2_ti"))
@@ -708,7 +702,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                         st.session_state.polyinfo["polygons"] = st.session_state.original_polygons
                         st.session_state.stage = "LC"
                         st.session_state.poly_directory = os.path.join(f"/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson")
-                        st.write(f"Saving polygons to: {st.session_state.poly_directory}")
                         os.makedirs(os.path.dirname(f"{st.session_state.biab_dir}{st.session_state.poly_directory}"), exist_ok=True)
                         with open(f"{st.session_state.biab_dir}{st.session_state.poly_directory}", "w") as f:
                             geojson.dump(st.session_state.polyinfo["polygons"], f)
@@ -748,43 +741,42 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
 
-        if st.session_state["data_source"]==rtext("1_1_opt2") or st.session_state["data_source"]==rtext("1_1_opt1"):
-            st.markdown(rtext("1_2_ti"))
-            st.markdown(rtext("1_2_te"))
-            st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
 
-            with st.expander(rtext("1_2_exp_ti"), expanded=False):
-                st.markdown(rtext("1_2_exp_te"))
         
-        if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
+        if st.session_state.polyinfo["polygons"] is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
-            LC_selection = [ rtext("2_opt4"), rtext("2_opt2")]#removed rtext("2_opt1") since get_TCY is not working properly.
-            
-            st.session_state.LC_selection = st.selectbox(
-                rtext("2_plac"),
-                LC_selection,
-                index=st.session_state.LC_index,
-                placeholder=rtext("2_desc"),
-                key="LC_type_key",
-                
-                on_change=lambda: (
-                    setattr(st.session_state, "LC_index", LC_selection.index(st.session_state.LC_type_key)),
-                    setattr(st.session_state, "LC_class_names", None),
-                    setattr(st.session_state, "LC", {"LC_class": None}),
 
+            if st.session_state["data_source"]==rtext("1_1_opt2") or st.session_state["data_source"]==rtext("1_1_opt1"):
+                st.markdown(rtext("1_2_ti"))
+                st.markdown(rtext("1_2_te"))
+                st.number_input(rtext("1_2_plac"), step=1, min_value=2004, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
+
+            if st.session_state.baseyear is not None:
+                st.markdown(rtext("1_2_1_te"))
+                LC_selection = [ rtext("2_opt4"), rtext("2_opt2")]#removed rtext("2_opt1") since get_TCY is not working properly.
+                
+                st.session_state.LC_selection = st.selectbox(
+                    rtext("2_plac"),
+                    LC_selection,
+                    index=st.session_state.LC_index,
+                    placeholder=rtext("2_desc"),
+                    key="LC_type_key",
+                    
+                    on_change=lambda: (
+                        setattr(st.session_state, "LC_index", LC_selection.index(st.session_state.LC_type_key)),
+                        setattr(st.session_state, "LC_class_names", None),
+                        setattr(st.session_state, "LC", {"LC_class": None}),
+
+
+                    )
 
                 )
+                st.warning("At the moment the Global forest watch data option is not available. we are working on fixing it. Please use the ESA CCI dataset.")
 
-            )
-            st.warning("At the moment the Global forest watch data option is not available. we are working on fixing it. Please use the ESA CCI dataset.")
-
-            
-            with st.expander(rtext("3_exp_ti"), expanded=False):
-                st.markdown(rtext("3_exp_te"))
-
-            with st.expander(rtext("3_exp1_ti"), expanded=False):
-                st.markdown(rtext("3_exp1_te"))
+                
+                with st.expander(rtext("3_exp_ti"), expanded=False):
+                    st.markdown(rtext("3_exp_te"))
 
         if st.session_state.LC_selection==rtext("2_opt3"):
             st.markdown(rtext("3_2_ti"))
@@ -800,6 +792,8 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
         if st.session_state.LC_selection==rtext("2_opt2"):
+            st.markdown(rtext("3_1_ti"))
+            st.markdown(rtext("3_1_te"))
 
             lc_table = pd.DataFrame({
                 "Class": LC_names_simple,
@@ -826,7 +820,8 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
 
                 # Persist current selection so next rerun starts from it, not the original default
-                st.session_state.LC["LC_class_names_current"] = LC_class
+                st.session_state.LC["LC_classnames"] = LC_class
+                st.write(st.session_state.LC)
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
@@ -844,25 +839,26 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
             data={"pipeline@13":st.session_state.LC["timeseries"],"pipeline@12":st.session_state.poly_directory }
             if st.session_state.info is None or st.session_state.polyinfo["polygons"] != st.session_state.poly_old :
-                try:
-                    # 1. Call the API
-                    info_response = LC_info(data)
-    
-                    # 2. Extract runId
-                    if isinstance(info_response, dict) and "runId" in info_response:
-                        run_id = info_response["runId"]
-                    elif isinstance(info_response, str):
-                        run_id = info_response
-                    else:
-                        log_and_show("Unexpected response from LC_info.")
-                        st.stop()
-    
-                    # 3. Poll for results
-                    st.session_state.info = get_output(run_id)
-                    st.session_state.poly_old = st.session_state.polyinfo["polygons"]
-                except BiaBError as e:
-                    _show_biab_error(e)
-                    st.stop()  
+                with st.spinner(rtext("3_3_load")):
+                    try:
+                        # 1. Call the API
+                        info_response = LC_info(data)
+        
+                        # 2. Extract runId
+                        if isinstance(info_response, dict) and "runId" in info_response:
+                            run_id = info_response["runId"]
+                        elif isinstance(info_response, str):
+                            run_id = info_response
+                        else:
+                            log_and_show("Unexpected response from LC_info.")
+                            st.stop()
+        
+                        # 3. Poll for results
+                        st.session_state.info = get_output(run_id)
+                        st.session_state.poly_old = st.session_state.polyinfo["polygons"]
+                    except BiaBError as e:
+                        _show_biab_error(e)
+                        st.stop()  
             if st.session_state.info is not None:
                 LC_cum=pd.read_csv(f"{st.session_state.biab_dir}/output/{st.session_state.info['GFS_IndicatorsTool>LC_info.yml@11']}/pop_lc_sorted_cum.csv")
                 # Compute individual element percentages
@@ -1043,7 +1039,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                 cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                                 st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                             if st.session_state.LC_selection==rtext("2_opt2"):
-                                st.session_state.LC_classnames=[LC_names_simple[values_simple.index(value)] for value in st.session_state.LC["LC_class"] if value in values_simple]
+                                st.session_state.LC_classnames=st.session_state.LC["LC_classnames"]
                                 cover_output_code=output_area["GFS_IndicatorsTool>get_LCY.yml@195"]
                                 st.session_state.cover_maps=f"/output/{cover_output_code}/cover maps"
                             pop_area=f"/output/{area_output_code}/pop_habitat_area.tsv"

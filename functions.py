@@ -471,29 +471,29 @@ def edit_points():
         st.session_state.area_table = None
         st.session_state.cover_maps = None
         st.rerun()
-    # Show a histogram of GBIF observations grouped by occurrence year.
-    if "year" in obs_edit.columns:
-        years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
-        if not years.empty:
-            year_histogram = (
-                years.astype(int)
-                .value_counts()
-                .sort_index()
-                .rename_axis("year")
-                .to_frame("observations")
-                .reset_index()
-            )
-            st.subheader("GBIF observations by year")
+    # # Show a histogram of GBIF observations grouped by occurrence year.
+    # if "year" in obs_edit.columns:
+    #     years = pd.to_numeric(obs_edit["year"], errors="coerce").dropna()
+    #     if not years.empty:
+    #         year_histogram = (
+    #             years.astype(int)
+    #             .value_counts()
+    #             .sort_index()
+    #             .rename_axis("year")
+    #             .to_frame("observations")
+    #             .reset_index()
+    #         )
+    #         st.subheader("GBIF observations by year")
 
-            chart = (
-                alt.Chart(year_histogram)
-                .mark_bar()
-                .encode(
-                    x=alt.X("year:O", title="Year"),
-                    y=alt.Y("observations:Q", title="Observations"),
-                )
-            )
-            st.altair_chart(chart, use_container_width=True)
+    #         chart = (
+    #             alt.Chart(year_histogram)
+    #             .mark_bar()
+    #             .encode(
+    #                 x=alt.X("year:O", title="Year"),
+    #                 y=alt.Y("observations:Q", title="Observations"),
+    #             )
+    #         )
+    #         st.altair_chart(chart, use_container_width=True)
     with st.expander("advanced options"):
         
         st.session_state.index 

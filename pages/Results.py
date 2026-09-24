@@ -145,7 +145,7 @@ def load_geojson():
         st.session_state.LC_classnames =geojson_data["LC_class_names"]
         st.session_state.run_id = geojson_data["run_id"]
 
-input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
+
 
 if not st.session_state.upload:
     if st.session_state.polyinfo is not None:
@@ -267,7 +267,7 @@ if input is not None or st.session_state.polyinfo is not None:
         # Call to render Folium map in Streamlit
         st.session_state.out = st_folium(m, use_container_width=True, pixelated=True, feature_group_to_add=fg)
     if NC is not None:
-        st.write(rtext("out_1_ti"))
+        st.markdown(rtext("out_1_ti"))
         for value in class_names:
             st.markdown(f"<li><strong>{value}</strong></li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
@@ -431,7 +431,7 @@ if input is not None or st.session_state.polyinfo is not None:
                     key="data",
                     column_config={
                     "effective_size": st.column_config.Column(disabled=True),
-                    "nenc": st.column_config.Column(disabled=True),
+                    "NeNc": st.column_config.Column(disabled=True),
                     "habitat_area": st.column_config.Column(disabled=True)
                     },
 
@@ -459,7 +459,7 @@ if input is not None or st.session_state.polyinfo is not None:
                         key="pop_density"
                     )
                     default_nenc = st.number_input(
-                        "Default nenc",
+                        "Default Ne:Nc ratio",
                         value=st.session_state.default_nenc,
                         min_value=0.0, 
                         step=0.01, 
@@ -502,8 +502,8 @@ if input is not None or st.session_state.polyinfo is not None:
                             y="NE",
                             color=NE.columns[0],
                             markers=True,
-                            title="Effective Population Size (NE) Over Time",
-                            labels={"NE": "Effective Population Size (NE)", "year": "Year", NE.columns[0]: "Category"},
+                            title="Effective Population Size (Ne) Over Time",
+                            labels={"NE": "Effective Population Size (Ne)", "year": "Year", NE.columns[0]: "Category"},
                             color_discrete_map={
                                 feature["properties"]["name"]: feature["properties"]["color"]
                                 for feature in st.session_state.pop_polygons["features"]
@@ -515,7 +515,7 @@ if input is not None or st.session_state.polyinfo is not None:
                             y=500,
                             line_dash="dash",
                             line_color="black",
-                            annotation_text="NE>500",
+                            annotation_text="Ne>500",
                             annotation_position="top left"
                         )
 
@@ -526,31 +526,28 @@ if input is not None or st.session_state.polyinfo is not None:
                         ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
                         ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
-                        # Calculate the ratio of effective population sizes > 50
-                        end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > 10]
-                        start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
-                        
-                        pop_total= len(start_pop)
-                        pop_above= [start_pop >= 500][0]
-                        end_pop_bellow=end_pop[pop_above]<100
+                        # Starting population size
+                        start_pop = st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
+
+                        end_pop = st.session_state.properties["effective_size"]
+
+                        pop_total = len(start_pop)
+                        pop_above = start_pop >= 500
+                        end_pop_bellow = end_pop[pop_above] < 50
+
                         pop_above_count = int(pop_above.sum())
                         end_pop_bellow_count = int(end_pop_bellow.sum())
-                        PM_table = pd.DataFrame(
-                            {
-                                "Value": [pop_total, pop_above_count, end_pop_bellow_count]
-                            },
-                            index=["total populations", "starting populations with NE>500", "at risk populations (NE drop bellow 100)"]
-                        )
 
+                        PM_table = pd.DataFrame(
+                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count]},
+                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow 50)"]
+                        )
                         st.markdown("### Estimated GBF genetic diversity indicators")
                         st.markdown(
-                            "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
+                            "**Ne>500:**   \n   {:.2f}".format(ratio_ne_greater_500)
                         )
-                        st.markdown(
-                            "**PM:** "
-                        )
-                        st.markdown("For multiple reasons our Tool is not capable of correctly estimating the PM indicator. We are working on solving this issue, but for the moment we can provide you with an overview of the populations that are at risk of extinction. In the following Table, all populations are considered that had Ne>500 at the start of the observation period. Of these, Populations that drop bellow 100 within the observation period are considered at risk of extinction.")
-
+                        st.markdown(rtext("out_4_te"))
+                        
                         st.dataframe(PM_table, use_container_width=False)
 
 
@@ -572,7 +569,7 @@ if input is not None or st.session_state.polyinfo is not None:
 
                     })
                     st.markdown("##### Download The Run as a GeoJSON file")
-                    st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
+                    st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file or previously generated files in the below section to reconstruct the results.")
                     st.download_button(
                     label="Download GeoJSON",
                     data=geojson_data,
@@ -580,7 +577,9 @@ if input is not None or st.session_state.polyinfo is not None:
                     mime="text/csv",
                     icon=":material/download:",
                 )
-
+if input is None or st.session_state.polyinfo is None:
+    st.markdown("You can upload a previously generated GeoJSON file to reconstruct the results. This file contains all the relevant Data to reconstruct the Output.")
+input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
 ## advance functionalities form
 
 #             with st.expander("Advanced functionalities (beta)", expanded=False):
