@@ -64,6 +64,8 @@ if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
+if "PM_cutoff" not in st.session_state:
+    st.session_state.PM_cutoff = 50
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
 
 # !! Hide a page
@@ -520,37 +522,45 @@ if input is not None or st.session_state.polyinfo is not None:
                         )
 
                         # Display the plot in Streamlit
+
                         ne_plot = st.plotly_chart(ne_fig, use_container_width=True)
 
-                        # Calculate the ratio of populations with effective size > 500
+
+                                                
+                                                
+                        if class_names == "Tree cover":
+                            pixel_threshold=0.03*0.03
+                        else:
+                            pixel_threshold=0.3*0.3
+                        
+
+                        # now the calculation always sees the up-to-date cutoff
                         ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
                         ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
-                        # Starting population size
                         start_pop = st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
-
                         end_pop = st.session_state.properties["effective_size"]
 
                         pop_total = len(start_pop)
                         pop_above = start_pop >= 500
-                        end_pop_bellow = end_pop[pop_above] < 50
+                        end_pop_bellow = end_pop < st.session_state.PM_cutoff
+                        end_pop_bellow_raw = end_pop == 0
+                        end_pop_bellow_pixel = st.session_state.properties["habitat_area"] < pixel_threshold
 
                         pop_above_count = int(pop_above.sum())
                         end_pop_bellow_count = int(end_pop_bellow.sum())
-
+                        end_pop_bellow_raw_count = int(end_pop_bellow_raw.sum())
+                        end_pop_bellow_pixel_count = int(end_pop_bellow_pixel.sum())
                         PM_table = pd.DataFrame(
-                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count]},
-                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow 50)"]
+                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count, end_pop_bellow_raw_count, end_pop_bellow_pixel_count]},
+                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow {:.0f})".format(st.session_state.PM_cutoff), "extinct populations (Ne = 0)", "populations with insufficient habitat area"]
                         )
+
                         st.markdown("### Estimated GBF genetic diversity indicators")
-                        st.markdown(
-                            "**Ne>500:**   \n   {:.2f}".format(ratio_ne_greater_500)
-                        )
+                        st.markdown("**Ne>500:**   \n   {:.2f}".format(ratio_ne_greater_500))
                         st.markdown(rtext("out_4_te"))
-                        
                         st.dataframe(PM_table, use_container_width=False)
-
-
+                        st.slider("PM Threshold", 0, 100, key="PMcutoff", on_change=lambda: setattr(st.session_state, "PM_cutoff", st.session_state.PMcutoff))
 
 
                     geojson_data = json.dumps({
@@ -577,9 +587,9 @@ if input is not None or st.session_state.polyinfo is not None:
                     mime="text/csv",
                     icon=":material/download:",
                 )
-if input is None or st.session_state.polyinfo is None:
+if input is None or st.session_state.NC is None:
     st.markdown("You can upload a previously generated GeoJSON file to reconstruct the results. This file contains all the relevant Data to reconstruct the Output.")
-input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
+    input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
 ## advance functionalities form
 
 #             with st.expander("Advanced functionalities (beta)", expanded=False):

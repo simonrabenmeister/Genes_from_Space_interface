@@ -821,7 +821,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
                 # Persist current selection so next rerun starts from it, not the original default
                 st.session_state.LC["LC_classnames"] = LC_class
-                st.write(st.session_state.LC)
+
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
