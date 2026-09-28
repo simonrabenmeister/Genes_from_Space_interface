@@ -288,7 +288,17 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
-    selection=["Species 1", "Species 2", "Species 3"]
+    options=["GBIF species search", "Upload your own points", "Polygons"]
+    st.session_state["data_option"] = st.selectbox("Which data source would you like to use?", options)
+
+    if  st.session_state["data_option"]== "GBIF species search":
+        selection=["Species 1", "Species 2", "Species 3", "Species 4"]
+    if st.session_state["data_option"]== "Upload your own points":
+        selection=["Species 5", "Species 6"]
+    if st.session_state["data_option"]=="Polygons":
+        selection=["Species 7"]
+
+    
 
     st.session_state["data_source"] = st.selectbox(
         rtext("1_1_in"), selection, 
