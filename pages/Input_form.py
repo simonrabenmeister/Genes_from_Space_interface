@@ -160,6 +160,10 @@ st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/in
 height_source=streamlit_js_eval(js_expressions='screen.height', key = 'SCR')
 if height_source is not None:
     st.session_state.height=int(height_source*0.6)
+else:
+    # Fallback if JS eval fails or returns None on first run
+    if 'height' not in st.session_state:
+        st.session_state.height = 500
 if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 if "scroll_image_container" not in st.session_state:
@@ -754,7 +758,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
             if st.session_state.baseyear is not None:
                 st.markdown(rtext("1_2_1_te"))
-                LC_selection = [ rtext("2_opt4"), rtext("2_opt2")]#removed rtext("2_opt1") since get_TCY is not working properly.
+                LC_selection = [ rtext("2_opt4"), rtext("2_opt2"), rtext("2_opt1")] # Point to add/remove GFW tree cover option
                 
                 st.session_state.LC_selection = st.selectbox(
                     rtext("2_plac"),
@@ -772,7 +776,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     )
 
                 )
-                st.warning("At the moment the Global forest watch data option is not available. we are working on fixing it. Please use the ESA CCI dataset.")
 
                 
                 with st.expander(rtext("3_exp_ti"), expanded=False):

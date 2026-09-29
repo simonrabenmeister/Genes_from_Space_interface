@@ -138,6 +138,192 @@ To schedule it in crontab (with `root` permissions) use `sudo crontab -e` and ed
 0 0 * * 0 /usr/local/bin/docker-cleanup.sh
 ```
 
+### Serving Spatial Datasets Locally
+
+It is possible to download and prepare the STAC layers locally so that the server/application need not call for the layers remotely.
+
+However, the datasets must be arranged in a very specific directory layout for the scripts to make use of them. Specifically:
+
+- Create a subdirectory inside of the `bon-in-a-box-pipeline` repo in `userdata` named `gfs_layers`.
+- Within this subdirectory, place either the individual Global Forest Watch layers directly (in the format described below) and/or make a second subdirectory titled `esacci_lc` to place all of the properly formatted ESA CCI Land Cover layers (also as described below).
+
+If you need to symlink this location to ensure your server's main HD has enough storage capacity, you can perform the symlink (e.g., `ln -s /mnt/gfs_layers ~/BIAB/bon-in-a-box-pipelines/userdata/gfs_layers`) but you must also update the Bon in a Box `compose.env.yml` file to mount the symlinked location within the Docker containers. For example, if you used the example symlink command, you should edit the `runner-conda` section of the compose file to read:
+
+```yml
+services:
+  runner-conda:
+    image: ghcr.io/geo-bon/bon-in-a-box-pipelines/runner-conda
+    # build:
+    #   context: ${PIPELINE_REPO_PATH}/runners/conda
+    #   dockerfile: conda-dockerfile
+    tty: true # Needed to keep the container alive, waiting for requests.
+    volumes:
+      - /mnt/gfs_layers:/mnt/gfs_layers:ro # <---- This ensures the symlinked location is also accessible to Docker
+```
+
+If this section is omitted, the scripts will fallback to using the GeoBon STAC.
+
+<details closed>
+<summary> <b>Global Forest Watch</b> </summary>
+<br>
+
+When preparing these layers, do not download them verbatim from the STAC. Instead, use the following Google Earth Engine script:
+
+```javascript
+var gfw = ee.Image("UMD/hansen/global_forest_change_2025_v1_13");
+var gfw2000 = gfw.select('treecover2000');
+Map.addLayer(gfw2000,{},'gfw2000',false);
+
+var gfw2000GT30 = gfw.select('treecover2000').gt(30).selfMask();
+print('gfw2000GT30',gfw2000GT30);
+Map.addLayer(gfw2000GT30,{},'gfw2000GT30',false);
+
+var lossyear = gfw.select('lossyear');
+print(lossyear);
+Map.addLayer(lossyear,{},'lossyear',false);
+
+print(lossyear.projection());
+
+var unboundedGeo = ee.Geometry.Polygon([-180, 88, 0, 88, 180, 88, 180, -88, 0, -88, -180, -88], null, false);
+
+Export.image.toDrive({
+	image: gfw2000,
+	description: 'gfw2000TreeCover',
+	fileNamePrefix: 'gfw2000TreeCover',
+	region: unboundedGeo,
+	crs: 'EPSG:4326',
+	crsTransform:[0.00025,0,-180,0,-0.00025,80],
+	maxPixels: 1e12,
+	fileFormat: 'GeoTIFF',
+	formatOptions: {'cloudOptimized':true},
+	maxPixels:10000000000000
+});
+
+Export.image.toDrive({
+	image: gfw2000GT30,
+	description: 'gfw2000TreeCoverGT30Masked',
+	fileNamePrefix: 'gfw2000TreeCoverGT30Masked',
+	region: unboundedGeo,
+	crs: 'EPSG:4326',
+	crsTransform:[0.00025,0,-180,0,-0.00025,80],
+	maxPixels: 1e12,
+	fileFormat: 'GeoTIFF',
+	formatOptions: {'cloudOptimized':true},
+	maxPixels:10000000000000
+});
+
+Export.image.toDrive({
+	image: lossyear,
+	description: 'gfwLossYear',
+	fileNamePrefix: 'gfwLossYear',
+	region: unboundedGeo,
+	crs: 'EPSG:4326',
+	crsTransform:[0.00025,0,-180,0,-0.00025,80],
+	maxPixels: 1e12,
+	fileFormat: 'GeoTIFF',
+	formatOptions: {'cloudOptimized':true},
+	maxPixels:10000000000000
+});
+```
+
+Once you have downloaded all of the individual tifs, use the following commands to prepare them for analysis:
+
+```bash
+# binary version of the tree cover layer
+gdalbuildvrt temp_gfwTreeCoverGT30.vrt ./gfwTreeCoverGT30/*.tif
+gdal_translate -of GTiff -co BIGTIFF=YES -ot Byte -co NBITS=1 -co COMPRESS=DEFLATE -co TILED=YES -co NUM_THREADS=6 --config GDAL_CACHEMAX 8192 temp_gfwTreeCoverGT30.vrt binary_temp_gfwTreeCoverGT30.tif
+gdal_translate -of COG -co BIGTIFF=YES -co COMPRESS=DEFLATE -co NUM_THREADS=6 --config GDAL_CACHEMAX 8192 binary_temp_gfwTreeCoverGT30.tif gfwTreeCoverGT30_1BitCOG.tif
+
+
+# 8 bit original version of the loss year layer
+gdalbuildvrt temp_gfwLossYear.vrt ./gfwLossYear/*.tif
+gdal_translate -of COG -co COMPRESS=DEFLATE -co BIGTIFF=YES -co PREDICTOR=2 -co NUM_THREADS=6 --config GDAL_CACHEMAX 4096 "temp_gfwLossYear.vrt" "gfwLossYear.tif"
+```
+
+The files must be then placed directly in `./BIAB/bon-in-a-box-pipelines/userdata/gfs_layers`. Moreover, they must be named explicitly `gfw_lossyear.tif` and  `gfw_treecover_2000.tif`. Any deviation from these names will result in the script falling back to the STAC.
+
+</details>
+
+<details closed>
+<summary> <b>ESA CCI Land Cover</b> </summary>
+<br>
+
+Firstly, to download the original files, use the following Python script (as constructed via the [Copernius Data Store](https://cds.climate.copernicus.eu/how-to-api) web portal):
+
+```python
+import cdsapi
+
+dataset = "satellite-land-cover"
+request = {
+    "variable": "all",
+    "year": ["YEAR_PLACEHOLDER"],
+    "version": ["VERSION_PLACEHOLDER"]
+}
+
+client = cdsapi.Client()
+
+for year in range(1992, 2023):
+    if year <= 2015:
+        version = "v2_0_7cds"
+    else:
+        version = "v2_1_1"
+    
+    request["year"] = [str(year)]
+    request["version"] = [version]
+    
+    print(f"[{year}] Downloading land cover data ({version})...")
+    
+    try:
+        client.retrieve(dataset, request).download()
+        print(f"[{year}] ✓ Done")
+    except Exception as e:
+        print(f"[{year}] ✗ Failed: {e}")
+```
+
+After downloading the files, rename them for consistency and to follow natural numeric order in filesystem contexts:
+
+```bash
+cd ~/Documents/Consulting/Genes_From_Space/CCI_Land_Cover
+
+for f in ESACCI-LC-L4-LCCS-Map-300m-P1Y-*-v2_0_7cds.tif C3S-LC-L4-LCCS-Map-300m-P1Y-*-v2_1_1.tif; do
+  yr=$(echo "$f" | sed -E 's/.*-P1Y-([0-9]{4})-.*/\1/')
+  target="esacci-lc-${yr}.tif"
+  if [ -e "$target" ]; then
+    echo "SKIP (exists): $f -> $target"
+  else
+    cp -v "$f" "$target"
+  fi
+done
+```
+
+Please note: `cp` is used here so as to create new, renamed versions of the files; you can substitute it with the `mv` command if you would instead prefer to change their names in place.
+
+Once the layers have been downloaded and renamed, they are then ready to be uploaded directly to ``./BIAB/bon-in-a-box-pipelines/userdata/gfs_layers/esacci_lc`.
+
+For reference, fidelity with the STAC layers can be affirmed using checksums with `gdal`:
+
+```bash
+for yr in $(seq 1992 2020); do
+  if [ $yr -le 2015 ]; then
+    raw="CCI_Land_Cover/ESACCI-LC-L4-LCCS-Map-300m-P1Y-${yr}-v2_0_7cds.tif"
+  else
+    raw="CCI_Land_Cover/C3S-LC-L4-LCCS-Map-300m-P1Y-${yr}-v2_1_1.tif"
+  fi
+  stac="CCI_STAC_Data/esacci-lc-${yr}.tif"
+
+  cs_stac=$(gdalinfo -checksum "$stac" | sed -n 's/.*Checksum=\([0-9]*\).*/\1/p' | tr '\n' ',')
+  cs_raw=$(gdalinfo -checksum "$raw" | sed -n 's/.*Checksum=\([0-9]*\).*/\1/p' | tr '\n' ',')
+
+  if [ -n "$cs_stac" ] && [ "$cs_stac" = "$cs_raw" ]; then
+    echo "${yr}: IDENTICAL (checksum ${cs_stac})"
+  elif [ -z "$cs_stac" ] || [ -z "$cs_raw" ]; then
+    echo "${yr}: EXTRACTION FAILED (stac='${cs_stac}', raw='${cs_raw}')"
+  else
+    echo "${yr}: DIFFERS (stac=${cs_stac}, raw=${cs_raw})"
+  fi
+```
+</details>
+
 ### FAQ:
 
 <details closed>
