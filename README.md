@@ -115,7 +115,7 @@ screen -r gfs_streamlit
 # !! Within the screen session
 cd ~/Genes_from_Space_interface/
 conda activate gfs_env
-streamlit run Hello.py
+streamlit run Methods.py
 ```
 
 At this point, check the server via `ip_address:8501` (or via `localhost:8501` if serving the application locally). Make sure to open the VM ports if they have not already been opened.
@@ -989,7 +989,7 @@ Hay una publicación sobre el concepto y los flujos de trabajo [aquí](https://d
 
 
 #### Content
-- **Hello.py**: This is the main Streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
+- **Methods.py**: This is the main Streamlit script that is used to run the Interface and serves as the "Homepage" for the Tool. It contains some Page configuration settings, it sets up the subpages Input_form and Output_display and contains some general information about the Tool and approach.
 - **/pages/Input_form.py**: This file is the main Input form. It is linked to and called by the "Homepage" Hello.py. The contents of this script generates all the relevant User inputs and executes the Bon in a Box scripts. It saves all relevant data in the session_state and finally redirects the User to the Output_display.py when all the Information is provided.
 - **/pages/Output_display.py**: This file uses the Output data created in Input_form.py to create interactive maps and plots to visualize the data. It also allows you to download created runs or upload previous runs as GeoJSON files.
 - **/temp_tiles**: This folder is used to save Images created in the Output_display.py and are used in the Map display. These Files must be kept as long as we want to give the User the option to view previously created runs
