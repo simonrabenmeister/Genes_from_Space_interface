@@ -298,7 +298,7 @@ done
 
 Please note: `cp` is used here so as to create new, renamed versions of the files; you can substitute it with the `mv` command if you would instead prefer to change their names in place.
 
-Once the layers have been downloaded and renamed, they are then ready to be uploaded directly to ``./BIAB/bon-in-a-box-pipelines/userdata/gfs_layers/esacci_lc`.
+Once the layers have been downloaded and renamed, they are then ready to be uploaded directly to `./BIAB/bon-in-a-box-pipelines/userdata/gfs_layers/esacci_lc`.
 
 For reference, fidelity with the STAC layers can be affirmed using checksums with `gdal`:
 
