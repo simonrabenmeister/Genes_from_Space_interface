@@ -794,37 +794,13 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             else:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 5).astype(int).tolist()
 
+
         if st.session_state.LC_selection==rtext("2_opt2"):
+
             st.markdown(rtext("3_1_ti"))
             st.markdown(rtext("3_1_te"))
-
-            lc_table = pd.DataFrame({
-                "Class": LC_names_simple,
-                "Include": [None for name in LC_names_simple],
-            })
-
-            edited_lc_table = st.data_editor(
-                lc_table,
-                column_config={
-                    "Class": st.column_config.TextColumn(disabled=True),
-                    "Include": st.column_config.CheckboxColumn(default=False),
-                },
-                width="content",
-                hide_index=True,
-                key="LC_class_editor",
-            )
-
-            # Get selected class names, then map back to underlying values
-            
-            if edited_lc_table["Include"].any():
-                edited_lc_table["Include"] = edited_lc_table["Include"].astype(bool)
-
-                LC_class = edited_lc_table.loc[edited_lc_table["Include"] == True, "Class"].tolist()
-                st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
-
-                # Persist current selection so next rerun starts from it, not the original default
-                st.session_state.LC["LC_classnames"] = LC_class
-
+            LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)
+            st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
