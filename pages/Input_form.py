@@ -122,6 +122,10 @@ if "GBIF_data" not in st.session_state:
         "index data": None,
         "index boundry": None
     }
+if "selection" not in st.session_state:
+    st.session_state.selection = None  # Default selection for species
+if "species_type" not in st.session_state:
+    st.session_state.species_type = None  # Default species type
 if "LC_class_index" not in st.session_state:
     st.session_state.LC_class_index = None  # Default LC type
 if "GBIF_index" not in st.session_state:
@@ -246,6 +250,8 @@ st.markdown("""
 
 st.image('images/logo.png')
 with st.sidebar:
+
+    st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
     # Display the session ID for user confirmation when debugging
     st.divider()
     st.caption(
@@ -288,78 +294,164 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
-    options=["GBIF species search", "Upload your own points", "Polygons"]
-    st.session_state["data_option"] = st.selectbox("Which data source would you like to use?", options)
+    selection=[rtext("1_1_opt1"), rtext("1_1_opt2"), rtext("1_1_opt3")]
+    st.markdown(rtext("1_1_ti"))
+    st.markdown(rtext("1_1_te"))
+    options=["Get species observation points from GBIF", "Upload your own species observation points", "Upload your own polygons of population distribution"]
 
-    if  st.session_state["data_option"]== "GBIF species search":
-        selection=["Species 1", "Species 2", "Species 3", "Species 4"]
-    if st.session_state["data_option"]== "Upload your own points":
-        selection=["Species 5", "Species 6"]
-    if st.session_state["data_option"]=="Polygons":
-        selection=["Species 7"]
+    st.session_state["data_source"] = st.selectbox("Which data source would you like to use?", options, index=None)
 
     
+    if  st.session_state["data_source"]== "Get species observation points from GBIF":
+        st.session_state.selection=["Dendrocoptes medius", "Tetrao urogallus", "Proboscis monkey"]
+    if st.session_state["data_source"]== "Upload your own polygons of population distribution":
+        st.session_state.selection=["Zea perennis", "Persea cinerascens"]
+    if st.session_state["data_source"]=="Upload your own species observation points":
+        st.session_state.selection=[ "Diceros bicornis"]
 
-    st.session_state["data_source"] = st.selectbox(
-        rtext("1_1_in"), selection, 
-        index=st.session_state["data_source_index"],  
-        placeholder=rtext("1_1_plac"),
-        key="data_source_key",
-        on_change=lambda: (
-        setattr(st.session_state, 'data_source_index', selection.index(st.session_state.data_source_key)),
-        setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
-        setattr(st.session_state, 'obs', None),
-        setattr(st.session_state, 'obs_edit', None),
-        setattr(st.session_state, 'buffer', None),
-        setattr(st.session_state, 'distance', None),
-        setattr(st.session_state, 'LC_selection', None),
-        setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
-        setattr(st.session_state, 'LC_index', None),
-        setattr(st.session_state, 'area_table', None),
-        setattr(st.session_state, 'stage', "upload"),
-        setattr(st.session_state, 'LC_class_index', None),
-        setattr(st.session_state, "index_poly", None),
-        setattr(st.session_state, "baseyear", None),
-        setattr(st.session_state, "stage", "Manipulate points"),
+
+    if st.session_state.selection is not None:
+        st.session_state["species_type"] = st.selectbox(
+            rtext("1_1_in"), st.session_state.selection, 
+            placeholder=rtext("1_1_plac"),
+            index=None,
+            key="data_source_key",
+            on_change=lambda: (
+            setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
+            setattr(st.session_state, 'obs', None),
+            setattr(st.session_state, 'obs_edit', None),
+            setattr(st.session_state, 'buffer', None),
+            setattr(st.session_state, 'distance', None),
+            setattr(st.session_state, 'LC_selection', None),
+            setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
+            setattr(st.session_state, 'LC_index', None),
+            setattr(st.session_state, 'area_table', None),
+            setattr(st.session_state, 'stage', "upload"),
+            setattr(st.session_state, 'LC_class_index', None),
+            setattr(st.session_state, "index_poly", None),
+            setattr(st.session_state, "baseyear", None),
+            setattr(st.session_state, "stage", "Manipulate points"),
+            )
         )
-    )
 
-    if st.session_state["data_source"] is not None:
+    if st.session_state["species_type"] is not None:
         
-        if st.session_state["data_source"]=="Species 1":
-            obs_link= "/home/ubuntu/BIAB/bon-in-a-box-pipelines/output/GFS_IndicatorsTool/GBIF_obs/6hbgCxOjkiUf37yBCa_vgg_oGM9U/GBIF_obs.csv"
-        if st.session_state["data_source"]=="Species 2":
-            obs_link= "/home/ubuntu/BIAB/bon-in-a-box-pipelines/output/GFS_IndicatorsTool/GBIF_obs/EZTOCTm2PU7tYMn1mycWpZyLytSD/GBIF_obs.csv"
-        if st.session_state["data_source"]=="Species 3":
-            obs_link= "/home/ubuntu/BIAB/bon-in-a-box-pipelines/output/GFS_IndicatorsTool/GBIF_obs/nZm5-CN2nQZ-ViQP3-DH7HiKULav/GBIF_obs.csv"
-        if st.session_state["data_source"]==rtext("1_1_opt2"): # Upload your own points
+        if st.session_state["species_type"]=="Diceros bicornis":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Black_Rhino_decimal_coordinates_fixed[1](1).csv"
+        if st.session_state["species_type"]=="Persea cinerascens":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Pcinerascens_Observations4326.geojson"
+        if st.session_state["species_type"]=="Tetrao urogallus":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Tetrao urogallus_CH_GBIF.csv"
+        if st.session_state["species_type"]=="Dendrocoptes medius":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Dendrocoptes medius_CH_GBIF.csv"
+        if st.session_state["species_type"]=="Zea perennis":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/ZeaPerennisSDMWGS4326.geojson"
+        if st.session_state["species_type"]=="Proboscis monkey":
+            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Monkey_Brunei Darussalam + Indonesia + Malaysia_GBIF.csv"
+        
+        if st.session_state["data_source"]=="Upload your own polygons of population distribution": # Upload your own polygons
+
+
+            try:
+                with open(obs_link, "r", encoding="utf-8") as polygon_file:
+                    st.session_state.polyinfo["polygons"] = geojson.load(polygon_file)
+                st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
+            except Exception as e:
+                log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
+
+
+
+            if st.session_state.polyinfo["polygons"] is not None:
+                if st.session_state.polyinfo["polygons"] is not None:
+                    lat_min, lat_max, lng_min, lng_max = polygon_bounds(st.session_state.polyinfo["polygons"])
+
+                    # Center on the bounding box of all polygons
+                    center_lat = (lat_min + lat_max) / 2
+                    center_lng = (lng_min + lng_max) / 2
+                    st.session_state.center = {"lat": center_lat, "lng": center_lng}
+
+                    # Zoom level that fits every polygon on screen
+                    st.session_state.zoom = compute_fit_zoom_from_bounds(
+                        lat_min, lat_max, lng_min, lng_max,
+                        map_width_px=st.session_state.get("map_width", 800),
+                        map_height_px=st.session_state.get("height", 500),
+                    )
+                run = os.path.join(st.session_state.run_dir, "updated_polygons.geojson")
+                os.makedirs(os.path.dirname(run), exist_ok=True)  # Ensure the directory exists
+                with open(run, "w") as f:
+                    geojson.dump(st.session_state.polyinfo["polygons"], f)
+                st.session_state.poly_directory = os.path.join(
+                    "/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson"
+                )
+                st.session_state.stage = "LC"
+            if st.session_state.polyinfo["polygons"] is not None:
+                st.markdown("If you want to add more polygons to the map, click the button below. You will be redirected to a new page where you can draw polygons on the map.")
+                if st.button("add polygons to map"):
+                    st.session_state.stage = "manual_polygon_creation"
+                    st.session_state.polygon_addition = st.session_state.original_polygons
+                    st.rerun()
+        if st.session_state["data_source"]==rtext("1_1_opt1"): # Upload your own points
 
             st.markdown(rtext("1_3_2_ti"))
             st.markdown(rtext("1_3_2_te"))
-#Upload your own point file
-        st.session_state.obs = pd.read_csv(obs_link, sep=None, engine='python')  # Let pandas infer the separator
-        # Check if the required columns are present
+        #Upload your own point file
+            obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv","tsv"], label_visibility="collapsed", key="point_source", 
+                                        on_change=lambda: st.session_state.update({"stage": "Manipulate points",
+                                                                                   "obs": None,
+                                                                                   "obs_edit": None,
+                                                                                   "obs_final": None,
+                                                                                   "obs_csv": None,
+                                                                                   "index": None,
+                                                                                   "poly_creation": None
+                                                                                   }))
+            if obs_link is not None and st.session_state.obs is None:
+                try:
+                    st.session_state.obs = read_occurrence_file(obs_link)
+                    # Check if the required columns are present
+                    required_columns = ["decimallongitude", "decimallatitude"]
+                    if not all(col in st.session_state.obs.columns for col in required_columns):
+                        log_and_show(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
 
-        if st.session_state.obs is not None:
-            
-            # Calculate the center of all point observations in total
-            lats = st.session_state.obs["decimallatitude"].to_numpy()
-            lngs = st.session_state.obs["decimallongitude"].to_numpy()
-            center_lat = np.mean(lats)
-            center_lng = np.mean(lngs)
+                except Exception as e:
+                    log_and_show(f"Error reading the file: {e}", exc_info=True)
+            if st.session_state.obs is not None:
+                
+                # Calculate the center of all point observations in total
+                lats = st.session_state.obs["decimallatitude"].to_numpy()
+                lngs = st.session_state.obs["decimallongitude"].to_numpy()
+                center_lat = np.mean(lats)
+                center_lng = np.mean(lngs)
 
-            # Update session state with the center coordinates
-            st.session_state.center = {"lat": center_lat, "lng": center_lng}
+                # Update session state with the center coordinates
+                st.session_state.center = {"lat": center_lat, "lng": center_lng}
+                
 
-            st.success("Go to the interactive map on the right to check and confirm species observation points.")
-            
+        #Download example file
+            b1, b2 = st.columns(2)
+            with b1:
+                st.download_button(
+                    label=rtext("1_3_1_ex_file"),
+                    data=open("points_example.csv", "rb").read(),
+                    file_name="points_example.csv",
+                    mime="text/csv"
+                )
+            with b2:
+                if (st.session_state.obs_final is not None
+                    and not st.session_state.obs.equals(st.session_state.obs_final)):
+                    st.download_button(
+                        label="Download Curated Points",
+                        data=st.session_state.obs_final.to_csv(index=False).encode('utf-8'),
+                        file_name="curated_points.csv",
+                        mime="text/csv"
+                    )
         if st.session_state["data_source"]==rtext("1_1_opt2"): # Search species in GBIF
             
             st.markdown(rtext("1_3_3_ti")) 
             st.markdown(rtext("1_3_3_te")) 
  
             name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"], on_change=lambda: setattr(st.session_state, 'species', None))
-
+            with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
+                st.markdown(rtext("1_3_3_1_exp_te"))
 
             if name_to_species:
 
@@ -388,7 +480,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.markdown(rtext("1_2_2_ti"))
                 st.markdown(rtext("1_2_2_te"))
                 with st.form(key='GBIF_parameters', enter_to_submit=False):
-                    st.slider(rtext("1_2_2_plac"), 1900, 2026, (1970, 2026), key="GBIF_year_range")
+                    st.slider("Select a range of values", 1900, 2026, (1970, 2026), key="GBIF_year_range")
                     st.form_submit_button(
                         "Select GBIF Range",
                         on_click=lambda: (
@@ -416,8 +508,11 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == rtext("1_3_3_2_op2") else "bbox_draw"),
                     )
                 )
-
+                with st.expander(rtext("1_3_3_2_exp_ti"), expanded=False):
+                    st.markdown(rtext("1_3_3_2_exp_te"))
                 if region== rtext("1_3_3_2_op2"): 
+                    st.markdown(rtext("1_3_3_3_ti2"))
+                    st.markdown(rtext("1_3_3_3_te2"))
                     st.session_state.GBIF_data["bbox"] = None
                     countries = st.multiselect("Select countries", country_names, default=st.session_state.countries,key="country_selection", on_change=lambda: setattr(st.session_state, 'countries', st.session_state.country_selection))
                 if region==rtext("1_3_3_2_op1"):
@@ -466,23 +561,23 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                 if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
                                     # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
                                     run_id = initial_response["runId"]
-                                    st.info(f"Job submitted:  Waiting for loading GBIF data...")
+                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
             
                                     # Poll for the result
                                     output_GBIF = get_output(run_id)
-                                    # st.success("Data loaded successfully!")
+                                    st.success("Pipeline ran successfully!")
             
                                 elif isinstance(initial_response, str):
                                     # Case B: Server returned a raw string Job ID (Legacy support)
                                     run_id = initial_response
-                                    st.info(f"Job submitted:  Waiting for loading GBIF data...")
+                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
                                     output_GBIF = get_output(run_id)
-                                    # st.success("Data loaded successfully!")
+                                    st.success("Pipeline ran successfully!")
             
                                 elif isinstance(initial_response, dict):
                                     # Case C: Server returned immediate JSON results (Full data, not just runId)
                                     output_GBIF = initial_response
-                                    # st.success("Data was found")
+                                    st.success("Pipeline ran successfully (immediate)!")
             
                                 else:
                                     log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
@@ -509,8 +604,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                                 st.session_state.obs = obs
                                                 st.session_state.stage = "Manipulate points"
                                                 st.success("Data loaded successfully!")
-                                                st.success("Go to the interactive map on the right to check and confirm species observation points.")
-                                                
                                             except FileNotFoundError:
                                                 log_and_show(f"Output file not found: {file_path}")
                                             except Exception as e:
@@ -525,7 +618,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                                 _show_biab_error(e)
                             except Exception as e:
                                 log_and_show(f"Unexpected app error: {e}", exc_info=True)
-                    
                 with b2:
                     if st.session_state.obs_final is not None:
                         st.download_button(
@@ -634,6 +726,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                         st.success("Polygons saved successfully.")
                         del st.session_state.polygon_addition
                         st.rerun()
+
                 with bu2:
                     if st.button("add polygons to map"):
                         st.session_state.stage = "manual_polygon_creation"
@@ -658,8 +751,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
 
     if st.session_state.stage=="LC":
-
-        if st.session_state["data_source"]=="Species 1":
+        if st.session_state["data_source"]==rtext("1_1_opt3"):
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
                 st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2025, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
@@ -667,7 +759,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 with st.expander(rtext("1_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_2_exp_te"))
 
-        if st.session_state["data_source"]=="Species 2" or st.session_state["data_source"]=="Species 3":
+        if st.session_state["data_source"]==rtext("1_1_opt2") or st.session_state["data_source"]==rtext("1_1_opt1"):
             st.markdown(rtext("1_2_ti"))
             st.markdown(rtext("1_2_te"))
             st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2020, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
@@ -869,7 +961,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
                 if st.session_state.LC_class:
                     table_data = [
-                        {"Land cover class": lc}
+                        {"Land cover class": lc, "Codes": ", ".join(str(c) for c in LC_dict[lc])}
                         for lc in st.session_state.LC_class
                     ]
                     st.table(table_data)
