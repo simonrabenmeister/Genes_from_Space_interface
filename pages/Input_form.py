@@ -201,7 +201,9 @@ LC_names_simple_en= [
     "Shrubland",
     "Sparse vegetation",
     "bare Areas",
-    "Settlements"
+    "Settlements",
+    "Waterbodies",
+    "snow and Ice"
 ]
 LC_names_simple_sp = [
     "Bosque",
@@ -227,7 +229,10 @@ values_simple = [
     [120, 121, 122],             # Shrubland
     [140,150, 151, 152, 153],            # Sparse vegetation
     [200, 201, 202],      # Bare Areas
-    190       # Settlements
+    190,     # Settlements
+    210,      # Waterbodies
+    220       # snow and Ice
+
 ]
 st.markdown("""
     <style>
