@@ -801,6 +801,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.markdown(rtext("3_1_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)
             st.session_state.LC["LC_class"] = [values_simple[LC_names_simple.index(name)] for name in LC_class]
+            st.session_state.LC["LC_classnames"]=LC_class
             if 2020-st.session_state.baseyear < 5:
                 st.session_state.LC["timeseries"] = np.linspace(st.session_state.baseyear, 2020, 2020-st.session_state.baseyear+1).astype(int).tolist()
             else:
