@@ -203,7 +203,7 @@ LC_names_simple_en= [
     "bare Areas",
     "Settlements",
     "Waterbodies",
-    "snow and Ice"
+    "permanent snow and ice"
 ]
 LC_names_simple_sp = [
     "Bosque",
