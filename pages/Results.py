@@ -145,7 +145,6 @@ def load_geojson():
         st.session_state.LC_classnames =geojson_data["LC_class_names"]
         st.session_state.run_id = geojson_data["run_id"]
 
-input = st.file_uploader("Upload a GeoJSON file", type=["geojson"], key="geojson", on_change=lambda: load_geojson())
 
 if not st.session_state.upload:
     if st.session_state.polyinfo is not None:
@@ -571,15 +570,7 @@ if input is not None or st.session_state.polyinfo is not None:
 
 
                     })
-                    st.markdown("##### Download The Run as a GeoJSON file")
-                    st.markdown("You can download your Run as a GeoJSON file. This file contains all the relevant Data to reconstruct the Output. You can upload this file at a later date in this datavisualizer.")
-                    st.download_button(
-                    label="Download GeoJSON",
-                    data=geojson_data,
-                    file_name="data.geojson",
-                    mime="text/csv",
-                    icon=":material/download:",
-                )
+
 
 ## advance functionalities form
 

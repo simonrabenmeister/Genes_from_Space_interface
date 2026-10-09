@@ -23,6 +23,7 @@ from functions import (
     compute_fit_zoom_from_bounds,
     load_shapefile_zip
 )
+import glasbey
 from logging_config import log_and_show, log_and_warn
 import uuid
 import os
@@ -144,6 +145,8 @@ if "LC" not in st.session_state:
         "LC_class": None,
         "timeseries": None
     }
+if "text" not in st.session_state:
+    st.session_state.text = None  # Default text for species information
 if "data_source_index" not in st.session_state:
     st.session_state.data_source_index = None  # Default index for data source selection
 if "LC_index" not in st.session_state:
@@ -158,6 +161,8 @@ if "obs_csv" not in st.session_state:
     st.session_state.obs_csv = None
 if "all_drawings" not in st.session_state:
     st.session_state.all_drawings = None
+if "obs_link" not in st.session_state:
+    st.session_state.obs_link = None    
 if "polygon_addition" not in st.session_state:
     st.session_state.polygon_addition = None
 st.session_state.run_dir= os.path.join(f"{st.session_state.biab_dir}/userdata/interface_polygons/", st.session_state.run_id)
@@ -168,6 +173,8 @@ if "data_source" not in st.session_state:
     st.session_state.data_source = None  # Default data source index
 if "scroll_image_container" not in st.session_state:
     st.session_state.scroll_image_container = False
+if "obs_link" not in st.session_state:
+    st.session_state.obs_link = None  # Default observation link
 ##Load necessary functions, files etc
 texts = pd.read_csv("texts.csv").set_index("id")
 country_names = pd.read_csv("countries.txt", header=None)[0].to_numpy()  # Assuming the file has no header
@@ -295,27 +302,47 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
     st.markdown(rtext("1_1_ti"))
     st.markdown(rtext("1_1_te"))
     selection=[rtext("1_1_opt1"), rtext("1_1_opt2"), rtext("1_1_opt3")]
-    st.markdown(rtext("1_1_ti"))
-    st.markdown(rtext("1_1_te"))
     options=["Get species observation points from GBIF", "Upload your own species observation points", "Upload your own polygons of population distribution"]
 
-    st.session_state["data_source"] = st.selectbox("Which data source would you like to use?", options, index=None)
+    st.session_state["data_source"] = st.selectbox("Which data source would you like to use?", options, index=None, key="data_source_key",
+            on_change=lambda: (
+            setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
+            setattr(st.session_state, 'obs', None),
+            setattr(st.session_state, 'obs_edit', None),
+            setattr(st.session_state, 'buffer', None),
+            setattr(st.session_state, 'distance', None),
+            setattr(st.session_state, 'LC_selection', None),
+            setattr(st.session_state, 'LC', {"LC_class": None, "timeseries": None}),
+            setattr(st.session_state, 'LC_index', None),
+            setattr(st.session_state, 'area_table', None),
+            setattr(st.session_state, 'stage', "upload"),
+            setattr(st.session_state, 'LC_class_index', None),
+            setattr(st.session_state, "index_poly", None),
+            setattr(st.session_state, "baseyear", None),
+            setattr(st.session_state, "stage", "start"),
+            )
+        )
 
     
     if  st.session_state["data_source"]== "Get species observation points from GBIF":
-        st.session_state.selection=["Dendrocoptes medius", "Tetrao urogallus", "Proboscis monkey"]
+        st.session_state.selection=["Dendrocoptes medius", "Tetrao urogallus", "Nasalis larvatus"]
+        st.session_state.text = "The GBIF method will source species observation points from the Global Biodiversity Information Facility (GBIF) database. By providing the Species name and a range of years, the system will automatically retrieve the relevant observation points for that species within the specified timeframe."
     if st.session_state["data_source"]== "Upload your own polygons of population distribution":
         st.session_state.selection=["Zea perennis", "Persea cinerascens"]
+        st.session_state.obs_final=None
+        st.session_state.text = "The polygon method allows you to upload your own polygons representing the population distribution of a species. You can either upload a GeoJSON file containing the polygons, upload a .shp file or draw them directly on the map. This method is useful when you have specific geographic areas of interest for your species."
     if st.session_state["data_source"]=="Upload your own species observation points":
         st.session_state.selection=[ "Diceros bicornis"]
+        st.session_state.text = "The point method allows you to upload your own species observation points in CSV or TSV format. This method is useful when you have specific observation data for your species that you want to analyze."
 
-
+    st.session_state.selection
     if st.session_state.selection is not None:
+        st.markdown(st.session_state.text)
         st.session_state["species_type"] = st.selectbox(
             rtext("1_1_in"), st.session_state.selection, 
             placeholder=rtext("1_1_plac"),
             index=None,
-            key="data_source_key",
+            key="data_type_key",
             on_change=lambda: (
             setattr(st.session_state, 'polyinfo', {"buffer": None, "distance": None, "polygons": None}),
             setattr(st.session_state, 'obs', None),
@@ -335,31 +362,103 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         )
 
     if st.session_state["species_type"] is not None:
-        
-        if st.session_state["species_type"]=="Diceros bicornis":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Black_Rhino_decimal_coordinates_fixed[1](1).csv"
-        if st.session_state["species_type"]=="Persea cinerascens":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Pcinerascens_Observations4326.geojson"
-        if st.session_state["species_type"]=="Tetrao urogallus":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Tetrao urogallus_CH_GBIF.csv"
-        if st.session_state["species_type"]=="Dendrocoptes medius":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Dendrocoptes medius_CH_GBIF.csv"
-        if st.session_state["species_type"]=="Zea perennis":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/ZeaPerennisSDMWGS4326.geojson"
-        if st.session_state["species_type"]=="Proboscis monkey":
-            obs_link= "/home/ubuntu/Genes_from_Space_interface/Example_files/Monkey_Brunei Darussalam + Indonesia + Malaysia_GBIF.csv"
-        
+
+        if st.session_state["species_type"] == "Diceros bicornis":
+            st.markdown("#### Black rhinoceros (Diceros bicornis), South Africa")
+            st.image("images/diceros_bicornis.jpg", width=400)
+            st.markdown(
+                "- Status: Black rhinoceros is categorized as Critically Endangered on the IUCN Red List (IUCN, 2006). "
+                "About a third of the population in South Africa is in protected areas or private reserves (Brooks, 2001). "
+                "Declining population productivity has been attributed to negative habitat changes and a reduction in carrying capacity.\n"
+                "- Habitat: Savanna and shrubland are the major habitat types identified for the species."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Diceros_bicornis_SA.csv"
+
+        elif st.session_state["species_type"] == "Persea cinerascens":
+            st.markdown("#### Wild avocado (Persea cinerascens), Mexico")
+            st.image(
+                "images/persea_cinerascens.jpg",
+                width=400,
+            )
+            st.markdown(
+                "- Importance: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
+                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by LULC "
+                "change and several species (spp.) are endangered, some critically (Goettsch et al., 2021).\n"
+                "- Habitat: a wild avocado growing among the trees composing cloud forests, Mexico's most biodiverse terrestrial "
+                "ecosystem type per unit area (Conabio, 2023; Rojas-Soto et al., 2012). Its habitat is suspected to have decreased "
+                "or disappeared due to rapid land use change. It inhabits remote locations that are challenging to visit."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Pcinerascens_Observations4326.geojson"
+
+        elif st.session_state["species_type"] == "Tetrao urogallus":
+            st.markdown("#### Western capercaillie (Tetrao urogallus), Switzerland")
+            st.image("images/Western_Capercaillie.jpg", width=400)
+            st.markdown(
+                "- Status: nationally threatened in Switzerland with a declining trend. The species is found in 5 separated "
+                "populations, and one of the main causes of the decline is the loss and fragmentation of suitable habitat.\n"
+                "- Characteristics: home range < 5 km², population density 5-10 individuals/km².\n"
+                "- Habitat: coniferous and mixed forests."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Tetrao_urogallus_CH_GBIF.csv"
+
+        elif st.session_state["species_type"] == "Dendrocoptes medius":
+            st.image("images/dendrocopets_medius.jpg", width=400)
+            st.markdown("#### Middle spotted woodpecker (Dendrocoptes medius), Switzerland")
+            st.markdown(
+                "- Habitat: mature deciduous forest, preferably mixed oak forest with rough bark and dead wood.\n"
+                "- Importance and status: populations have declined in several regions of Switzerland, and habitat loss is the "
+                "main threat in the country. Small and isolated populations are also more vulnerable to population fluctuations "
+                "and local extinction."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Dendrocoptes_medius_CH_GBIF.csv"
+
+        elif st.session_state["species_type"] == "Zea perennis":
+            st.markdown("#### Perennial teosinte (Zea perennis), Mexico")
+            st.image(
+                "images/zea_perennis.jpg",
+                caption="https://acsess.onlinelibrary.wiley.com/doi/10.2135/cropsci2016.10.0855",
+                width=400,
+            )
+            st.markdown(
+                "- Importance: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
+                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by LULC "
+                "change and several species (spp.) are endangered, some critically (Goettsch et al., 2021).\n"
+                "- Habitat: this species has only been recorded in two locations in Western Mexico (González et al., 2018), "
+                "although species distribution models suggest it may occur in other localities within the region, where genetic "
+                "differentiation is expected due to environmental and historical differences (Tobón-Niedfeldt et al., 2022). "
+                "Based on DNA data, the Ne of both documented Z. perennis populations is below 500 (Rivera-Rodríguez et al., 2023)."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/ZeaPerennisSDMWGS4326.geojson"
+
+        elif st.session_state["species_type"] == "Nasalis larvatus":
+            st.markdown("#### Proboscis monkey (Nasalis larvatus), Borneo")
+            st.image("images/nasalis_larvatus.jpg", width=400)
+            st.markdown("- Status: the species is listed as Endangered. It has undergone extensive population reductions across its "
+                "range, and ongoing hunting and habitat destruction continue to threaten most populations.\n"
+                "- Habitat: riparian-riverine forests and coastal lowland forest, including mangroves, peat swamp, and "
+                "freshwater swamp forest (Boonratana, 2000)."
+            )
+            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Nasalis_larvatus_Borneo_GBIF.csv"
         if st.session_state["data_source"]=="Upload your own polygons of population distribution": # Upload your own polygons
 
+            if st.session_state.polyinfo["polygons"] is None or st.session_state.obs_link != obs_link:
+                st.session_state.obs_link = obs_link
+                try:
+                    with open(obs_link, "r", encoding="utf-8") as polygon_file:
+                        st.session_state.polyinfo["polygons"] = geojson.load(polygon_file)
+                    st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
+                    colors = glasbey.create_palette(
+                        palette_size=len(st.session_state.original_polygons["features"]),
+                        colorblind_safe=True,
+                        cvd_severity=100
+                    )
+                    for i, feature in enumerate(st.session_state.original_polygons["features"]):
+                        feature["properties"]["style"] = {}
+                        feature["properties"]["style"]["color"] = colors[i]
+                except Exception as e:
+                    log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
 
-            try:
-                with open(obs_link, "r", encoding="utf-8") as polygon_file:
-                    st.session_state.polyinfo["polygons"] = geojson.load(polygon_file)
-                st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
-            except Exception as e:
-                log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
-
-
+                st.session_state.stage = "LC"
 
             if st.session_state.polyinfo["polygons"] is not None:
                 if st.session_state.polyinfo["polygons"] is not None:
@@ -383,37 +482,21 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.session_state.poly_directory = os.path.join(
                     "/userdata/interface_polygons/", st.session_state.run_id, "updated_polygons.geojson"
                 )
-                st.session_state.stage = "LC"
+                
             if st.session_state.polyinfo["polygons"] is not None:
                 st.markdown("If you want to add more polygons to the map, click the button below. You will be redirected to a new page where you can draw polygons on the map.")
                 if st.button("add polygons to map"):
                     st.session_state.stage = "manual_polygon_creation"
                     st.session_state.polygon_addition = st.session_state.original_polygons
                     st.rerun()
-        if st.session_state["data_source"]==rtext("1_1_opt1"): # Upload your own points
+        if st.session_state["data_source"]=="Get species observation points from GBIF" or st.session_state["data_source"]=="Upload your own species observation points": # Upload your own points
+            
 
-            st.markdown(rtext("1_3_2_ti"))
-            st.markdown(rtext("1_3_2_te"))
-        #Upload your own point file
-            obs_link = st.file_uploader(rtext("1_3_2_plac"), type=["csv","tsv"], label_visibility="collapsed", key="point_source", 
-                                        on_change=lambda: st.session_state.update({"stage": "Manipulate points",
-                                                                                   "obs": None,
-                                                                                   "obs_edit": None,
-                                                                                   "obs_final": None,
-                                                                                   "obs_csv": None,
-                                                                                   "index": None,
-                                                                                   "poly_creation": None
-                                                                                   }))
             if obs_link is not None and st.session_state.obs is None:
-                try:
-                    st.session_state.obs = read_occurrence_file(obs_link)
-                    # Check if the required columns are present
-                    required_columns = ["decimallongitude", "decimallatitude"]
-                    if not all(col in st.session_state.obs.columns for col in required_columns):
-                        log_and_show(f"{rtext('1_3_2_err')}, {', '.join(required_columns)}")
 
-                except Exception as e:
-                    log_and_show(f"Error reading the file: {e}", exc_info=True)
+                st.session_state.obs = pd.read_csv(obs_link, sep=None, engine='python')  # Use 'python' engine to auto-detect separator
+
+
             if st.session_state.obs is not None:
                 
                 # Calculate the center of all point observations in total
@@ -425,238 +508,25 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 # Update session state with the center coordinates
                 st.session_state.center = {"lat": center_lat, "lng": center_lng}
                 
-
-        #Download example file
-            b1, b2 = st.columns(2)
-            with b1:
-                st.download_button(
-                    label=rtext("1_3_1_ex_file"),
-                    data=open("points_example.csv", "rb").read(),
-                    file_name="points_example.csv",
-                    mime="text/csv"
-                )
-            with b2:
-                if (st.session_state.obs_final is not None
-                    and not st.session_state.obs.equals(st.session_state.obs_final)):
-                    st.download_button(
-                        label="Download Curated Points",
-                        data=st.session_state.obs_final.to_csv(index=False).encode('utf-8'),
-                        file_name="curated_points.csv",
-                        mime="text/csv"
-                    )
-        if st.session_state["data_source"]==rtext("1_1_opt2"): # Search species in GBIF
-            
-            st.markdown(rtext("1_3_3_ti")) 
-            st.markdown(rtext("1_3_3_te")) 
- 
-            name_to_species = st.text_input(rtext('1_3_3_1_plac'), placeholder="Example: Quercus sartorii",value=st.session_state["species"], on_change=lambda: setattr(st.session_state, 'species', None))
-            with st.expander(rtext("1_3_3_1_exp_ti"), expanded=False):
-                st.markdown(rtext("1_3_3_1_exp_te"))
-
-            if name_to_species:
-
-                if st.session_state["species"]==None: ## the GBIF check can be made before the species is confirmed. Once the species is set, this can not be changed. 
-
-                    # Make the API call
-
-                    response = requests.get(f"https://api.gbif.org/v1/species/match", params={"name": name_to_species})
-                    response = response.json()
-
-                    # Check if the request was successful
-
-                    if response["matchType"] != "NONE":
-                    # Parse the JSON response
-
-                        st.write(rtext('1_3_3_1_in_te1')+" **"+str(response['scientificName'])+"** "+rtext('1_3_3_1_in_te2'))
-                        if st.button(rtext('1_3_3_1_in_bu1')):
-                            st.session_state["species"] = response["scientificName"]
-                            st.session_state.scroll_image_container = True
-                            st.rerun() # force streamlit to re-run page and deactivate name_to_specie form
-
-                    else:
-
-                        st.write(rtext('1_3_3_1_in_te3'))
-            if st.session_state["species"] is not None:
-                st.markdown(rtext("1_2_2_ti"))
-                st.markdown(rtext("1_2_2_te"))
-                with st.form(key='GBIF_parameters', enter_to_submit=False):
-                    st.slider("Select a range of values", 1900, 2026, (1970, 2026), key="GBIF_year_range")
-                    st.form_submit_button(
-                        "Select GBIF Range",
-                        on_click=lambda: (
-                            setattr(st.session_state, 'GBIF_range', st.session_state.GBIF_year_range),
-                            setattr(st.session_state, 'scroll_image_container', True),
-                        ),
+                # Update session state with a zoom level that fits all points on screen
+                st.session_state.zoom = compute_fit_zoom(
+                    lats, lngs,
+                    map_width_px=st.session_state.get("map_width", 800),
+                    map_height_px=st.session_state.get("height", 500),
                     )
 
-            if st.session_state["GBIF_range"] is not None:
 
-                st.session_state.GBIF_data["start_y"]=st.session_state.GBIF_range[0]
-                st.session_state.GBIF_data["end_y"]=st.session_state.GBIF_range[1]
-                st.markdown(rtext("1_3_3_2_ti"))
-                st.markdown(rtext("1_3_3_2_te"))
-                
-                region_list=[rtext("1_3_3_2_op1"), rtext("1_3_3_2_op2")]
-                region = st.selectbox(
-                    rtext("1_3_3_2_plac"),
-                    region_list,
-                    index=st.session_state["region_index"],
-                    placeholder="Choose your method",
-                    key="region_selection",
-                    on_change=lambda: (
-                    setattr(st.session_state, 'region_index', region_list.index(st.session_state.region_selection)),
-                    setattr(st.session_state, 'stage', "country" if st.session_state.region_selection == rtext("1_3_3_2_op2") else "bbox_draw"),
-                    )
-                )
-                with st.expander(rtext("1_3_3_2_exp_ti"), expanded=False):
-                    st.markdown(rtext("1_3_3_2_exp_te"))
-                if region== rtext("1_3_3_2_op2"): 
-                    st.markdown(rtext("1_3_3_3_ti2"))
-                    st.markdown(rtext("1_3_3_3_te2"))
-                    st.session_state.GBIF_data["bbox"] = None
-                    countries = st.multiselect("Select countries", country_names, default=st.session_state.countries,key="country_selection", on_change=lambda: setattr(st.session_state, 'countries', st.session_state.country_selection))
-                if region==rtext("1_3_3_2_op1"):
-                    if st.session_state.obs is None:
-                        st.markdown(rtext("1_3_3_3_ti1"))
-                        st.markdown(rtext("1_3_3_3_te1"))
-                        st.session_state.countries = []
-            if st.session_state.countries or st.session_state.GBIF_data["bbox"]:
-                b1, b2 = st.columns(2)
-                with b1:
-                    if st.button(rtext("1_3_3_bu")):
-                        
-                        st.session_state.polyinfo = {
-                                "buffer": None,
-                                "distance": None,
-                                "polygons": None
-                            }
-                        st.session_state.LC = {
-                                "LC_type": None,
-                                "LC_class": None,
-                                "index": None
-                            }  
+                if st.session_state.obs is None:
 
-                        st.session_state.obs = None
-                        with st.spinner(rtext("1_3_3_load")):
-                            data = {
-                                "pipeline@52": st.session_state.species,
-                                "pipeline@60": st.session_state.countries, 
-                                "pipeline@54": [st.session_state.GBIF_data["start_y"]],
-                                "pipeline@55": [st.session_state.GBIF_data["end_y"]],
-                                "pipeline@56": [0.1],  # Example value for coordinate precision
-                                "pipeline@57": [0.1],  # Example value for coordinate uncertainty
-                                "pipeline@58": st.session_state.GBIF_data["bbox"]
-                            }
-                            if data["pipeline@58"] is None:
-                                data["pipeline@58"] = []
-                            # st.write('data',data)
-                            try:
-                                # 1. Call the pipeline
-                                initial_response = GBIF(data)
-        
-                                output_GBIF = None
+                    # Confirm points to be used
 
-                                # 2. Determine if we have a Job ID or Immediate Results
-                                # NEW LOGIC: Check if it's a dict with ONLY a runId (Job Submission)
-                                if isinstance(initial_response, dict) and "runId" in initial_response and len(initial_response) == 1:
-                                    # Case A: Server returned a Job ID wrapped in JSON (Our new standard)
-                                    run_id = initial_response["runId"]
-                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
-            
-                                    # Poll for the result
-                                    output_GBIF = get_output(run_id)
-                                    st.success("Pipeline ran successfully!")
-            
-                                elif isinstance(initial_response, str):
-                                    # Case B: Server returned a raw string Job ID (Legacy support)
-                                    run_id = initial_response
-                                    st.info(f"Job submitted: {run_id}. Waiting for results...")
-                                    output_GBIF = get_output(run_id)
-                                    st.success("Pipeline ran successfully!")
-            
-                                elif isinstance(initial_response, dict):
-                                    # Case C: Server returned immediate JSON results (Full data, not just runId)
-                                    output_GBIF = initial_response
-                                    st.success("Pipeline ran successfully (immediate)!")
-            
-                                else:
-                                    log_and_show(f"Unexpected response type from pipeline: {type(initial_response)}")
-                                    raise ValueError("Invalid response type")
-
-                                # 3. Process the result (Only runs if no exception occurred above)
-                                if output_GBIF is not None:
-                                    # Check for errors in the result structure
-                                    if isinstance(output_GBIF, dict) and "error" in output_GBIF:
-                                        log_and_show(f"Pipeline error: {output_GBIF['error']}")
-                                    else:
-                                        # Extract the specific code you need
-                                        target_key = "GFS_IndicatorsTool>GBIF_obs.yml@51"
-                                        if isinstance(output_GBIF, dict) and target_key in output_GBIF:
-                                            GBIF_output_code = output_GBIF[target_key]
-                    
-                                            # Construct the file path
-                                            file_path = f"{st.session_state.biab_dir}/output/{GBIF_output_code}/GBIF_obs.csv"
-                    
-                                            # Read the file
-                                            try:
-                                                with open(file_path, "r") as obs_file:
-                                                    obs = pd.read_csv(obs_file, sep='\t')
-                                                st.session_state.obs = obs
-                                                st.session_state.stage = "Manipulate points"
-                                                st.success("Data loaded successfully!")
-                                            except FileNotFoundError:
-                                                log_and_show(f"Output file not found: {file_path}")
-                                            except Exception as e:
-                                                log_and_show(f"Error reading output file: {e}", exc_info=True)
-                                        else:
-                                            # This should now only happen if the pipeline returned valid JSON but missing the key
-                                            log_and_show(f"Unexpected response format from pipeline. Expected key '{target_key}' not found.")
-                                            # Optional: Debug print to see what we actually got
-                                            # st.code(f"Received: {output_GBIF}")
-
-                            except BiaBError as e:
-                                _show_biab_error(e)
-                            except Exception as e:
-                                log_and_show(f"Unexpected app error: {e}", exc_info=True)
-                with b2:
-                    if st.session_state.obs_final is not None:
-                        st.download_button(
-                            label="Download Curated Points",
-                            data=st.session_state.obs_final.to_csv(index=False).encode('utf-8'),
-                            file_name="curated_points.csv",
-                            mime="text/csv"
-                        )
-    if st.session_state.obs is not None:
-        if st.session_state.obs.empty:
-            log_and_warn("No observations available.")
-            st.stop()
-        
-        # Calculate the center of all point observations in total
-        lats = st.session_state.obs["decimallatitude"].to_numpy()
-        lngs = st.session_state.obs["decimallongitude"].to_numpy()
-        center_lat = np.mean(lats)
-        center_lng = np.mean(lngs)
-
-        # Update session state with the center coordinates
-        st.session_state.center = {"lat": center_lat, "lng": center_lng}
-        # Update session state with a zoom level that fits all points on screen
-        st.session_state.zoom = compute_fit_zoom(
-            lats, lngs,
-            map_width_px=st.session_state.get("map_width", 800),
-            map_height_px=st.session_state.get("height", 500),
-            )
-
-        if st.session_state.obs is None:
-
-            # Confirm points to be used
-
-            st.markdown(rtext("1_3_3_4_ti"))
-            st.markdown(rtext("1_3_3_4_te"))
-
+                    st.markdown(rtext("1_3_3_4_ti"))
+                    st.markdown(rtext("1_3_3_4_te"))
 
             
 
         if st.session_state.obs_final is not None:
+
             
             st.markdown(rtext("1_4_ti"))
             st.markdown(rtext("1_4_te"))
@@ -687,7 +557,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.session_state.index_poly=0
 
             with st.form(key='parameters', enter_to_submit=False):
-                st.number_input(rtext("1_4_2_plac1"),min_value=0.5,  key="buffer_input")
+                st.number_input(rtext("1_4_2_plac1"),min_value=0.5, index=None, key="buffer_input")
                 st.number_input(rtext("1_4_2_plac2"), key="distance_input")
                 with st.expander(rtext("1_4_2_exp_ti"), expanded=False):
                     st.markdown(rtext("1_4_2_exp_te"))
@@ -751,7 +621,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
 
     if st.session_state.stage=="LC":
-        if st.session_state["data_source"]==rtext("1_1_opt3"):
+        if st.session_state["data_source"]=="Upload your own polygons of population distribution":
                 st.markdown(rtext("1_2_ti"))
                 st.markdown(rtext("1_2_te"))
                 st.number_input(rtext("1_2_plac"), step=1, min_value=2003, max_value=2025, key="baseyear_selection", value=st.session_state.baseyear, on_change=lambda: (setattr(st.session_state, 'baseyear', st.session_state.baseyear_selection)))
@@ -770,7 +640,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         if st.session_state.polyinfo["polygons"] is not None and st.session_state.baseyear is not None:
             st.markdown(rtext("2_ti"))
             st.markdown(rtext("2_te"))
-            LC_selection = [ rtext("2_opt4"), rtext("2_opt2")]#removed rtext("2_opt1") since get_TCY is not working properly.
+            LC_selection = [ rtext("2_opt4"), rtext("2_opt2"), rtext("2_opt1")]#removed rtext("2_opt1") since get_TCY is not working properly.
             
             st.session_state.LC_selection = st.selectbox(
                 rtext("2_plac"),
@@ -788,7 +658,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 )
 
             )
-            st.warning("At the moment the Global forest watch data option is not available. we are working on fixing it. Please use the ESA CCI dataset.")
 
             
             with st.expander(rtext("3_exp_ti"), expanded=False):
