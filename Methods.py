@@ -66,7 +66,8 @@ col1, col2, col3 = st.columns([1,10,1])
 
 with col2:
     with st.expander(rtext("disclaimer_ti")):
-        st.markdown(rtext("disclaimer_te"))
+        # st.markdown(rtext("disclaimer_te"))
+        st.markdown(rtext("disclaimer_te1"))
     st.markdown('# <a href="./Input_form" style="color:black; text-decoration:none;">Monitoring Tool</a>', unsafe_allow_html=True)
     st.markdown(rtext("hello_1"),unsafe_allow_html=True)
     
@@ -93,9 +94,13 @@ with col2:
     # Encode the images to base64
     nomis_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/Nomis_Logo.png"
     uzh_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/uzh_logo.png"
+    ESA_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/ESA_Logo_Black.png"
+    ISSI_logo_path = "/home/ubuntu/Genes_from_Space_interface/images/ISSI_logo.png"
 
     nomis_logo_base64 = base64.b64encode(open(nomis_logo_path, "rb").read()).decode()
     uzh_logo_base64 = base64.b64encode(open(uzh_logo_path, "rb").read()).decode()
+    ESA_logo_base64 = base64.b64encode(open(ESA_logo_path, "rb").read()).decode()
+    ISSI_logo_base64 = base64.b64encode(open(ISSI_logo_path, "rb").read()).decode()
 
     # Define custom CSS for consistent spacing and layout
     st.markdown(
@@ -122,6 +127,8 @@ with col2:
         <div class="image-container">
             <img src="data:image/png;base64,{nomis_logo_base64}" alt="Nomis Logo">
             <img src="data:image/png;base64,{uzh_logo_base64}" alt="UZH Logo">
+            <img src="data:image/png;base64,{ESA_logo_base64}" alt="ESA Logo">
+            <img src="data:image/png;base64,{ISSI_logo_base64}" alt="ISSI Logo">
         </div>
         """,
         unsafe_allow_html=True
