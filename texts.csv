@@ -27,7 +27,7 @@ thanks_te," We thank the NOMIS Foundation and the University of Zurich (UZH) for
 1_ti,##### Step 1: Determine populations distribution ,##### Paso 1: Determinar la distribución de las poblaciones
 1_te,"In the first step, you will provide information on the geographical distribution of the species' populations.","En el primer paso, proporcionará información sobre la distribución geográfica de las poblaciones de la especie."
 1_1_ti,"###### Choosing Data sources"," ""Elección de fuentes de datos"""
-1_1_te,"Choose a data source to define the population distributions. You have the following options:\n - Upload your own observation points and use the tool to group them into populations.\n - Get species observation points from GBIF if you do not have your own observation coordinates.\n - Upload your own spatial polygons that define the population distributions.","Primero debe elegir la fuente de datos para definir la distribución de las poblaciones."
+1_1_te,"Choose a data source to define the population distributions. You have the following options:\n - Upload your own observation points and use the tool to group them into populations.\n - Get species observation points from the Global Biodiversity Information Facility (GBIF) if you do not have your own observation coordinates.\n - Upload your own spatial polygons that define the population distributions.","Primero debe elegir la fuente de datos para definir la distribución de las poblaciones."
 1_1_in,Select a tool, Seleccione una herramienta
 1_1_plac, Choose an option, Elija una opción
 1_1_opt1,Upload your own species observation points,Sube tus propias observaciones puntuales

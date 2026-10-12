@@ -255,7 +255,7 @@ st.markdown("""
     
 
 
-st.image('images/logo.png')
+st.image('images/logo_GfS.png')
 with st.sidebar:
 
     st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
@@ -326,7 +326,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
     
     if  st.session_state["data_source"]== "Get species observation points from GBIF":
         st.session_state.selection=["Dendrocoptes medius", "Tetrao urogallus", "Nasalis larvatus"]
-        st.session_state.text = "The GBIF method will source species observation points from the Global Biodiversity Information Facility (GBIF) database. By providing the Species name and a range of years, the system will automatically retrieve the relevant observation points for that species within the specified timeframe."
+        st.session_state.text = "The GBIF method will source species observation points from the GBIF database. By providing the Species name and a range of years, the system will automatically retrieve the relevant observation points for that species within the specified timeframe."
     if st.session_state["data_source"]== "Upload your own polygons of population distribution":
         st.session_state.selection=["Zea perennis", "Persea cinerascens"]
         st.session_state.obs_final=None
@@ -381,12 +381,12 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 width=400,
             )
             st.markdown(
-                "- Importance: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
-                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by LULC "
-                "change and several species (spp.) are endangered, some critically (Goettsch et al., 2021).\n"
-                "- Habitat: a wild avocado growing among the trees composing cloud forests, Mexico's most biodiverse terrestrial "
+                "- Status: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
+                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by Land Use and Land Cover "
+                "change and several species are endangered (Goettsch et al., 2021).\n"
+                "- Habitat: the wild avocado grows among the trees composing cloud forests, Mexico's most biodiverse terrestrial "
                 "ecosystem type per unit area (Conabio, 2023; Rojas-Soto et al., 2012). Its habitat is suspected to have decreased "
-                "or disappeared due to rapid land use change. It inhabits remote locations that are challenging to visit."
+                "or disappeared due to rapid land use change. The species inhabits remote locations that are challenging to visit."
             )
             obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Pcinerascens_Observations4326.geojson"
 
@@ -405,10 +405,10 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.image("images/dendrocopets_medius.jpg", width=400)
             st.markdown("#### Middle spotted woodpecker (Dendrocoptes medius), Switzerland")
             st.markdown(
-                "- Habitat: mature deciduous forest, preferably mixed oak forest with rough bark and dead wood.\n"
-                "- Importance and status: populations have declined in several regions of Switzerland, and habitat loss is the "
-                "main threat in the country. Small and isolated populations are also more vulnerable to population fluctuations "
-                "and local extinction."
+                "- Status: populations have declined in several regions of Switzerland, and habitat loss is the "
+                "main threat in the country. Small and isolated populations are more vulnerable to population fluctuations "
+                "and local extinction.\n"
+                "- Habitat: mature deciduous forest, preferably mixed oak forest with rough bark and dead wood."
             )
             obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Dendrocoptes_medius_CH_GBIF.csv"
 
@@ -416,17 +416,16 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
             st.markdown("#### Perennial teosinte (Zea perennis), Mexico")
             st.image(
                 "images/zea_perennis.jpg",
-                caption="https://acsess.onlinelibrary.wiley.com/doi/10.2135/cropsci2016.10.0855",
                 width=400,
             )
             st.markdown(
-                "- Importance: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
-                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by LULC "
-                "change and several species (spp.) are endangered, some critically (Goettsch et al., 2021).\n"
+                "- Status: the wild relatives of modern-day crops (crop wild relatives) harbor an important proportion of "
+                "crops' genetic diversity (Maxted et al., 2006). In Mexico, crop wild relatives are threatened mainly by Land Use and Land Cover "
+                "change and several species are endangered (Goettsch et al., 2021).\n"
                 "- Habitat: this species has only been recorded in two locations in Western Mexico (González et al., 2018), "
                 "although species distribution models suggest it may occur in other localities within the region, where genetic "
                 "differentiation is expected due to environmental and historical differences (Tobón-Niedfeldt et al., 2022). "
-                "Based on DNA data, the Ne of both documented Z. perennis populations is below 500 (Rivera-Rodríguez et al., 2023)."
+                "Based on DNA data, the Ne of Z. perennis population is below 500 (Rivera-Rodríguez et al., 2023)."
             )
             obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/ZeaPerennisSDMWGS4326.geojson"
 

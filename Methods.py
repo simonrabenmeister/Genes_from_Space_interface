@@ -29,7 +29,7 @@ else:
     # Fallback if JS eval fails or returns None
     if 'height' not in st.session_state:
         st.session_state.height = 500
-st.image('images/logo.png')
+st.image('images/logo_GfS.png')
 with st.sidebar:
 
     st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
