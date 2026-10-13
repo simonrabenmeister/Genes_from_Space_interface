@@ -433,7 +433,7 @@ if input is not None or st.session_state.polyinfo is not None:
                     key="data",
                     column_config={
                     "effective_size": st.column_config.Column(disabled=True),
-                    "NeNc": st.column_config.Column(disabled=True),
+                    "nenc": st.column_config.Column(disabled=True),
                     "habitat_area": st.column_config.Column(disabled=True)
                     },
 

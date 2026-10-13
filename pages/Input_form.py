@@ -334,6 +334,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.markdown(rtext("1_3_1_exp_te"))
         #Upload your own Polygon file
             poly_link= st.file_uploader(rtext("1_3_1_plac"), type=["geojson", "zip"], label_visibility="collapsed", key="point_source")
+
             st.download_button(
                     label=rtext("1_3_1_ex_file"),
                     data=open("polygon_example.geojson", "rb").read(),
@@ -342,14 +343,13 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 )
             if poly_link is not None and poly_link.file_id != st.session_state.get("last_poly_file_id"):
                 st.session_state["last_poly_file_id"] = poly_link.file_id
-                if poly_link.type == "application/geo+json":
-                    st.write("GeoJSON file uploaded successfully.")
+                if poly_link.type == "application/geo+json" or poly_link.type == "application/octet-stream":
                     try:
                         st.session_state.polyinfo["polygons"] = geojson.load(poly_link)
                         st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
                     except Exception as e:
                         log_and_show(f"Error reading the GeoJSON file: {e}", exc_info=True)
-                elif poly_link.type == "application/zip":
+                elif poly_link.type == "application/zip" or poly_link.type == "application/x-zip-compressed":
                     try:
                         st.session_state.polyinfo["polygons"] = load_shapefile_zip(poly_link)
                         st.session_state.original_polygons = st.session_state.polyinfo["polygons"]
