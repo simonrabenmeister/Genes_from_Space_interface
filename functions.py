@@ -150,7 +150,7 @@ def _call_biab_pipeline(pipeline_name, data):
         logger.exception("Request failed calling %s", url)
         raise BiaBError(
             source="connection",
-            message="Connection error — request to Bon-in-a-Box failed",
+            message=f"URL: {url}\nConnection error — request to Bon-in-a-Box failed",
             detail=str(e)
         )
 
@@ -359,8 +359,13 @@ def edit_points():
 
     
     # Remove duplicate points based on latitude and longitude
+
+    m = folium.Map(
+        location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+        tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+        attr="&copy; OpenStreetMap contributors",
+        max_zoom=19)
     
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
 
     # Add the observations to the map
     fg = folium.FeatureGroup(name="Markers")
@@ -588,8 +593,13 @@ def polygon_clustering():
  
             # This runs on every pass (including the rerun above), using
             # whatever original_polygons currently holds.
-            m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]],   zoom_start=st.session_state.zoom)
- 
+            
+            m = folium.Map(
+                location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+                tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+                attr="&copy; OpenStreetMap contributors",
+                max_zoom=19)
+        
             fg = folium.FeatureGroup(name="Points")
             for i, row in obs.iterrows():
                 corr = [row["decimallatitude"], row["decimallongitude"]]
@@ -610,7 +620,12 @@ def polygon_clustering():
     # Option 2: manually drawn polygons used to group points into clusters
     # =====================================================================
     if st.session_state.poly_creation == rtext("1_4_opt2"):
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        
+        m = folium.Map(
+            location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+            tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+            attr="&copy; OpenStreetMap contributors",
+            max_zoom=19)
         fg = folium.FeatureGroup(name="Points")
         for i, row in obs.iterrows():
             corr = [row["decimallatitude"], row["decimallongitude"]]
@@ -706,7 +721,12 @@ def polygon_clustering():
 
 @st.fragment
 def manual_polygon_addition():
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+
+    m = folium.Map(
+        location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+        tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+        attr="&copy; OpenStreetMap contributors",
+        max_zoom=19)
     draw = Draw(export=False, draw_options={
         'polyline': False,
         'polygon': True,
@@ -769,7 +789,12 @@ def convert_df():
             st.session_state.polygons["features"][i]["properties"].update({"population_density": "", "nenc": "", "size": ""})
     
     # Add the polygons to the map
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lon"]], zoom_start=st.session_state.zoom)
+
+    m = folium.Map(
+        location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+        tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+        attr="&copy; OpenStreetMap contributors",
+        max_zoom=19)
     fg = folium.FeatureGroup(name="Polygons")
     # Display the map
     fg.add_child(folium.GeoJson(polygons, popup=folium.GeoJsonPopup(fields=["name", "population_density", "nenc", "size"])))
@@ -827,7 +852,12 @@ def mapbbox():
     # Create the map
 
     # Add the Draw tool to the map
-    m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+
+    m = folium.Map(
+        location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom,
+        tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+        attr="&copy; OpenStreetMap contributors",
+        max_zoom=19)
     draw = Draw(
         export=False,
         draw_options={

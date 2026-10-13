@@ -55,6 +55,7 @@ with open("directories.txt", "r") as file:
     directories = file.readlines()
 st.session_state.biab_dir = directories[0].strip()
 st.session_state.api_link= directories[2].strip()
+st.session_state.example_dir= directories[3].strip()
 if "lan" not in st.session_state:
     st.session_state.lan = "en"
 if "LC_class_names" not in st.session_state:
@@ -238,24 +239,30 @@ values_simple = [
 ]
 st.markdown("""
     <style>
-           .block-container {
-            padding-top: 0rem;
-            padding-bottom: 0rem;
+        /* Remove top/bottom padding (old and new class names) */
+        .block-container,
+        [data-testid="stMainBlockContainer"] {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
             padding-left: 5rem;
             padding-right: 5rem;
         }
-           /* Fix whitespace under Folium map */
-           iframe[title="streamlit_folium.st_folium"] {
+
+        /* Collapse the element that holds this <style> block */
+        [data-testid="stElementContainer"]:has(style) {
+            display: none;
+        }
+
+        /* Fix whitespace under Folium map */
+        iframe[title="streamlit_folium.st_folium"] {
             height: 500px !important;
             max-height: 500px !important;
             min-height: 500px !important;
-           }
+        }
     </style>
-    """, unsafe_allow_html=True)
-    
+""", unsafe_allow_html=True)
 
-
-st.image('images/logo_GfS.png')
+st.image('images/logo_GfS.png', width=round(st.session_state.height * 1.6))
 with st.sidebar:
 
     st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
@@ -335,7 +342,6 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
         st.session_state.selection=[ "Diceros bicornis"]
         st.session_state.text = "The point method allows you to upload your own species observation points in CSV or TSV format. This method is useful when you have specific observation data for your species that you want to analyze."
 
-    st.session_state.selection
     if st.session_state.selection is not None:
         st.markdown(st.session_state.text)
         st.session_state["species_type"] = st.selectbox(
@@ -372,7 +378,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "Declining population productivity has been attributed to negative habitat changes and a reduction in carrying capacity.\n"
                 "- Habitat: Savanna and shrubland are the major habitat types identified for the species."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Diceros_bicornis_SA.csv"
+            obs_link = f"{st.session_state.example_dir}/Diceros_bicornis_SA.csv"
 
         elif st.session_state["species_type"] == "Persea cinerascens":
             st.markdown("#### Wild avocado (Persea cinerascens), Mexico")
@@ -388,7 +394,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "ecosystem type per unit area (Conabio, 2023; Rojas-Soto et al., 2012). Its habitat is suspected to have decreased "
                 "or disappeared due to rapid land use change. The species inhabits remote locations that are challenging to visit."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Pcinerascens_Observations4326.geojson"
+            obs_link = f"{st.session_state.example_dir}/Pcinerascens_Observations4326.geojson"
 
         elif st.session_state["species_type"] == "Tetrao urogallus":
             st.markdown("#### Western capercaillie (Tetrao urogallus), Switzerland")
@@ -399,7 +405,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "- Characteristics: home range < 5 km², population density 5-10 individuals/km².\n"
                 "- Habitat: coniferous and mixed forests."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Tetrao_urogallus_CH_GBIF.csv"
+            obs_link = f"{st.session_state.example_dir}/Tetrao_urogallus_CH_GBIF.csv"
 
         elif st.session_state["species_type"] == "Dendrocoptes medius":
             st.image("images/dendrocopets_medius.jpg", width=400)
@@ -410,7 +416,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "and local extinction.\n"
                 "- Habitat: mature deciduous forest, preferably mixed oak forest with rough bark and dead wood."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Dendrocoptes_medius_CH_GBIF.csv"
+            obs_link = f"{st.session_state.example_dir}/Dendrocoptes_medius_CH_GBIF.csv"
 
         elif st.session_state["species_type"] == "Zea perennis":
             st.markdown("#### Perennial teosinte (Zea perennis), Mexico")
@@ -427,7 +433,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "differentiation is expected due to environmental and historical differences (Tobón-Niedfeldt et al., 2022). "
                 "Based on DNA data, the Ne of Z. perennis population is below 500 (Rivera-Rodríguez et al., 2023)."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/ZeaPerennisSDMWGS4326.geojson"
+            obs_link = f"{st.session_state.example_dir}/ZeaPerennisSDMWGS4326.geojson"
 
         elif st.session_state["species_type"] == "Nasalis larvatus":
             st.markdown("#### Proboscis monkey (Nasalis larvatus), Borneo")
@@ -437,7 +443,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 "- Habitat: riparian-riverine forests and coastal lowland forest, including mangroves, peat swamp, and "
                 "freshwater swamp forest (Boonratana, 2000)."
             )
-            obs_link = "/home/ubuntu/Genes_from_Space_interface/Example_files/Nasalis_larvatus_Borneo_GBIF.csv"
+            obs_link = f"{st.session_state.example_dir}/Nasalis_larvatus_Borneo_GBIF.csv"
         if st.session_state["data_source"]=="Upload your own polygons of population distribution": # Upload your own polygons
 
             if st.session_state.polyinfo["polygons"] is None or st.session_state.obs_link != obs_link:
@@ -978,11 +984,18 @@ with col2.container( border=False, key="container", height=st.session_state.heig
     if st.session_state.stage=="manual_polygon_creation":
         manual_polygon_addition()
     if st.session_state.stage=="LC":
-        m = folium.Map(location=[st.session_state.center["lat"], st.session_state.center["lng"]], zoom_start=st.session_state.zoom)
+        m = folium.Map(
+            location=[st.session_state.center["lat"], st.session_state.center["lng"]],
+            zoom_start=st.session_state.zoom,
+            tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+            attr="&copy; OpenStreetMap contributors",
+            max_zoom=19,
+        )
 
         # Add the polygons to the map
         fg = folium.FeatureGroup(name="Polygons")
         fg.add_child(folium.GeoJson(st.session_state.polyinfo["polygons"], popup=folium.GeoJsonPopup(fields=["name"])))
+
         # Display the map
         st.session_state.output2 = st_folium(m, feature_group_to_add=fg, width="stretch")
 
