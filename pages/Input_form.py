@@ -476,7 +476,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                 st.markdown(rtext("1_2_2_ti"))
                 st.markdown(rtext("1_2_2_te"))
                 with st.form(key='GBIF_parameters', enter_to_submit=False):
-                    st.slider("Select a range of values", 1900, 2026, (1970, 2026), key="GBIF_year_range")
+                    st.slider("Select a range of values", 1900, 2026, (1970, 2020), key="GBIF_year_range")
                     st.form_submit_button(
                         "Select GBIF Range",
                         on_click=lambda: (
@@ -936,7 +936,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     ]
                     st.table(table_data)
                 else:
-                    st.info("Please select land cover classes from the plot above to see their corresponding codes.") 
+                    st.info("To choose several land cover classes, hold down shift and select.") 
                 
                 
                 st.session_state.LC["LC_class"] = [item for lc in st.session_state.LC_class for item in LC_dict[lc]]
