@@ -64,6 +64,8 @@ if "LC_classnames" not in st.session_state:
     st.session_state.LC_classnames = None
 if "default_dens" not in st.session_state:
     st.session_state.default_dens = None
+if "PM_cutoff" not in st.session_state:
+    st.session_state.PM_cutoff = 50
 st.set_page_config(page_title="Genes from Space", page_icon="🌍", layout="wide")
 
 # !! Hide a page
@@ -209,10 +211,10 @@ if input is not None or st.session_state.polyinfo is not None:
         m = folium.Map(
             location=[middle_lat, middle_lon],
             zoom_start=7,
-            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-            attr="Esri"
-        )
-
+            tiles="http://localhost:8080/tile/{z}/{x}/{y}.png",
+            attr="&copy; OpenStreetMap contributors",
+            max_zoom=19)
+    
 
         # Use ImageOverlay for raster overlays
         # Save NC, GAIN, and LOSS arrays as images
@@ -521,38 +523,43 @@ if input is not None or st.session_state.polyinfo is not None:
                         # Display the plot in Streamlit
                         ne_plot = st.plotly_chart(ne_fig, use_container_width=True)
 
-                        # Calculate the ratio of populations with effective size > 500
+
+                        if class_names == "Tree cover":
+                            pixel_threshold=0.03*0.03*30
+                        else:
+                            pixel_threshold=0.3*0.3*3
+                        
+
+                        # now the calculation always sees the up-to-date cutoff
                         ne_greater_500 = (st.session_state.properties["effective_size"] > 500).sum()
                         ratio_ne_greater_500 = ne_greater_500 / len(st.session_state.properties)
 
-                        # Calculate the ratio of effective population sizes > 50
-                        end_pop = st.session_state.properties["effective_size"][st.session_state.properties["effective_size"] > 10]
-                        start_pop=area_table.iloc[:,1]* st.session_state.properties["pop_size"] / area_table.iloc[:, 1] * st.session_state.properties["nenc"]
-                        
-                        pop_total= len(start_pop)
-                        pop_above= [start_pop >= 500][0]
-                        end_pop_bellow=end_pop[pop_above]<100
+                        start_pop = st.session_state.properties["pop_size"] * st.session_state.properties["nenc"]
+                        end_pop = st.session_state.properties["effective_size"]
+
+                        pop_total = len(start_pop)
+                        pop_above = start_pop >= 500
+                        end_pop_bellow = end_pop < st.session_state.PM_cutoff
+                        end_pop_bellow_raw = end_pop == 0
+                        end_pop_bellow_pixel = st.session_state.properties["habitat_area"] < pixel_threshold
+
                         pop_above_count = int(pop_above.sum())
                         end_pop_bellow_count = int(end_pop_bellow.sum())
+                        end_pop_bellow_raw_count = int(end_pop_bellow_raw.sum())
+                        end_pop_bellow_pixel_count = int(end_pop_bellow_pixel.sum())
                         PM_table = pd.DataFrame(
-                            {
-                                "Value": [pop_total, pop_above_count, end_pop_bellow_count]
-                            },
-                            index=["total populations", "starting populations with NE>500", "at risk populations (NE drop bellow 100)"]
+                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count, end_pop_bellow_pixel_count]},
+                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow {:.0f})".format(st.session_state.PM_cutoff), "populations with insufficient habitat area"]
                         )
 
                         st.markdown("### Estimated GBF genetic diversity indicators")
-                        st.markdown(
-                            "**NE>500:** {:.2f}".format(ratio_ne_greater_500)
-                        )
-                        st.markdown(
-                            "**PM:** "
-                        )
-                        st.markdown("For multiple reasons our Tool is not capable of correctly estimating the PM indicator. We are working on solving this issue, but for the moment we can provide you with an overview of the populations that are at risk of extinction. In the following Table, all populations are considered that had Ne>500 at the start of the observation period. Of these, Populations that drop bellow 100 within the observation period are considered at risk of extinction.")
-
+                        st.markdown("**Ne>500:**   \n   {:.2f}".format(ratio_ne_greater_500))
+                        if class_names == "Tree cover":
+                            st.markdown(rtext("out_4_tev1"))
+                        else:
+                            st.markdown(rtext("out_4_tev2"))
                         st.dataframe(PM_table, use_container_width=False)
-
-
+                        st.slider("PM Threshold", 0, 100, key="PMcutoff", on_change=lambda: setattr(st.session_state, "PM_cutoff", st.session_state.PMcutoff))
 
 
                     geojson_data = json.dumps({
