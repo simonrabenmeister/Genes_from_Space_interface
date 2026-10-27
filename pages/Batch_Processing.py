@@ -11,7 +11,7 @@ from bulk_functions import (
     submit_spec, check_status, is_terminal, find_output,
     TERMINAL_FAIL,
     COL_TITLE, COL_SPECIES, COL_COUNTRIES, COL_BBOX, COL_BUFFER, COL_DISTANCE,
-    COL_END, COL_START, COL_YEARS, COL_LC, COL_DENSITY, COL_NENC,
+    COL_END, COL_START, COL_YEARS, COL_LC, COL_DENSITY, COL_NENC, COL_CSV_PATH
 )
 from functions import BiaBError, _show_biab_error, read_occurrence_file
 from logging_config import get_logger
@@ -46,7 +46,7 @@ if "biab_dir" not in st.session_state:
 
 DEFAULT_COLUMNS = [
     COL_TITLE, COL_SPECIES, COL_COUNTRIES, COL_BBOX, COL_BUFFER, COL_DISTANCE,
-    COL_END, COL_START, COL_YEARS, COL_LC, COL_DENSITY, COL_NENC,
+    COL_END, COL_START, COL_YEARS, COL_LC, COL_DENSITY, COL_NENC, COL_CSV_PATH
 ]
 
 if "table" not in st.session_state:
@@ -242,6 +242,7 @@ if col_run.button("Run all", disabled=not specs):
             "Pipeline": spec["pipeline"], "Status": "running", "Detail": "",
             "runId": None, "Ne>500": None, "PM": None, "Plot": None,
         }
+        
         try:
             job["runId"] = submit_spec(spec)          # non-blocking: returns immediately
         except BiaBError as e:
@@ -344,3 +345,4 @@ if completed:
                             mime=mime,
                             key=f"dl_{j['Row']}_{fname}",
                         )
+

@@ -95,6 +95,18 @@ def GBIF_LC(data):
 def GBIF_GFW(data):
     return _call_biab_pipeline("GBIF_GFW", data)
 
+def CSV_LC(data):
+    return _call_biab_pipeline("CSV_LC", data)
+
+def CSV_GFW(data):
+    return _call_biab_pipeline("CSV_GFW", data)
+
+def GBIF_CSV_LC(data):
+    return _call_biab_pipeline("GBIF_CSV_LC", data)
+
+def GBIF_CSV_GFW(data):
+    return _call_biab_pipeline("GBIF_CSV_GFW", data)    
+
 
 # ============================================================
 # CSV row parsing → @208…@226 payloads
@@ -115,6 +127,7 @@ COL_YEARS = "Years of interest"
 COL_LC = "Landcover classes"
 COL_DENSITY = "Population density"
 COL_NENC = "Ne:Nc ratio estimate"
+COL_CSV_PATH = "CSV file path"
 
 
 class RowError(Exception):
@@ -132,11 +145,22 @@ def _clean(value):
 def _req_num(row, col):
     raw = _clean(row.get(col))
     if raw == "":
-        raise RowError(f"'{col}' is required")
+        raise RowError(f"'{col}' is required unless '{COL_CSV_PATH}' is set")
     try:
         return float(raw)
     except ValueError:
         raise RowError(f"'{col}' must be a number, got '{raw}'")
+
+def _opt_num(row, col):
+    """Optional number: returns None if empty, raises RowError if present but invalid."""
+    raw = _clean(row.get(col))
+    if raw == "":
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        raise RowError(f"'{col}' must be a number, got '{raw}'")
+
 
 
 def _cell_list(row, col):
@@ -168,20 +192,32 @@ def _float_list(row, col):
 
 def parse_row(row):
     """Turn one CSV row (dict) into {'pipeline', 'payload', 'title', 'species'}."""
-    species = _clean(row.get(COL_SPECIES))
-    if not species:
-        raise RowError(f"'{COL_SPECIES}' is required")
+    csv_path = _clean(row.get(COL_CSV_PATH))
+    has_csv = bool(csv_path)
 
-    start_year = _req_num(row, COL_START)
-    end_year = _req_num(row, COL_END)
-    if start_year > end_year:
+    # Species, years, and location are only mandatory when no CSV file is given.
+    species = _clean(row.get(COL_SPECIES))
+    if not species and not has_csv:
+        raise RowError(f"'{COL_SPECIES}' is required (unless '{COL_CSV_PATH}' is set)")
+
+    if has_csv:
+        start_year = _opt_num(row, COL_START)
+        end_year = _opt_num(row, COL_END)
+    else:
+        start_year = _req_num(row, COL_START)
+        end_year = _req_num(row, COL_END)
+    if start_year is not None and end_year is not None and start_year > end_year:
         raise RowError(f"'{COL_START}' must not exceed '{COL_END}'")
 
-    # Location: require either a countries list or a 4-value bounding box.
+    # Location: countries list or a 4-value bounding box (optional with a CSV file).
     countries = _cell_list(row, COL_COUNTRIES)
     bbox_parts = _cell_list(row, COL_BBOX)
-    if not countries and not bbox_parts:
-        raise RowError(f"provide either '{COL_COUNTRIES}' or '{COL_BBOX}'")
+    if not countries and not bbox_parts and not has_csv:
+        raise RowError(
+            f"provide either '{COL_COUNTRIES}' or '{COL_BBOX}' (unless '{COL_CSV_PATH}' is set)"
+        )
+    if has_csv and not countries:
+        raise RowError(f"'{COL_COUNTRIES}' is required when '{COL_CSV_PATH}' is set")
     bbox = []
     if bbox_parts:
         if len(bbox_parts) != 4:
@@ -198,24 +234,47 @@ def parse_row(row):
 
     ne_nc = _float_list(row, COL_NENC)
     density = _float_list(row, COL_DENSITY)
-    title = _clean(row.get(COL_TITLE)) or species
+    title = _clean(row.get(COL_TITLE)) or species or os.path.basename(csv_path)
 
-    payload = {
-        "pipeline@210": species,
-        "pipeline@208": [end_year],
-        "pipeline@209": [start_year],
-        "pipeline@211": countries,
-        "pipeline@212": bbox,
-        "pipeline@214": buffer,
-        "pipeline@215": distance,
-        "pipeline@224": ne_nc,
-        "pipeline@225": density,
-        "pipeline@226": title,
-    }
+    if not has_csv:
+        payload = {
+            "pipeline@210": species,
+            "pipeline@208": [end_year],
+            "pipeline@209": [start_year],
+            "pipeline@211": countries,
+            "pipeline@212": bbox,
+            "pipeline@214": buffer,
+            "pipeline@215": distance,
+            "pipeline@224": ne_nc,
+            "pipeline@225": density,
+            "pipeline@226": title,
+        }
+        prefix = "GBIF"
 
-    is_tree_cover = _clean(row.get(COL_LC)).upper() == TREE_COVER_FLAG
-    if is_tree_cover:
-        pipeline = "GBIF_GFW"
+
+    elif has_csv:
+        payload = {
+
+            "pipeline@214": buffer,
+            "pipeline@215": distance,
+            "pipeline@224": ne_nc,
+            "pipeline@225": density,
+            "pipeline@226": title,
+            "pipeline@231": csv_path,
+            "pipeline@211": countries,
+        }
+        prefix = "CSV" 
+        if species or bbox_parts:
+            if species and end_year and start_year:
+                payload["pipeline@210"] = species
+                payload["pipeline@208"] = [end_year]
+                payload["pipeline@209"] = [start_year]
+                payload["pipeline@211"] = countries
+                payload["pipeline@212"] = bbox
+                prefix = "GBIF_CSV" 
+    if _clean(row.get(COL_LC)).upper() == TREE_COVER_FLAG:
+        pipeline = f"{prefix}_GFW"
+        payload["pipeline@232"] = years
     else:
         years = _int_list(row, COL_YEARS)
         lc_classes = _int_list(row, COL_LC)
@@ -225,7 +284,7 @@ def parse_row(row):
             raise RowError(f"'{COL_LC}' must be integer ESA codes (or 'TC' for tree cover)")
         payload["pipeline@217"] = years
         payload["pipeline@218"] = lc_classes
-        pipeline = "GBIF_LC"
+        pipeline = f"{prefix}_LC"
 
     return {"pipeline": pipeline, "payload": payload, "title": title, "species": species}
 
@@ -259,7 +318,18 @@ def _run_id_of(response):
 
 def submit_spec(spec):
     """POST a parsed spec to its pipeline; returns the runId (non-blocking)."""
-    fn = GBIF_GFW if spec["pipeline"] == "GBIF_GFW" else GBIF_LC
+    if spec["pipeline"]=="CSV_LC":
+        fn = CSV_LC
+    elif spec["pipeline"]=="CSV_GFW":
+        fn = CSV_GFW
+    elif spec["pipeline"]=="GBIF_CSV_LC":
+        fn = GBIF_CSV_LC
+    elif spec["pipeline"]=="GBIF_CSV_GFW":
+        fn = GBIF_CSV_GFW
+    elif spec["pipeline"]=="GBIF_LC":
+        fn = GBIF_LC
+    elif spec["pipeline"]=="GBIF_GFW":
+        fn = GBIF_GFW
     return _run_id_of(fn(spec["payload"]))
 
 
