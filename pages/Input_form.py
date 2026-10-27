@@ -220,7 +220,6 @@ if st.session_state.lan=="sp":
 elif st.session_state.lan=="en":    
     LC_names_simple=LC_names_simple_en
 
-
 values_simple = [
     [50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 160, 170],  # Forest
     [10, 11, 12, 20, 30, 40],      # Agriculture
@@ -787,6 +786,10 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
                     st.markdown(rtext("3_exp_te"))
 
         if st.session_state.LC_selection==rtext("2_opt3"):
+            if st.session_state.LC_class_names is not None:
+                invalid_values = [name for name in st.session_state.LC_class_names if name not in LC_dict.keys()]
+                if invalid_values:
+                    st.session_state.LC_class_names = None
             st.markdown(rtext("3_2_ti"))
             st.markdown(rtext("3_2_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_dict, key="LC_class", default=st.session_state.LC_class_names)
@@ -801,7 +804,10 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
 
         if st.session_state.LC_selection==rtext("2_opt2"):
-
+            if st.session_state.LC_class_names is not None:
+                invalid_values = [name for name in st.session_state.LC_class_names if name not in LC_names_simple]
+                if invalid_values:
+                    st.session_state.LC_class_names = None
             st.markdown(rtext("3_1_ti"))
             st.markdown(rtext("3_1_te"))
             LC_class = st.multiselect(rtext("3_plac"), options=LC_names_simple, key="LC_class", default=st.session_state.LC_class_names)

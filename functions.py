@@ -446,13 +446,13 @@ def edit_points():
             st.button(rtext("1_3_3_4_bu2"), on_click=remove_point, args=(st.session_state.index,), key="btn_remove_point") 
     with b2:
         if st.session_state.index is not None and not st.session_state.index.empty:
-            if st.button("undo selection", key="btn_undo_selection"):
+            if st.button("Undo Selection", key="btn_undo_selection"):
                 st.session_state.index = None
                 st.rerun(scope="fragment")
     with b3:
 
         if len(st.session_state.obs_original) != len(st.session_state.obs_edit):
-            if st.button("reset points", key="btn_reset_points"):
+            if st.button("Reset Points", key="btn_reset_points"):
                 st.session_state.obs_edit = st.session_state.obs_original
                 st.session_state.obs_csv = None
                 st.rerun(scope="fragment")

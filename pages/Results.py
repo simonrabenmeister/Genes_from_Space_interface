@@ -529,9 +529,9 @@ if input is not None or st.session_state.polyinfo is not None:
                                                 
                                                 
                         if class_names == "Tree cover":
-                            pixel_threshold=0.03*0.03
+                            pixel_threshold=0.03*0.03*30
                         else:
-                            pixel_threshold=0.3*0.3
+                            pixel_threshold=0.3*0.3*3
                         
 
                         # now the calculation always sees the up-to-date cutoff
@@ -552,13 +552,16 @@ if input is not None or st.session_state.polyinfo is not None:
                         end_pop_bellow_raw_count = int(end_pop_bellow_raw.sum())
                         end_pop_bellow_pixel_count = int(end_pop_bellow_pixel.sum())
                         PM_table = pd.DataFrame(
-                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count, end_pop_bellow_raw_count, end_pop_bellow_pixel_count]},
-                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow {:.0f})".format(st.session_state.PM_cutoff), "extinct populations (Ne = 0)", "populations with insufficient habitat area"]
+                            {"Value": [pop_total, pop_above_count, end_pop_bellow_count, end_pop_bellow_pixel_count]},
+                            index=["total populations", "starting populations with Ne>500", "at risk populations (Ne drop bellow {:.0f})".format(st.session_state.PM_cutoff), "populations with insufficient habitat area"]
                         )
 
                         st.markdown("### Estimated GBF genetic diversity indicators")
                         st.markdown("**Ne>500:**   \n   {:.2f}".format(ratio_ne_greater_500))
-                        st.markdown(rtext("out_4_te"))
+                        if class_names == "Tree cover":
+                            st.markdown(rtext("out_4_tev1"))
+                        else:
+                            st.markdown(rtext("out_4_tev2"))
                         st.dataframe(PM_table, use_container_width=False)
                         st.slider("PM Threshold", 0, 100, key="PMcutoff", on_change=lambda: setattr(st.session_state, "PM_cutoff", st.session_state.PMcutoff))
 
