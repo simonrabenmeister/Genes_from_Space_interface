@@ -29,7 +29,7 @@ else:
     # Fallback if JS eval fails or returns None
     if 'height' not in st.session_state:
         st.session_state.height = 500
-st.image('images/logo.png')
+st.image('images/logo_GfS.png')
 with st.sidebar:
 
     st.session_state.lan = st.radio("Select Language", ["en", "sp"], index=0)
@@ -82,9 +82,9 @@ with col2:
 
     st.image('images/AreaChange-1536x636.png', caption='Area change',width=st.session_state.height*2)
     st.markdown(rtext("hello_6"))
-    st.image('images/PointsToPoly-2048x422.png', caption='Points to Polygons',width=st.session_state.height*2)
+    st.image('images/PointsToPoly.png', caption='Points to Polygons',width=st.session_state.height*2)
     st.markdown(rtext("hello_7"))
-    st.image('images/LandcoverToHabitat-2048x504.png', caption='Landcover to habitat',width=st.session_state.height*2)
+    st.image('images/LandcoverToHabitat.png', caption='Landcover to habitat',width=st.session_state.height*2)
     st.markdown(rtext("hello_8"))
     st.markdown("\n")  # Add a break
     st.markdown(rtext("thanks_ti"))

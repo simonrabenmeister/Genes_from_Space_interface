@@ -252,7 +252,7 @@ st.markdown("""
     
 
 
-st.image('images/logo.png')
+st.image('images/logo_GfS.png')
 with st.sidebar:
 
     st.session_state.lan = st.radio("Select Language", ["en", "sp"], key="language_selection")
