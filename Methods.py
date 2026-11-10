@@ -93,9 +93,12 @@ with col2:
     # Encode the images to base64
     nomis_logo_path = "./images/Nomis_Logo.png"
     uzh_logo_path = "./images/uzh_logo.png"
+    esa_logo_path = "./images/esa_logo.png"
+
 
     nomis_logo_base64 = base64.b64encode(open(nomis_logo_path, "rb").read()).decode()
     uzh_logo_base64 = base64.b64encode(open(uzh_logo_path, "rb").read()).decode()
+    esa_logo_base64 = base64.b64encode(open(esa_logo_path, "rb").read()).decode()
 
     # Define custom CSS for consistent spacing and layout
     st.markdown(
@@ -122,6 +125,7 @@ with col2:
         <div class="image-container">
             <img src="data:image/png;base64,{nomis_logo_base64}" alt="Nomis Logo">
             <img src="data:image/png;base64,{uzh_logo_base64}" alt="UZH Logo">
+            <img src="data:image/png;base64,{esa_logo_base64}" alt="ESA Logo">
         </div>
         """,
         unsafe_allow_html=True
