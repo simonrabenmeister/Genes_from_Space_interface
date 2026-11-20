@@ -42,16 +42,16 @@ with st.sidebar:
         f"**Debug Session ID:** `{st.session_state.get('session_id', 'Loading...')}`"
         )
     
+
 def show_faq():
-
-    st.title("Frequently Asked Questions (FAQ)")
-
     st.markdown(
-        """
-        Find answers to common questions and troubleshooting tips
-        when using the Genes from Space Monitoring Tool.
-        """
+        '<h2 style="font-size:26px;">Tool updates and Frequently Asked Questions (FAQ)</h2>',
+        unsafe_allow_html=True
     )
+
+    st.markdown("""
+    This page provides the latest updates related to the tool, as well as answers to frequently asked questions (FAQ) and troubleshooting tips.
+    """)
 
     # 1. Browser compatibility
     with st.expander("1. I can’t open the tool in a specific web-browser."):
