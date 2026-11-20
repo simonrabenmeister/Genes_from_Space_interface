@@ -762,7 +762,7 @@ with col1.container( border=False, key="container1", height=st.session_state.hei
 
             if st.session_state.baseyear is not None:
                 st.markdown(rtext("1_2_1_te"))
-                LC_selection = [ rtext("2_opt4"), rtext("2_opt2"), rtext("2_opt1")] # Point to add/remove GFW tree cover option
+                LC_selection = [ rtext("2_opt4"), rtext("2_opt1")] # Point to add/remove GFW tree cover option
                 
                 st.session_state.LC_selection = st.selectbox(
                     rtext("2_plac"),
