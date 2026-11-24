@@ -45,13 +45,33 @@ with st.sidebar:
 
 def show_faq():
     st.markdown(
-        '<h2 style="font-size:26px;">Tool updates and Frequently Asked Questions (FAQ)</h2>',
+        '<h2 style="font-size:26px;">Tool updates, user guide and Frequently Asked Questions (FAQ)</h2>',
         unsafe_allow_html=True
     )
 
     st.markdown("""
-    This page provides the latest updates related to the tool, as well as answers to frequently asked questions (FAQ) and troubleshooting tips.
+    This page provides the latest updates related to the tool, detailed user guide information as well as answers to frequently asked questions (FAQ) and troubleshooting tips.
     """)
+
+   # User Guide
+    st.subheader("User Guide")
+
+    st.markdown("""
+    The User Guide provides detailed instructions on how to use the
+    tool, including input data requirements,
+    parameter selection, processing steps and interpretation of results.
+    """)
+
+    USER_GUIDE_URL = "https://drive.google.com/file/d/1dbKny8tQU2JYMC0u96g2JtZHV9Ai7xxQ/view"
+
+    st.link_button(
+        "📖 Download the User Guide",
+        USER_GUIDE_URL,
+        type="secondary"
+    )
+    # Frequently Asked Questions
+    st.subheader("Frequently Asked Questions (FAQ)")
+
 
     # 1. Browser compatibility
     with st.expander("1. I can’t open the tool in a specific web-browser."):

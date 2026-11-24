@@ -17,7 +17,7 @@ pages = [
     st.Page("pages/Methods.py", title="Methods", default=True),
     st.Page("pages/Input_form.py", title="Input form"),
     st.Page("pages/Results.py", title="Results"),
-    st.Page("pages/FAQ.py", title="Tool updates and FAQ"),
+    st.Page("pages/FAQ.py", title="Updates, user guide and FAQ"),
 ]
 
 # Run navigation
