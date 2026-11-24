@@ -62,7 +62,7 @@ def show_faq():
     parameter selection, processing steps and interpretation of results.
     """)
 
-    USER_GUIDE_URL = "https://drive.google.com/file/d/1dbKny8tQU2JYMC0u96g2JtZHV9Ai7xxQ/view"
+    USER_GUIDE_URL = "https://drive.google.com/file/d/1-nLp9wAl4Tdakr-o0M8WDCu48L8-wgBb/view?usp=sharing"
 
     st.link_button(
         "📖 Download the User Guide",
